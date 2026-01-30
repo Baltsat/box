@@ -161,6 +161,14 @@ setup_shell_config() {
     fi
 }
 
+# === Symlink Config Files ===
+link_configs() {
+    if has_cmd bun && [[ -f "$SCRIPT_DIR/script/files.ts" ]]; then
+        log "symlinking config files"
+        bun "$SCRIPT_DIR/script/files.ts" || true
+    fi
+}
+
 # === Main ===
 log "starting box setup"
 
@@ -171,6 +179,7 @@ decrypt_secrets
 install_nix
 apply_config
 source_nix
+link_configs
 set_shell
 setup_shell_config
 

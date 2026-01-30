@@ -1,4 +1,4 @@
-{ pkgs, username, ... }:
+{ pkgs, username, config, ... }:
 
 {
   home.stateVersion = "24.05";
@@ -20,11 +20,12 @@
     fzf
     tree
     zoxide
-    lsd
+    eza  # modern ls replacement
 
     # === Data Processing ===
     jq
     yq
+    duckdb
 
     # === Development ===
     neovim
@@ -33,6 +34,8 @@
     htop
     watch
     tldr
+    delta  # better git diffs
+    bun
 
     # === Media Processing ===
     ffmpeg
@@ -49,7 +52,18 @@
     # === Archive ===
     xz
     zstd
+
+    # === Secrets ===
+    age
+    sops
   ];
+
+  # Symlink config files after setup
+  home.activation.linkFiles = config.lib.dag.entryAfter [ "writeBoundary" ] ''
+    if command -v bun &>/dev/null && [ -f "$HOME/box/script/files.ts" ]; then
+      ${pkgs.bun}/bin/bun "$HOME/box/script/files.ts" || true
+    fi
+  '';
 
   # Git configuration
   programs.git = {

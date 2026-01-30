@@ -51,9 +51,29 @@
     # Global settings
     NSGlobalDomain = {
       AppleShowAllExtensions = true;
-      InitialKeyRepeat = 30;
-      KeyRepeat = 5;
-      "com.apple.swipescrolldirection" = true;
+      InitialKeyRepeat = 15;
+      KeyRepeat = 2;
+      ApplePressAndHoldEnabled = false;  # Enable key repeat
+      NSAutomaticSpellingCorrectionEnabled = false;
+      NSAutomaticCapitalizationEnabled = false;
+      NSAutomaticDashSubstitutionEnabled = false;
+      NSAutomaticPeriodSubstitutionEnabled = false;
+      NSAutomaticQuoteSubstitutionEnabled = false;
+      NSAutomaticInlinePredictionEnabled = false;
+    };
+
+    # Screenshot settings
+    screencapture = {
+      location = "~/Desktop";
+      disable-shadow = true;
+    };
+
+    # Prevent .DS_Store on network/USB drives
+    CustomUserPreferences = {
+      "com.apple.desktopservices" = {
+        DSDontWriteNetworkStores = true;
+        DSDontWriteUSBStores = true;
+      };
     };
   };
 
