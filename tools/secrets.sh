@@ -12,6 +12,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BOX_DIR="$(dirname "$SCRIPT_DIR")"
 ENV_FILE="$BOX_DIR/.env"
 ENCRYPTED_FILE="$BOX_DIR/.env.age"
+MEM_DIR="$HOME/.claude-mem"
+MEM_BACKUP="$BOX_DIR/claude-mem.tar.gz.age"
 
 log() { echo "[secrets] $*"; }
 die() { log "error: $*"; exit 1; }
@@ -87,25 +89,72 @@ rekey() {
     log "Done! .env.age re-encrypted with new password"
 }
 
+backup_mem() {
+    [[ -d "$MEM_DIR" ]] || die "claude-mem directory not found at $MEM_DIR"
+    log "Backing up claude-mem (~$(du -sh "$MEM_DIR" | cut -f1))"
+
+    local tmp_file
+    tmp_file=$(mktemp)
+    trap "rm -f $tmp_file" EXIT
+
+    # Compress
+    tar -czf "$tmp_file" -C "$HOME" .claude-mem
+
+    # Encrypt
+    log "Enter encryption password:"
+    age -p -o "$MEM_BACKUP" "$tmp_file"
+
+    log "Done! claude-mem.tar.gz.age created ($(du -sh "$MEM_BACKUP" | cut -f1))"
+}
+
+restore_mem() {
+    [[ -f "$MEM_BACKUP" ]] || die "claude-mem.tar.gz.age not found"
+
+    if [[ -d "$MEM_DIR" ]]; then
+        log "WARNING: $MEM_DIR already exists"
+        read -p "Overwrite? [y/N] " -n 1 -r
+        echo
+        [[ $REPLY =~ ^[Yy]$ ]] || die "Aborted"
+        rm -rf "$MEM_DIR"
+    fi
+
+    local tmp_file
+    tmp_file=$(mktemp)
+    trap "rm -f $tmp_file" EXIT
+
+    log "Enter decryption password:"
+    age -d -o "$tmp_file" "$MEM_BACKUP"
+
+    # Extract
+    tar -xzf "$tmp_file" -C "$HOME"
+
+    log "Done! claude-mem restored to $MEM_DIR"
+}
+
 show_help() {
     cat << EOF
 Secrets management for box
 
 Commands:
-  encrypt   Encrypt .env to .env.age
-  decrypt   Decrypt .env.age to .env
-  edit      Decrypt, edit in \$EDITOR, re-encrypt
-  rekey     Re-encrypt with a new password
+  encrypt      Encrypt .env to .env.age
+  decrypt      Decrypt .env.age to .env
+  edit         Decrypt, edit in \$EDITOR, re-encrypt
+  rekey        Re-encrypt with a new password
+  backup-mem   Backup ~/.claude-mem (encrypted)
+  restore-mem  Restore ~/.claude-mem from backup
 
 Files:
-  .env      Plaintext secrets (gitignored, local only)
-  .env.age  Encrypted secrets (safe to commit)
+  .env                    Plaintext secrets (gitignored)
+  .env.age                Encrypted secrets (committed)
+  claude-mem.tar.gz.age   Encrypted claude-mem backup (committed)
 
 Usage:
   ./tools/secrets.sh encrypt
   ./tools/secrets.sh decrypt
   ./tools/secrets.sh edit
   ./tools/secrets.sh rekey
+  ./tools/secrets.sh backup-mem
+  ./tools/secrets.sh restore-mem
 EOF
 }
 
@@ -114,5 +163,7 @@ case "${1:-help}" in
     decrypt) decrypt ;;
     edit) edit ;;
     rekey) rekey ;;
+    backup-mem) backup_mem ;;
+    restore-mem) restore_mem ;;
     *) show_help ;;
 esac
