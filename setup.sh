@@ -174,9 +174,10 @@ log "starting box setup"
 
 source_nix
 install_homebrew
+install_nix
+source_nix
 install_age
 decrypt_secrets
-install_nix
 apply_config
 source_nix
 link_configs
