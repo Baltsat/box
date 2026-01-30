@@ -17,7 +17,15 @@
       ...
     }:
     let
-      username = "konstantinbaltsat";
+      # Default username - override via BOX_USER env var in setup.sh
+      defaultUsername = "konstantinbaltsat";
+
+      # Helper to create home-manager config for any user
+      mkHomeConfig = { system, username }: home-manager.lib.homeManagerConfiguration {
+        pkgs = import nixpkgs { inherit system; };
+        modules = [ ./linux.nix ];
+        extraSpecialArgs = { inherit username; };
+      };
     in
     {
       # macOS configuration (Apple Silicon)
@@ -29,29 +37,34 @@
           {
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
-            home-manager.users.${username} = import ./shared.nix;
-            home-manager.extraSpecialArgs = { inherit username; };
+            home-manager.users.${defaultUsername} = import ./shared.nix;
+            home-manager.extraSpecialArgs = { username = defaultUsername; };
           }
         ];
-        specialArgs = { inherit username; };
+        specialArgs = { username = defaultUsername; };
       };
 
-      # Linux configuration (ARM)
-      homeConfigurations.linux = home-manager.lib.homeManagerConfiguration {
-        pkgs = import nixpkgs {
-          system = "aarch64-linux";
-        };
-        modules = [ ./linux.nix ];
-        extraSpecialArgs = { inherit username; };
+      # Linux configurations - default user
+      homeConfigurations.linux = mkHomeConfig {
+        system = "aarch64-linux";
+        username = defaultUsername;
       };
 
-      # Linux configuration (x86_64)
-      homeConfigurations.linux-x86 = home-manager.lib.homeManagerConfiguration {
-        pkgs = import nixpkgs {
-          system = "x86_64-linux";
-        };
-        modules = [ ./linux.nix ];
-        extraSpecialArgs = { inherit username; };
+      homeConfigurations.linux-x86 = mkHomeConfig {
+        system = "x86_64-linux";
+        username = defaultUsername;
+      };
+
+      # Linux configurations - generic (uses $USER)
+      # Usage: home-manager switch --flake .#linux-generic-x86
+      homeConfigurations.linux-generic = mkHomeConfig {
+        system = "aarch64-linux";
+        username = builtins.getEnv "USER";
+      };
+
+      homeConfigurations.linux-generic-x86 = mkHomeConfig {
+        system = "x86_64-linux";
+        username = builtins.getEnv "USER";
       };
     };
 }

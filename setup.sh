@@ -74,6 +74,9 @@ decrypt_secrets() {
 
 # === Apply Nix Configuration ===
 apply_config() {
+    local arch
+    arch=$(uname -m)
+
     case "$(uname -s)" in
     Darwin)
         log "applying nix-darwin config"
@@ -85,10 +88,19 @@ apply_config() {
         ;;
     Linux)
         log "applying home-manager config"
-        if has_cmd home-manager; then
-            home-manager switch --flake .#linux -b backup
+        # Use generic config (auto-detects $USER) or specific arch
+        local config
+        if [[ "$arch" == "x86_64" ]]; then
+            config="linux-generic-x86"
         else
-            nix --extra-experimental-features 'nix-command flakes' run home-manager -- switch --flake .#linux -b backup
+            config="linux-generic"
+        fi
+        log "using config: $config for user: $USER"
+
+        if has_cmd home-manager; then
+            home-manager switch --flake ".#$config" -b backup --impure
+        else
+            nix --extra-experimental-features 'nix-command flakes' run home-manager -- switch --flake ".#$config" -b backup --impure
         fi
         ;;
     *)
