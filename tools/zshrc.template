@@ -1,0 +1,57 @@
+# ZSH Configuration Template
+# Copy relevant parts to your ~/.zshrc
+
+# === Oh My Zsh ===
+export ZSH="$HOME/.oh-my-zsh"
+ZSH_THEME="robbyrussell"
+
+plugins=(
+  git
+  zsh-completions
+  zsh-autosuggestions
+  zsh-syntax-highlighting
+)
+
+source $ZSH/oh-my-zsh.sh
+
+# === Path Configuration ===
+typeset -U path
+path=(
+  /opt/homebrew/bin
+  /opt/homebrew/sbin
+  "$HOME/.cargo/bin"
+  "$HOME/.local/bin"
+  "$HOME/.bun/bin"
+  /usr/local/bin
+  /usr/bin
+  /bin
+  /usr/sbin
+  /sbin
+  $path
+)
+
+# === Environment ===
+export LANG=en_US.UTF-8
+export BUN_INSTALL="$HOME/.bun"
+
+# === NVM ===
+export NVM_DIR="$HOME/.nvm"
+[ -s "/opt/homebrew/opt/nvm/nvm.sh" ] && source "/opt/homebrew/opt/nvm/nvm.sh"
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+
+# === Tool Initializations ===
+eval $(thefuck --alias)
+autoload -U compinit && compinit
+eval "$(zoxide init zsh)"
+eval "$(starship init zsh)"
+
+# === Source Aliases ===
+[ -f "$HOME/box/tools/aliases.sh" ] && source "$HOME/box/tools/aliases.sh"
+
+# === Settings ===
+unsetopt correct
+unsetopt correct_all
+
+# === API Keys (keep in separate .env file, don't commit!) ===
+# export OPENAI_API_KEY="..."
+# export ANTHROPIC_API_KEY="..."

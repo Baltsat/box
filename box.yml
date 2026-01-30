@@ -1,0 +1,19 @@
+#cloud-config
+# Cloud-init configuration for provisioning VMs
+
+users:
+  - name: konstantinbaltsat
+    groups: sudo
+    shell: /bin/bash
+    sudo: ["ALL=(ALL) NOPASSWD:ALL"]
+
+package_update: true
+
+packages:
+  - git
+  - curl
+
+runcmd:
+  - git clone https://github.com/YOUR_USERNAME/box.git /home/konstantinbaltsat/box
+  - chown -R konstantinbaltsat:konstantinbaltsat /home/konstantinbaltsat/box
+  - sudo -u konstantinbaltsat bash -c 'cd /home/konstantinbaltsat/box && ./setup.sh'

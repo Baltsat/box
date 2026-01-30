@@ -1,0 +1,11 @@
+{
+  "name": "box",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "setup": "./setup.sh"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  }
+}

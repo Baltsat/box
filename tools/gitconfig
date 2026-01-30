@@ -1,0 +1,28 @@
+# Git configuration reference
+# This is managed by home-manager in shared.nix
+# Kept here for reference and manual installations
+
+[user]
+	name = Konstantin Baltsat
+	email = baltsat2002@mail.ru
+
+[credential]
+	helper = osxkeychain
+
+[alias]
+	lg = log --color --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit
+
+[init]
+	defaultBranch = main
+
+[push]
+	autoSetupRemote = true
+
+[pull]
+	rebase = true
+
+[filter "lfs"]
+	process = git-lfs filter-process
+	required = true
+	clean = git-lfs clean -- %f
+	smudge = git-lfs smudge -- %f
