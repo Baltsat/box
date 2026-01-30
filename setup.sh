@@ -26,6 +26,14 @@ install_nix() {
     curl --proto '=https' --tlsv1.2 -sSf -L \
         https://install.determinate.systems/nix | sh -s -- install --no-confirm
     source_nix
+    # Start nix daemon if not running (needed in containers)
+    if [[ -f /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh ]]; then
+        if ! pgrep -x nix-daemon >/dev/null 2>&1; then
+            log "starting nix daemon"
+            sudo nix-daemon &
+            sleep 2
+        fi
+    fi
     has_cmd nix || die "nix installation failed"
 }
 
