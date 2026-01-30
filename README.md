@@ -68,3 +68,22 @@ ripgrep, fd, fzf, jq, yq, bat, htop, neovim, tmux, git, gh, tldr, tree, zoxide, 
 2. Run `./setup.sh`
 3. Copy relevant parts from `tools/zshrc.template` to `~/.zshrc`
 4. Source aliases: add `source ~/box/tools/aliases.sh` to your shell config
+5. Decrypt secrets: `./tools/secrets.sh decrypt`
+
+## Secrets Management
+
+Secrets are encrypted using [AGE](https://github.com/FiloSottile/age) with password protection.
+
+| File | Description |
+|------|-------------|
+| `.env` | Plaintext secrets (gitignored, local only) |
+| `.env.age` | Encrypted secrets (safe to commit) |
+| `.env.template` | Template for new secrets |
+
+**Commands:**
+```bash
+./tools/secrets.sh decrypt   # Decrypt .env.age -> .env
+./tools/secrets.sh encrypt   # Encrypt .env -> .env.age
+./tools/secrets.sh edit      # Decrypt, edit, re-encrypt
+./tools/secrets.sh rekey     # Change password
+```

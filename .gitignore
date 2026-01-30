@@ -6,11 +6,11 @@ bun.lockb
 result
 result-*
 
-# Environment
+# Environment (plaintext secrets - never commit!)
 .env
 .env.local
 .env.*.local
-*.sops
+# Note: .env.age is encrypted and SAFE to commit
 
 # Editor
 .idea/
