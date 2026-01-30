@@ -1,0 +1,136 @@
+{
+    "editor.fontSize": 10,
+    "editor.lineHeight": 0,
+    "editor.cursorSmoothCaretAnimation": "on",
+    "editor.inlineSuggest.enabled": true,
+    "editor.inlineSuggest.suppressSuggestions": true,
+    "editor.snippetSuggestions": "inline",
+    "editor.linkedEditing": true,
+    "editor.formatOnSave": true,
+    "editor.unicodeHighlight.ambiguousCharacters": false,
+    "editor.accessibilitySupport": "off",
+    "editor.minimap.autohide": true,
+
+    "workbench.colorTheme": "Default Light Modern",
+    "workbench.iconTheme": "vscode-icons",
+    "workbench.sideBar.location": "right",
+    "workbench.preferredHighContrastLightColorTheme": "Visual Studio Light",
+    "workbench.editorAssociations": {
+        "*.ipynb": "jupyter.notebook.ipynb"
+    },
+
+    "window.autoDetectColorScheme": true,
+    "window.zoomLevel": 1,
+
+    "explorer.confirmDragAndDrop": false,
+    "explorer.confirmDelete": false,
+    "explorer.confirmPasteNative": false,
+
+    "terminal.integrated.enableMultiLinePasteWarning": false,
+
+    "git.enableSmartCommit": true,
+    "git.autofetch": true,
+    "git.confirmSync": false,
+
+    "security.workspace.trust.untrustedFiles": "open",
+    "security.promptForLocalFileProtocolHandling": false,
+
+    "prettier.tabWidth": 4,
+
+    "[javascript]": {
+        "editor.defaultFormatter": "vscode.typescript-language-features"
+    },
+    "[typescript]": {
+        "editor.defaultFormatter": "vscode.typescript-language-features"
+    },
+    "[html]": {
+        "editor.defaultFormatter": "vscode.html-language-features"
+    },
+    "[python]": {
+        "editor.formatOnType": true,
+        "editor.defaultFormatter": "ms-python.autopep8",
+        "diffEditor.ignoreTrimWhitespace": false
+    },
+    "[vue]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[json]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[jsonc]": {
+        "editor.defaultFormatter": "vscode.json-language-features"
+    },
+    "[scss]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[markdown]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[dockercompose]": {
+        "editor.insertSpaces": true,
+        "editor.tabSize": 2,
+        "editor.autoIndent": "advanced",
+        "editor.quickSuggestions": {
+            "other": true,
+            "comments": false,
+            "strings": true
+        },
+        "editor.defaultFormatter": "redhat.vscode-yaml"
+    },
+    "[github-actions-workflow]": {
+        "editor.defaultFormatter": "redhat.vscode-yaml"
+    },
+    "[Dockerfile, yml]": {
+        "editor.formatOnSave": false
+    },
+
+    "github.copilot.enable": {
+        "*": true,
+        "plaintext": true,
+        "markdown": false,
+        "scminput": false,
+        "yaml": false,
+        "html": true
+    },
+    "github.copilot.editor.enableAutoCompletions": true,
+
+    "todo-tree.highlights.customHighlight": {
+        "TODO": {
+            "icon": "check",
+            "type": "line",
+            "iconColour": "yellow",
+            "foreground": "red",
+            "background": "yellow"
+        },
+        "FIXME": {
+            "icon": "beaker",
+            "iconColour": "red",
+            "foreground": "white",
+            "background": "red"
+        }
+    },
+
+    "cursor.composer.collapsePaneInputBoxPills": true,
+    "cursor.composer.shouldChimeAfterChatFinishes": true,
+    "cursor.enable_git_worktrees_setting": true,
+    "cursor.agent_layout_browser_beta_setting": true,
+    "cursor.terminal.usePreviewBox": true,
+
+    "remote.autoForwardPortsSource": "hybrid",
+    "remote.SSH.connectTimeout": 1800,
+
+    "diffEditor.maxComputationTime": 0,
+    "diffEditor.ignoreTrimWhitespace": false,
+
+    "liveServer.settings.donotShowInfoMsg": true,
+    "autoHide.autoHideSideBar": false,
+    "autoHide.hideOnOpen": true,
+    "gitlens.launchpad.indicator.enabled": false,
+    "vsicons.dontShowNewVersionMessage": true,
+    "extensions.ignoreRecommendations": true,
+    "redhat.telemetry.enabled": false,
+    "json.schemaDownload.enable": true,
+    "crashReporting.enabled": "off",
+    "update.mode": "silentlyApplyOnQuit",
+    "update.releaseTrack": "prerelease"
+}

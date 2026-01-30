@@ -30,6 +30,7 @@
       mouse-over-hilite-stack = true;
       orientation = "bottom";
       launchanim = true;
+      expose-group-apps = false;
     };
 
     # Finder settings
@@ -40,12 +41,15 @@
       ShowStatusBar = true;
       FXEnableExtensionChangeWarning = false;
       CreateDesktop = true;
+      FXPreferredViewStyle = "Nlsv";  # List view
+      _FXShowPosixPathInTitle = true;
     };
 
     # Trackpad settings
     trackpad = {
       Clicking = true;
-      TrackpadThreeFingerDrag = true;
+      TrackpadThreeFingerDrag = false;
+      TrackpadRightClick = true;
     };
 
     # Global settings
@@ -54,12 +58,19 @@
       InitialKeyRepeat = 15;
       KeyRepeat = 2;
       ApplePressAndHoldEnabled = false;  # Enable key repeat
+      AppleInterfaceStyleSwitchesAutomatically = true;  # Auto dark mode
+      AppleICUForce24HourTime = true;  # 24 hour time
+      AppleTemperatureUnit = "Celsius";
+      AppleWindowTabbingMode = "always";
+      AppleActionOnDoubleClick = "Maximize";
+      AppleKeyboardUIMode = 2;  # Full keyboard access
       NSAutomaticSpellingCorrectionEnabled = false;
       NSAutomaticCapitalizationEnabled = false;
       NSAutomaticDashSubstitutionEnabled = false;
       NSAutomaticPeriodSubstitutionEnabled = false;
       NSAutomaticQuoteSubstitutionEnabled = false;
       NSAutomaticInlinePredictionEnabled = false;
+      NSAllowContinuousSpellChecking = false;
     };
 
     # Screenshot settings
@@ -68,17 +79,26 @@
       disable-shadow = true;
     };
 
+    # Login window
+    loginwindow = {
+      GuestEnabled = false;
+    };
+
     # Prevent .DS_Store on network/USB drives
     CustomUserPreferences = {
       "com.apple.desktopservices" = {
         DSDontWriteNetworkStores = true;
         DSDontWriteUSBStores = true;
       };
+      # Rectangle window manager
+      "com.knollsoft.Rectangle" = {
+        launchOnLogin = true;
+        alternateDefaultShortcuts = true;
+      };
     };
   };
 
   # Homebrew (declarative management)
-  # Note: Homebrew must be installed separately first
   homebrew = {
     enable = true;
     onActivation = {
@@ -86,30 +106,86 @@
       cleanup = "none";  # Don't remove unlisted packages
     };
 
-    # CLI tools
+    taps = [
+      "homebrew/cask-fonts"
+    ];
+
+    # CLI tools (from your brew leaves)
     brews = [
-      "bat"
-      "fzf"
-      "gh"
+      # Core
+      "bash"
+      "coreutils"
+      "curl"
+      "wget"
       "git"
       "git-lfs"
-      "htop"
+      "gh"
+
+      # Search & navigation
+      "ripgrep"
+      "fd"
+      "fzf"
+      "tree"
+      "lsd"
+      "zoxide"
+
+      # Data processing
       "jq"
+
+      # Development
       "neovim"
+      "tmux"
+      "bat"
+      "htop"
+      "tldr"
+      "watch"
+
+      # Node/JS
       "node"
       "nvm"
       "pnpm"
-      "ripgrep"
+      "yarn"
+
+      # Python
+      "pipx"
+      "python@3.12"
+
+      # Media
+      "ffmpeg"
+      "ffmpeg@6"
+      "imagemagick"
+      "graphicsmagick"
+      "yt-dlp"
+
+      # Shell
       "starship"
       "thefuck"
-      "tldr"
-      "tmux"
-      "tree"
-      "watch"
-      "wget"
-      "yarn"
-      "yt-dlp"
-      "zoxide"
+
+      # OCR & documents
+      "tesseract"
+      "tesseract-lang"
+      "ocrmypdf"
+
+      # Containers & infra
+      "docker"
+      "docker-compose"
+      "tailscale"
+
+      # Network tools
+      "tcpdump"
+      "telnet"
+      "lftp"
+      "privoxy"
+
+      # Misc tools
+      "act"
+      "age"
+      "sops"
+      "repomix"
+      "commitizen"
+      "sshpass"
+      "rlwrap"
+      "cmatrix"
     ];
 
     # GUI applications
@@ -120,14 +196,21 @@
       "alt-tab"
       "bartender"
       "karabiner-elements"
+      "maccy"
+      "itsycal"
 
       # Development
       "iterm2"
       "warp"
-      "cursor-cli"
+      "cursor"
       "postman"
       "dbeaver-community"
       "tableplus"
+      "sequel-ace"
+      "github"
+      "mitmproxy"
+      "wireshark"
+      "ngrok"
 
       # Browsers
       "google-chrome"
@@ -137,6 +220,8 @@
       "iina"
       "vlc"
       "obs"
+      "audacity"
+      "mixxx"
 
       # Utilities
       "appcleaner"
@@ -144,30 +229,61 @@
       "the-unarchiver"
       "cleanshot"
       "shottr"
-      "maccy"
       "stats"
       "monitorcontrol"
       "macs-fan-control"
+      "betterdisplay"
+      "bettertouchtool"
+      "lulu"
+      "little-snitch"
+      "keycastr"
+      "numi"
+      "latest"
+
+      # Cloud & sync
+      "google-drive"
+      "dropzone"
+      "motrix"
 
       # Communication
       "slack"
       "discord"
       "zoom"
       "notion"
+      "telegram"
 
       # Design
       "figma"
+      "canva"
+      "imageoptim"
+
+      # Media server
+      "plex-media-server"
+
+      # Reading
+      "adobe-acrobat-reader"
+      "fbreader"
 
       # QuickLook plugins
       "qlcolorcode"
       "qlmarkdown"
       "qlstephen"
+      "qlvideo"
       "quicklook-json"
+      "quicklook-csv"
+      "quicklookase"
       "syntax-highlight"
+      "webpquicklook"
+      "ipynb-quicklook"
+      "suspicious-package"
 
       # Fonts
       "font-fira-code"
       "font-hack-nerd-font"
+      "font-bebas-neue"
+      "font-inconsolata"
+      "font-pt-serif"
+      "font-readex-pro"
     ];
   };
 

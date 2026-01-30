@@ -22,6 +22,8 @@ const links: [string, string][] = [
 
 const macos_links: [string, string][] = [
   ["tools/karabiner.json", ".config/karabiner/karabiner.json"],
+  ["tools/cursor/settings.json", "Library/Application Support/Cursor/User/settings.json"],
+  ["tools/cursor/keybindings.json", "Library/Application Support/Cursor/User/keybindings.json"],
 ];
 
 const all_links = is_macos ? [...links, ...macos_links] : links;
