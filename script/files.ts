@@ -15,9 +15,12 @@ const is_macos = process.platform === "darwin";
 
 // [source in box/tools, destination in $HOME]
 const links: [string, string][] = [
+  // Shell & prompt
   ["tools/starship.toml", ".config/starship.toml"],
   ["tools/gitconfig", ".gitconfig"],
   ["tools/aliases.sh", ".config/box/aliases.sh"],
+  // Claude global instructions
+  ["tools/CLAUDE.md", ".claude/CLAUDE.md"],
 ];
 
 const macos_links: [string, string][] = [
