@@ -24,9 +24,18 @@ const links: [string, string][] = [
 ];
 
 const macos_links: [string, string][] = [
+  // Karabiner
   ["tools/karabiner.json", ".config/karabiner/karabiner.json"],
+  // Cursor
   ["tools/cursor/settings.json", "Library/Application Support/Cursor/User/settings.json"],
   ["tools/cursor/keybindings.json", "Library/Application Support/Cursor/User/keybindings.json"],
+  // Windsurf
+  ["tools/windsurf/settings.json", "Library/Application Support/Windsurf/User/settings.json"],
+  // VSCode
+  ["tools/vscode/settings.json", "Library/Application Support/Code/User/settings.json"],
+  // Warp
+  ["tools/warp/keybindings.yaml", ".warp/keybindings.yaml"],
+  // Claude Code
   ["tools/claude.json", ".claude/settings.json"],
 ];
 
