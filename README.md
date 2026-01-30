@@ -2,13 +2,19 @@
 
 Personal development environment configuration using Nix.
 
-## Quick Start
+## Quick Start (One Command)
 
 ```bash
-./setup.sh
+git clone https://github.com/Baltsat/box ~/box && cd ~/box && ./setup.sh
 ```
 
-This will install Nix (if needed) and apply the configuration.
+That's it. The setup script will:
+1. Install Homebrew (macOS)
+2. Install AGE for secrets decryption
+3. **Prompt for your password** to decrypt secrets
+4. Install Nix
+5. Apply system configuration (nix-darwin/home-manager)
+6. Set up your shell with aliases and environment
 
 ## What's Included
 
