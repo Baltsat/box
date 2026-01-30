@@ -44,7 +44,7 @@
 
     # === Shell ===
     starship
-    thefuck
+    pay-respects  # thefuck replacement
 
     # === Build Tools ===
     gnumake
@@ -68,10 +68,12 @@
   # Git configuration
   programs.git = {
     enable = true;
-    userName = "Konstantin Baltsat";
-    userEmail = "baltsat2002@mail.ru";
     lfs.enable = true;
-    extraConfig = {
+    settings = {
+      user = {
+        name = "Konstantin Baltsat";
+        email = "baltsat2002@mail.ru";
+      };
       init.defaultBranch = "main";
       push.autoSetupRemote = true;
       pull.rebase = true;
