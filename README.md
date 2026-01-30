@@ -1,95 +1,58 @@
 # box
 
-Personal development environment configuration using Nix.
+Personal development environment. One command to set up a new machine.
 
-## Quick Start (One Command)
+## Setup
 
 ```bash
-git clone https://github.com/Baltsat/box ~/box && cd ~/box && ./setup.sh
+git clone https://github.com/Baltsat/box.git ~/box && ~/box/setup.sh
 ```
 
-That's it. The setup script will:
-1. Install Homebrew (macOS)
-2. Install AGE for secrets decryption
-3. **Prompt for your password** to decrypt secrets
-4. Install Nix
-5. Apply system configuration (nix-darwin/home-manager)
-6. Set up your shell with aliases and environment
+Enter password when prompted. Done.
 
-## What's Included
+## What It Does
 
-### System Configuration
-- **nix-darwin** for macOS system settings (dock, finder, trackpad, Touch ID sudo)
-- **home-manager** for user environment on both macOS and Linux
-- **Homebrew** declarative management (brews and casks)
-
-### CLI Tools
-ripgrep, fd, fzf, jq, yq, bat, htop, neovim, tmux, git, gh, tldr, tree, zoxide, lsd, starship, thefuck, ffmpeg, imagemagick, yt-dlp
-
-### macOS Apps (via Homebrew)
-- **Productivity**: Raycast, Rectangle, Alt-Tab, Bartender, Karabiner
-- **Development**: iTerm2, Warp, Cursor, Postman, DBeaver, TablePlus
-- **Browsers**: Chrome, Firefox Developer Edition
-- **Media**: IINA, VLC, OBS
-- **Utilities**: AppCleaner, Keka, CleanShot, Shottr, Maccy, Stats
-
-### Shell Setup
-- Oh My Zsh with plugins (git, completions, autosuggestions, syntax-highlighting)
-- Starship prompt
-- Zoxide (smart cd)
-- Custom aliases
+1. Installs Nix + Homebrew
+2. Decrypts secrets (API keys, tokens)
+3. Configures macOS system settings
+4. Installs all packages and apps
+5. Sets up shell (zsh, starship, aliases)
+6. Symlinks config files
 
 ## Structure
 
-| Path | Description |
-|------|-------------|
-| `flake.nix` | Nix flake definition |
-| `macos.nix` | macOS system settings + Homebrew |
-| `linux.nix` | Linux-specific config |
-| `shared.nix` | Packages and programs for both platforms |
-| `setup.sh` | Installation script |
-| `tools/` | Tool configurations |
-| `script/` | Utility scripts |
-| `infra/` | Infrastructure as code |
+```
+~/box/
+├── flake.nix       # Nix entry point
+├── macos.nix       # macOS settings + Homebrew
+├── linux.nix       # Linux config
+├── shared.nix      # Shared packages
+├── setup.sh        # One-command setup
+├── tools/          # Configs (starship, karabiner, aliases, etc.)
+├── script/         # Utility scripts
+└── .env.age        # Encrypted secrets
+```
 
-## Tools Directory
+## Updating
 
-| File | Description |
-|------|-------------|
-| `starship.toml` | Starship prompt config |
-| `karabiner.json` | Keyboard customization |
-| `aliases.sh` | Shell aliases |
-| `zshrc.template` | ZSH configuration template |
-| `gitconfig` | Git configuration reference |
+After editing nix files:
+
+```bash
+~/box/setup.sh
+```
+
+## Secrets
+
+```bash
+~/box/tools/secrets.sh decrypt  # Decrypt to .env
+~/box/tools/secrets.sh encrypt  # Encrypt .env to .env.age
+~/box/tools/secrets.sh edit     # Edit secrets
+~/box/tools/secrets.sh rekey    # Change password
+```
 
 ## Customization
 
-1. Edit `shared.nix` to add/remove packages
-2. Edit `macos.nix` for macOS settings and Homebrew packages
-3. Run `./setup.sh` to apply changes
-
-## First Time Setup
-
-1. Clone this repo to `~/box`
-2. Run `./setup.sh`
-3. Copy relevant parts from `tools/zshrc.template` to `~/.zshrc`
-4. Source aliases: add `source ~/box/tools/aliases.sh` to your shell config
-5. Decrypt secrets: `./tools/secrets.sh decrypt`
-
-## Secrets Management
-
-Secrets are encrypted using [AGE](https://github.com/FiloSottile/age) with password protection.
-
-| File | Description |
-|------|-------------|
-| `.env` | Plaintext secrets (gitignored, local only) |
-| `.env.age` | Encrypted secrets (safe to commit) |
-| `.env.template` | Template for new secrets |
-
-**Commands:**
-```bash
-./tools/secrets.sh decrypt   # Decrypt .env.age -> .env
-./tools/secrets.sh encrypt   # Encrypt .env -> .env.age
-./tools/secrets.sh edit      # Decrypt, edit, re-encrypt
-./tools/secrets.sh rekey     # Change password
-```
+- **Packages**: Edit `shared.nix`
+- **macOS settings**: Edit `macos.nix`
+- **Homebrew apps**: Edit `homebrew.brews` and `homebrew.casks` in `macos.nix`
+- **Aliases**: Edit `tools/aliases.sh`

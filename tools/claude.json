@@ -5,5 +5,10 @@
   },
   "alwaysThinkingEnabled": true,
   "autoUpdatesChannel": "latest",
-  "model": "opus"
+  "model": "opus",
+  "permissions": {
+    "allow": [],
+    "deny": []
+  },
+  "promptCaching": true
 }
