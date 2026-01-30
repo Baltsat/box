@@ -75,8 +75,18 @@
 
     # Screenshot settings
     screencapture = {
-      location = "~/Desktop";
+      location = "~/Downloads";
       disable-shadow = true;
+      type = "jpg";
+      show-thumbnail = true;
+    };
+
+    # Menu bar clock
+    menuExtraClock = {
+      Show24Hour = true;
+      ShowDate = 2;  # Always show date
+      ShowDayOfWeek = false;
+      ShowSeconds = false;
     };
 
     # Login window
@@ -94,6 +104,17 @@
       "com.knollsoft.Rectangle" = {
         launchOnLogin = true;
         alternateDefaultShortcuts = true;
+      };
+      # Safari
+      "com.apple.Safari" = {
+        AutoOpenSafeDownloads = false;
+        CommandClickMakesTabs = true;
+        ShowFullURLInSmartSearchField = true;
+      };
+      # Terminal
+      "com.apple.Terminal" = {
+        FocusFollowsMouse = true;
+        "Default Window Settings" = "Pro";
       };
     };
   };

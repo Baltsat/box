@@ -1,0 +1,9 @@
+{
+  "hooks": {},
+  "enabledPlugins": {
+    "claude-mem@thedotmack": true
+  },
+  "alwaysThinkingEnabled": true,
+  "autoUpdatesChannel": "latest",
+  "model": "opus"
+}
