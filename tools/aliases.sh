@@ -307,7 +307,10 @@ tk() {
 init_box_tools() {
     command -v zoxide &>/dev/null && eval "$(zoxide init ${SHELL##*/})"
     command -v direnv &>/dev/null && eval "$(direnv hook ${SHELL##*/})"
-    command -v starship &>/dev/null && eval "$(starship init ${SHELL##*/})"
+    # Starship: only on macOS (Warp terminal on Linux has its own prompt)
+    if [[ "$(uname)" == "Darwin" ]]; then
+        command -v starship &>/dev/null && eval "$(starship init ${SHELL##*/})"
+    fi
     command -v fzf &>/dev/null && eval "$(fzf --${SHELL##*/})"
 
     # Run auto-update check
