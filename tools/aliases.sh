@@ -109,6 +109,23 @@ repos() {
     fd -H -t d '^\.git$' ~ --max-depth 2 2>/dev/null | sed 's/\/\.git\/$//';
 }
 
+# === Brew wrapper (reminder to update box) ===
+brew() {
+    /opt/homebrew/bin/brew "$@"
+    local ret=$?
+
+    # remind after install/uninstall
+    case "$1" in
+        install|uninstall|remove|reinstall)
+            echo ""
+            echo "⚠️  remember to update ~/box/macos.nix!"
+            echo "   run: box-brew (to see drift)"
+            ;;
+    esac
+
+    return $ret
+}
+
 # === Box Protection ===
 # Warn before dangerous operations on ~/box
 _box_protected_rm() {
@@ -141,6 +158,17 @@ _box_protected_mv() {
 
 alias rm='_box_protected_rm'
 alias mv='_box_protected_mv'
+
+# Check brew drift (packages installed but not in macos.nix)
+box-brew() {
+    echo "=== formulas not in macos.nix ==="
+    comm -23 <(brew leaves | sort) <(grep -oE '"[a-z][^"]*"' ~/box/macos.nix | tr -d '"' | sort) 2>/dev/null
+    echo ""
+    echo "=== casks not in macos.nix ==="
+    comm -23 <(brew list --cask | sort) <(grep -oE '"[a-z][^"]*"' ~/box/macos.nix | tr -d '"' | sort) 2>/dev/null
+    echo ""
+    echo "add missing packages to ~/box/macos.nix"
+}
 
 # Check symlink health
 box-check() {
