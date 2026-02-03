@@ -272,6 +272,18 @@ install_cli_tools() {
         return 0
     fi
 
+    # Claude Code
+    if ! has_cmd claude; then
+        log "installing claude-code"
+        npm install -g @anthropic-ai/claude-code || true
+    fi
+
+    # Codex (OpenAI)
+    if ! has_cmd codex; then
+        log "installing codex"
+        npm install -g @openai/codex || true
+    fi
+
     # Gemini CLI
     if ! has_cmd gemini; then
         log "installing gemini-cli"
@@ -288,6 +300,12 @@ install_cli_tools() {
     if ! has_cmd happy; then
         log "installing happy-coder"
         npm install -g happy-coder || true
+    fi
+
+    # Repomix
+    if ! has_cmd repomix; then
+        log "installing repomix"
+        npm install -g repomix || true
     fi
 
     # Omnara (AI agent control platform)
@@ -440,7 +458,7 @@ log ""
 log "installed:"
 log "  - nix + home-manager/nix-darwin"
 log "  - homebrew packages (macOS)"
-log "  - cli tools (gemini, qwen, happy, omnara)"
+log "  - cli tools (claude, codex, gemini, qwen, happy, repomix, omnara)"
 log "  - ssh keys restored"
 log "  - all tool configs applied"
 log ""

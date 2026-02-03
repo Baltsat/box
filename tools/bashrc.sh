@@ -137,7 +137,7 @@ TMUX_CONF
 
     # npm global packages
     if command -v npm &>/dev/null; then
-        for pkg in "@anthropic-ai/claude-code:claude" "repomix:repomix" "happy-coder:happy"; do
+        for pkg in "@anthropic-ai/claude-code:claude" "@openai/codex:codex" "repomix:repomix" "happy-coder:happy"; do
             local name="${pkg%%:*}"
             local cmd="${pkg##*:}"
             if ! command -v "$cmd" &>/dev/null; then
