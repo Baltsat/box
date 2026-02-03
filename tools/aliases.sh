@@ -243,6 +243,52 @@ ans() {
     ${EDITOR:-vim} "$f" && pbcopy < "$f"
 }
 
+# === Linux: sudo with nix PATH ===
+# Fix sudo not seeing Nix binaries on Linux
+if [[ "$(uname)" == "Linux" ]]; then
+    sudo() {
+        /usr/bin/sudo env "PATH=$PATH" "$@"
+    }
+fi
+
+# === Tmux Session per Directory ===
+# Usage: ts [session-name]
+# Creates/attaches to tmux session named after current directory
+ts() {
+    if ! command -v tmux &>/dev/null; then
+        echo "tmux not installed"
+        return 1
+    fi
+
+    local session_name="${1:-$(basename "$PWD" | tr ' .:-' '____')}"
+
+    if [[ -n "$TMUX" ]]; then
+        # Inside tmux - switch or create
+        if tmux has-session -t "$session_name" 2>/dev/null; then
+            tmux switch-client -t "$session_name"
+        else
+            tmux new-session -d -s "$session_name" -c "$PWD"
+            tmux switch-client -t "$session_name"
+        fi
+    else
+        # Outside tmux - attach or create
+        if tmux has-session -t "$session_name" 2>/dev/null; then
+            tmux attach-session -t "$session_name"
+        else
+            tmux new-session -s "$session_name" -c "$PWD"
+        fi
+    fi
+}
+
+# List tmux sessions
+alias tl='tmux list-sessions 2>/dev/null || echo "no sessions"'
+
+# Kill tmux session
+tk() {
+    local session="${1:-$(tmux display-message -p '#S' 2>/dev/null)}"
+    [[ -n "$session" ]] && tmux kill-session -t "$session"
+}
+
 # === Tool Initialization (call once in shell rc) ===
 init_box_tools() {
     command -v zoxide &>/dev/null && eval "$(zoxide init ${SHELL##*/})"
