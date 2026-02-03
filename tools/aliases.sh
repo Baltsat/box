@@ -109,6 +109,60 @@ repos() {
     fd -H -t d '^\.git$' ~ --max-depth 2 2>/dev/null | sed 's/\/\.git\/$//';
 }
 
+# === Box Protection ===
+# Warn before dangerous operations on ~/box
+_box_protected_rm() {
+    local box_path="$HOME/box"
+    for arg in "$@"; do
+        local resolved="${arg/#\~/$HOME}"
+        if [[ "$resolved" == "$box_path" || "$resolved" == "$box_path/" ]]; then
+            echo "⚠️  BLOCKED: refusing to delete ~/box"
+            echo "   this would break all your symlinked configs!"
+            echo "   if you REALLY need to: /bin/rm -rf ~/box"
+            return 1
+        fi
+    done
+    /bin/rm "$@"
+}
+
+_box_protected_mv() {
+    local box_path="$HOME/box"
+    for arg in "$@"; do
+        local resolved="${arg/#\~/$HOME}"
+        if [[ "$resolved" == "$box_path" || "$resolved" == "$box_path/" ]]; then
+            echo "⚠️  WARNING: moving ~/box will break symlinks!"
+            echo "   after moving, run: cd <new-location> && bun script/files.ts"
+            echo "   if you're sure: /bin/mv $*"
+            return 1
+        fi
+    done
+    /bin/mv "$@"
+}
+
+alias rm='_box_protected_rm'
+alias mv='_box_protected_mv'
+
+# Check symlink health
+box-check() {
+    echo "checking ~/box symlinks..."
+    local broken=0
+    for link in ~/.gitconfig ~/.config/starship.toml ~/.ssh/config ~/.config/gh/config.yml; do
+        if [[ -L "$link" ]]; then
+            local target
+            target=$(readlink "$link")
+            if [[ ! -e "$target" ]]; then
+                echo "✗ BROKEN: $link → $target"
+                ((broken++))
+            fi
+        fi
+    done
+    if [[ $broken -eq 0 ]]; then
+        echo "✓ all symlinks OK"
+    else
+        echo "⚠ $broken broken symlinks. run: cd ~/box && bun script/files.ts"
+    fi
+}
+
 # === Tool Initialization (call once in shell rc) ===
 init_box_tools() {
     command -v zoxide &>/dev/null && eval "$(zoxide init ${SHELL##*/})"

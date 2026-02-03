@@ -1,0 +1,56 @@
+{
+  "security": {
+    "auth": {
+      "selectedType": "oauth-personal"
+    },
+    "enablePermanentToolApproval": true
+  },
+  "ui": {
+    "theme": "Default",
+    "hideTips": true,
+    "hideBanner": true,
+    "hideContextSummary": true,
+    "showLineNumbers": false,
+    "useAlternateBuffer": true
+  },
+  "mcpServers": {
+    "sequential-thinking": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+    },
+    "shadcn": {
+      "command": "npx",
+      "args": ["shadcn@latest", "mcp"]
+    },
+    "playwright": {
+      "command": "docker",
+      "args": ["run", "-i", "--rm", "mcp/playwright"]
+    },
+    "Bright Data": {
+      "command": "npx",
+      "args": ["@brightdata/mcp"],
+      "env": {
+        "API_TOKEN": "${BRIGHT_DATA_API_TOKEN}"
+      }
+    },
+    "github": {
+      "url": "https://api.githubcopilot.com/mcp/",
+      "headers": {
+        "Authorization": "${GITHUB_PAT}"
+      }
+    }
+  },
+  "general": {
+    "enableAutoUpdate": true,
+    "previewFeatures": true,
+    "sessionRetention": {"enabled": true},
+    "enablePromptCompletion": true
+  },
+  "output": {"format": "text"},
+  "tools": {
+    "shell": {"showColor": true},
+    "autoAccept": true
+  },
+  "ide": {"enabled": true},
+  "experimental": {"plan": true}
+}

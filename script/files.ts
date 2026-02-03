@@ -19,8 +19,14 @@ const links: [string, string][] = [
   ["tools/starship.toml", ".config/starship.toml"],
   ["tools/gitconfig", ".gitconfig"],
   ["tools/aliases.sh", ".config/box/aliases.sh"],
+  // SSH
+  ["tools/ssh/config", ".ssh/config"],
+  // GitHub CLI
+  ["tools/gh/config.yml", ".config/gh/config.yml"],
   // Claude global instructions
   ["tools/CLAUDE.md", ".claude/CLAUDE.md"],
+  // Zed
+  ["tools/zed/settings.json", ".config/zed/settings.json"],
 ];
 
 const macos_links: [string, string][] = [

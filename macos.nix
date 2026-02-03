@@ -124,7 +124,7 @@
     enable = true;
     onActivation = {
       autoUpdate = false;
-      cleanup = "none";  # Don't remove unlisted packages
+      cleanup = "uninstall";  # Remove packages not in this list
     };
 
     taps = [
@@ -207,6 +207,35 @@
       "sshpass"
       "rlwrap"
       "cmatrix"
+
+      # Security/networking tools
+      "aircrack-ng"
+      "hashcat"
+      "hcxtools"
+
+      # Remote development
+      "coder"
+
+      # Python extras
+      "fastapi"
+      "jupyterlab"
+      "virtualenv"
+
+      # Additional runtimes
+      "node@22"
+      "php"
+      "python@3.10"
+
+      # Media/utilities
+      "telegram-downloader"
+      "vips"
+      "gstreamer"
+
+      # Atlassian CLI
+      "atlassian/acli/acli"
+
+      # Torrents
+      "autobrr"
     ];
 
     # GUI applications
@@ -305,6 +334,69 @@
       "font-inconsolata"
       "font-pt-serif"
       "font-readex-pro"
+
+      # Window managers & input
+      "amethyst"
+      "middleclick"
+      "multitouch"
+      "intellidock"
+      "mission-control-plus"
+      "scroll-reverser"
+
+      # Development extras
+      "cursor-cli"
+      "chromedriver"
+      "sf-symbols"
+
+      # Utilities
+      "apparency"
+      "clop"
+      "context"
+      "find-empty-folders"
+      "glance-chamburr"
+      "hazeover"
+      "one-switch"
+      "pally"
+      "pdf-squeezer"
+      "pine"
+      "reminders-menubar"
+      "serverbuddy"
+      "sip"
+      "swift-quit"
+      "table-tool"
+      "tempbox"
+      "time-out"
+      "unclack"
+
+      # Network & VPN
+      "protonvpn"
+      "network-radar"
+      "vibetunnel"
+
+      # Media
+      "droid"
+      "flow"
+      "flow-desktop"
+      "riverside-studio"
+      "macmediakeyforwarder"
+
+      # Firefox alt name
+      "firefox@developer-edition"
+
+      # DJ software snapshot
+      "mixxx@snapshot"
+
+      # UI tools
+      "ui-tars"
+
+      # Additional/duplicates
+      "mixxx-snapshot"
+      "sip-app"
+      "wireshark-app"
+
+      # Yandex
+      "yandex"
+      "yandex-music-unofficial"
     ];
   };
 

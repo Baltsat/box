@@ -181,8 +181,106 @@ setup_shell_config() {
     fi
 }
 
+# === Node.js CLI Tools ===
+install_cli_tools() {
+    if ! has_cmd node; then
+        log "node not found, will be installed by nix"
+        return 0
+    fi
+
+    # Gemini CLI
+    if ! has_cmd gemini; then
+        log "installing gemini-cli"
+        npm install -g @google/gemini-cli || true
+    fi
+
+    # Qwen Code
+    if ! has_cmd qwen; then
+        log "installing qwen-code"
+        npm install -g @qwen-code/qwen-code@latest || true
+    fi
+}
+
+# === Apply Tool Configs ===
+apply_tool_configs() {
+    log "applying tool configurations"
+
+    # Load .env for token substitution
+    if [[ -f "$SCRIPT_DIR/.env" ]]; then
+        set -a
+        source "$SCRIPT_DIR/.env"
+        set +a
+    fi
+
+    # SSH directory setup (config symlinked by files.ts)
+    mkdir -p "$HOME/.ssh"
+    chmod 700 "$HOME/.ssh"
+
+    # Restore SSH keys from .env (base64 encoded)
+    if [[ -n "${SSH_KEY_GITHUB:-}" ]]; then
+        echo "$SSH_KEY_GITHUB" | base64 -d > "$HOME/.ssh/github"
+        chmod 600 "$HOME/.ssh/github"
+        log "restored ~/.ssh/github"
+    fi
+    if [[ -n "${SSH_KEY_ID_ED25519:-}" ]]; then
+        echo "$SSH_KEY_ID_ED25519" | base64 -d > "$HOME/.ssh/id_ed25519"
+        chmod 600 "$HOME/.ssh/id_ed25519"
+        log "restored ~/.ssh/id_ed25519"
+    fi
+
+    # Gemini settings (needs envsubst for tokens - can't symlink)
+    if [[ -f "$SCRIPT_DIR/tools/gemini/settings.json" ]]; then
+        mkdir -p "$HOME/.gemini"
+        if has_cmd envsubst; then
+            envsubst < "$SCRIPT_DIR/tools/gemini/settings.json" > "$HOME/.gemini/settings.json"
+        else
+            cp "$SCRIPT_DIR/tools/gemini/settings.json" "$HOME/.gemini/settings.json"
+        fi
+        log "applied gemini settings (with token substitution)"
+    fi
+
+    # Gemini OAuth creds (restore from base64)
+    if [[ -n "${GEMINI_OAUTH_CREDS:-}" ]]; then
+        mkdir -p "$HOME/.gemini"
+        echo "$GEMINI_OAUTH_CREDS" | base64 -d > "$HOME/.gemini/oauth_creds.json"
+        chmod 600 "$HOME/.gemini/oauth_creds.json"
+        log "restored gemini oauth credentials"
+    fi
+
+    # GitHub CLI auth (using token)
+    if [[ -n "${GH_TOKEN:-}" ]] && has_cmd gh; then
+        if ! gh auth status &>/dev/null; then
+            log "authenticating github cli"
+            echo "$GH_TOKEN" | gh auth login --with-token 2>/dev/null || true
+            log "github cli authenticated"
+        else
+            log "github cli already authenticated"
+        fi
+    fi
+
+    # Coder config
+    if [[ -n "${CODER_URL:-}" ]] && [[ -n "${CODER_SESSION:-}" ]]; then
+        local coder_dir
+        if [[ "$(uname -s)" == "Darwin" ]]; then
+            coder_dir="$HOME/Library/Application Support/coderv2"
+        else
+            coder_dir="$HOME/.config/coderv2"
+        fi
+        mkdir -p "$coder_dir"
+        echo "$CODER_URL" > "$coder_dir/url"
+        echo "$CODER_SESSION" > "$coder_dir/session"
+        chmod 600 "$coder_dir/session"
+        log "restored coder credentials"
+    fi
+}
+
 # === Symlink Config Files ===
 link_configs() {
+    # Ensure directories with special permissions exist first
+    mkdir -p "$HOME/.ssh" && chmod 700 "$HOME/.ssh"
+    mkdir -p "$HOME/.config/gh"
+    mkdir -p "$HOME/.config/zed"
+
     if has_cmd bun && [[ -f "$SCRIPT_DIR/script/files.ts" ]]; then
         log "symlinking config files"
         bun "$SCRIPT_DIR/script/files.ts" || true
@@ -190,7 +288,9 @@ link_configs() {
 }
 
 # === Main ===
-log "starting box setup"
+log "============================================"
+log "       box setup - full system config      "
+log "============================================"
 
 source_nix
 install_homebrew
@@ -200,10 +300,24 @@ install_age
 decrypt_secrets
 apply_config
 source_nix
+install_cli_tools
+apply_tool_configs
 link_configs
 set_shell
 setup_shell_config
 
 log "============================================"
-log "done! restart your terminal to apply changes"
+log "  DONE! restart your terminal to apply     "
 log "============================================"
+log ""
+log "installed:"
+log "  - nix + home-manager/nix-darwin"
+log "  - homebrew packages (macOS)"
+log "  - gemini-cli, qwen-code"
+log "  - ssh keys restored"
+log "  - all tool configs applied"
+log ""
+log "next steps:"
+log "  1. restart terminal"
+log "  2. run 'gemini' to auth with Google (if needed)"
+log "  3. run 'qwen' to auth with Alibaba (if needed)"
