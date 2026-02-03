@@ -309,4 +309,67 @@ init_box_tools() {
     command -v direnv &>/dev/null && eval "$(direnv hook ${SHELL##*/})"
     command -v starship &>/dev/null && eval "$(starship init ${SHELL##*/})"
     command -v fzf &>/dev/null && eval "$(fzf --${SHELL##*/})"
+
+    # Run auto-update check
+    _box_auto_update 2>/dev/null &
+}
+
+# === Auto-Update (once per day, background, non-blocking) ===
+_box_auto_update() {
+    local check_file="$HOME/.cache/box_last_update_check"
+    local now
+    now=$(date +%s)
+    local last_check=0
+
+    mkdir -p "$HOME/.cache"
+
+    # Read last check time
+    [[ -f "$check_file" ]] && last_check=$(cat "$check_file" 2>/dev/null || echo 0)
+
+    # Check if 24 hours (86400 seconds) have passed
+    [[ $((now - last_check)) -le 86400 ]] && return 0
+
+    local log_file="$HOME/.cache/box_update.log"
+    echo "[box] auto-update started: $(date)" >"$log_file"
+
+    # Claude Code
+    if command -v claude &>/dev/null && command -v npm &>/dev/null; then
+        echo "[box] checking claude-code..." >>"$log_file"
+        npm update -g @anthropic-ai/claude-code >>"$log_file" 2>&1 || true
+    fi
+
+    # Codex (OpenAI)
+    if command -v codex &>/dev/null && command -v npm &>/dev/null; then
+        echo "[box] checking codex..." >>"$log_file"
+        npm update -g @openai/codex >>"$log_file" 2>&1 || true
+    fi
+
+    # Happy Coder
+    if command -v happy &>/dev/null && command -v npm &>/dev/null; then
+        echo "[box] checking happy-coder..." >>"$log_file"
+        npm update -g happy-coder >>"$log_file" 2>&1 || true
+    fi
+
+    # Omnara
+    if command -v omnara &>/dev/null; then
+        echo "[box] checking omnara..." >>"$log_file"
+        omnara update >>"$log_file" 2>&1 || true
+    fi
+
+    # Gemini CLI
+    if command -v gemini &>/dev/null && command -v npm &>/dev/null; then
+        echo "[box] checking gemini-cli..." >>"$log_file"
+        npm update -g @google/gemini-cli >>"$log_file" 2>&1 || true
+    fi
+
+    # Homebrew (macOS)
+    if [[ "$(uname)" == "Darwin" ]] && command -v brew &>/dev/null; then
+        echo "[box] updating homebrew..." >>"$log_file"
+        brew update >>"$log_file" 2>&1 || true
+        brew upgrade >>"$log_file" 2>&1 || true
+        brew cleanup -s >>"$log_file" 2>&1 || true
+    fi
+
+    echo "[box] auto-update finished: $(date)" >>"$log_file"
+    echo "$now" >"$check_file"
 }
