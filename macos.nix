@@ -1,15 +1,15 @@
 { pkgs, username, ... }:
 
 {
-  # Nix settings
-  nix.settings.experimental-features = [ "nix-command" "flakes" ];
+  # Primary user for user-specific settings
+  system.primaryUser = username;
 
-  # System packages available to all users
+  # Nix settings (managed by Determinate, not nix-darwin)
+  nix.enable = false;
+
+  # System packages (minimal, rest via home-manager)
   environment.systemPackages = with pkgs; [
     vim
-    git
-    curl
-    wget
   ];
 
   # Enable Touch ID for sudo
@@ -62,7 +62,6 @@
       AppleICUForce24HourTime = true;  # 24 hour time
       AppleTemperatureUnit = "Celsius";
       AppleWindowTabbingMode = "always";
-      AppleActionOnDoubleClick = "Maximize";
       AppleKeyboardUIMode = 2;  # Full keyboard access
       NSAutomaticSpellingCorrectionEnabled = false;
       NSAutomaticCapitalizationEnabled = true;  # current system
@@ -70,7 +69,6 @@
       NSAutomaticPeriodSubstitutionEnabled = false;
       NSAutomaticQuoteSubstitutionEnabled = true;  # current system
       NSAutomaticInlinePredictionEnabled = false;
-      NSAllowContinuousSpellChecking = false;
     };
 
     # Screenshot settings
@@ -124,81 +122,41 @@
     enable = true;
     onActivation = {
       autoUpdate = false;
-      cleanup = "uninstall";  # Remove packages not in this list
+      upgrade = false;
     };
 
-    taps = [
-      "homebrew/cask-fonts"
-    ];
-
-    # CLI tools (from your brew leaves)
+    # CLI tools (macOS-specific or not in nix)
+    # Core CLI tools are in shared.nix (nix) for cross-platform support
     brews = [
-      # Core
-      "bash"
-      "coreutils"
-      "curl"
-      "wget"
-      "git"
-      "git-lfs"
+      # Git extras (delta/gitui better via brew)
       "git-delta"
-      "gh"
       "gitui"
+      "lsd"  # ls alternative
 
-      # Search & navigation
-      "ripgrep"
-      "fd"
-      "fzf"
-      "tree"
-      "eza"
-      "lsd"
-      "zoxide"
-
-      # Data processing
-      "jq"
-
-      # Formatters & linters
-      "nixfmt"
-      "shfmt"
-      "shellcheck"
-      "taplo"
-      "prettier"
-      "ruff"
-
-      # Development
-      "neovim"
-      "tmux"
-      "bat"
-      "htop"
-      "tldr"
-      "watch"
-
-      # Node/JS
+      # Node/JS ecosystem (brew manages versions better)
       "node"
+      "node@22"
       "nvm"
       "pnpm"
       "yarn"
 
-      # Python
+      # Python (brew manages versions better)
       "pipx"
       "python@3.12"
+      "python@3.10"
+      "virtualenv"
+      "fastapi"
+      "jupyterlab"
 
-      # Media
-      "ffmpeg"
-      "ffmpeg@6"
-      "imagemagick"
-      "graphicsmagick"
-      "yt-dlp"
-
-      # Shell
-      "starship"
+      # Shell extras
       "thefuck"
 
-      # OCR & documents
+      # OCR & documents (macOS specific libs)
       "tesseract"
       "tesseract-lang"
       "ocrmypdf"
 
-      # Containers & infra
+      # Containers & infra (macOS integration)
       "docker"
       "docker-compose"
       "tailscale"
@@ -212,15 +170,14 @@
 
       # Misc tools
       "act"
-      "age"
-      "sops"
+      "sops"  # needed for precommit hook
       "repomix"
       "commitizen"
       "sshpass"
       "rlwrap"
       "cmatrix"
 
-      # Security/networking tools
+      # Security/networking
       "aircrack-ng"
       "hashcat"
       "hcxtools"
@@ -228,17 +185,12 @@
       # Remote development
       "coder"
 
-      # Python extras
-      "fastapi"
-      "jupyterlab"
-      "virtualenv"
-
       # Additional runtimes
-      "node@22"
       "php"
-      "python@3.10"
 
-      # Media/utilities
+      # Media (macOS specific libs)
+      "ffmpeg@6"  # specific version
+      "graphicsmagick"
       "telegram-downloader"
       "vips"
       "gstreamer"
@@ -271,19 +223,17 @@
       "sequel-ace"
       "github"
       "mitmproxy"
-      "wireshark"
+      "wireshark-app"
       "ngrok"
 
       # Browsers
       "google-chrome"
-      "firefox-developer-edition"
 
       # Media
       "iina"
       "vlc"
       "obs"
       "audacity"
-      "mixxx"
 
       # Utilities
       "appcleaner"
@@ -373,7 +323,7 @@
       "pine"
       "reminders-menubar"
       "serverbuddy"
-      "sip"
+      "sip-app"
       "swift-quit"
       "table-tool"
       "tempbox"
@@ -387,12 +337,11 @@
 
       # Media
       "droid"
-      "flow"
       "flow-desktop"
       "riverside-studio"
       "macmediakeyforwarder"
 
-      # Firefox alt name
+      # Firefox
       "firefox@developer-edition"
 
       # DJ software snapshot
@@ -401,10 +350,6 @@
       # UI tools
       "ui-tars"
 
-      # Additional/duplicates
-      "mixxx-snapshot"
-      "sip-app"
-      "wireshark-app"
 
       # Yandex
       "yandex"
@@ -417,6 +362,13 @@
     name = username;
     home = "/Users/${username}";
   };
+
+  # Additional macOS defaults (not available in nix-darwin)
+  system.activationScripts.macosDefaults.text = ''
+    if command -v bun &>/dev/null; then
+      bun ${./script/macos.ts} || true
+    fi
+  '';
 
   # Required for nix-darwin
   system.stateVersion = 5;

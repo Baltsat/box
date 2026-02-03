@@ -1,11 +1,12 @@
-{ pkgs, username, config, ... }:
+{ pkgs, config, ... }:
 
 {
-  home.stateVersion = "24.05";
+  home.stateVersion = "24.11";
+  home.enableNixpkgsReleaseCheck = false;
 
   # Packages installed for the user
   home.packages = with pkgs; [
-    # === Core CLI Tools ===
+    # Core CLI
     coreutils
     curl
     wget
@@ -14,104 +15,74 @@
     gh
     gnupg
 
-    # === Search & Navigation ===
+    # Search & Navigation
     ripgrep
     fd
     fzf
     tree
     zoxide
-    eza  # modern ls replacement
+    eza
 
-    # === Data Processing ===
+    # Data Processing
     jq
     yq
     duckdb
 
-    # === Development ===
+    # Development
     neovim
     tmux
+    zellij
     bat
     htop
     watch
     tldr
-    delta  # better git diffs
+    delta
     bun
 
-    # === Media Processing ===
+    # Formatters
+    nixfmt
+    shfmt
+    shellcheck
+    taplo
+    nodePackages.prettier
+    ruff
+
+    # Media
     ffmpeg
     imagemagick
     yt-dlp
 
-    # === Shell ===
+    # Shell
     starship
-    pay-respects  # thefuck replacement
+    direnv
+    nix-direnv
 
-    # === Build Tools ===
+    # Build
     gnumake
 
-    # === Archive ===
+    # Archive
     xz
     zstd
 
-    # === Secrets ===
+    # Secrets
     age
     sops
   ];
 
+  # Suppress login message
+  home.file.".hushlogin".text = "";
+
   # Symlink config files after setup
   home.activation.linkFiles = config.lib.dag.entryAfter [ "writeBoundary" ] ''
-    if command -v bun &>/dev/null && [ -f "$HOME/box/script/files.ts" ]; then
-      ${pkgs.bun}/bin/bun "$HOME/box/script/files.ts" || true
-    fi
+    ${pkgs.bun}/bin/bun $HOME/box/script/files.ts || true
   '';
 
-  # Git configuration
-  programs.git = {
-    enable = true;
-    lfs.enable = true;
-    settings = {
-      user = {
-        name = "Konstantin Baltsat";
-        email = "baltsat2002@mail.ru";
-      };
-      init.defaultBranch = "main";
-      push.autoSetupRemote = true;
-      pull.rebase = true;
-      credential.helper = "osxkeychain";
-      alias = {
-        lg = "log --color --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit";
-      };
-    };
-  };
-
-  # Starship prompt
-  programs.starship = {
-    enable = true;
-    settings = {
-      command_timeout = 1000;
-      add_newline = false;
-    };
-  };
-
-  # Zoxide (smart cd)
-  programs.zoxide = {
-    enable = true;
-    enableBashIntegration = true;
-    enableZshIntegration = true;
-  };
-
-  # fzf (fuzzy finder)
-  programs.fzf = {
-    enable = true;
-    enableBashIntegration = true;
-    enableZshIntegration = true;
-  };
-
-  # Direnv (per-directory environments)
-  programs.direnv = {
-    enable = true;
-    nix-direnv.enable = true;
-  };
+  # Install pre-commit hook
+  home.activation.installPrecommit = config.lib.dag.entryAfter [ "writeBoundary" ] ''
+    if [ -f "$HOME/box/script/precommit.sh" ]; then
+      cd $HOME/box && source script/precommit.sh && install_hook || true
+    fi
+  '';
 
   # Let home-manager manage itself
   programs.home-manager.enable = true;

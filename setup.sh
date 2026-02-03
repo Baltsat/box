@@ -69,9 +69,19 @@ decrypt_secrets() {
     log "decrypting secrets with SOPS..."
     export SOPS_AGE_KEY_FILE="$HOME/.config/sops/age/keys.txt"
     if [[ ! -f "$SOPS_AGE_KEY_FILE" ]]; then
-        warn "no age key found at $SOPS_AGE_KEY_FILE"
-        warn "run: mkdir -p ~/.config/sops/age && age-keygen -o ~/.config/sops/age/keys.txt"
-        return 1
+        # Try to decrypt age key from passphrase-protected file
+        if [[ -f "$SCRIPT_DIR/tools/sops-key.age" ]]; then
+            log "age key not found, decrypting from sops-key.age..."
+            log "enter your passphrase:"
+            mkdir -p "$(dirname "$SOPS_AGE_KEY_FILE")"
+            age -d "$SCRIPT_DIR/tools/sops-key.age" > "$SOPS_AGE_KEY_FILE"
+            chmod 600 "$SOPS_AGE_KEY_FILE"
+            log "age key restored"
+        else
+            warn "no age key found at $SOPS_AGE_KEY_FILE"
+            warn "run: mkdir -p ~/.config/sops/age && age-keygen -o ~/.config/sops/age/keys.txt"
+            return 1
+        fi
     fi
     sops --decrypt --input-type dotenv --output-type dotenv "$SCRIPT_DIR/.env.sops" > "$SCRIPT_DIR/.env"
     log "secrets decrypted to .env"
@@ -250,6 +260,14 @@ apply_tool_configs() {
         echo "$GEMINI_OAUTH_CREDS" | base64 -d > "$HOME/.gemini/oauth_creds.json"
         chmod 600 "$HOME/.gemini/oauth_creds.json"
         log "restored gemini oauth credentials"
+    fi
+
+    # Codex/OpenAI auth (restore from base64)
+    if [[ -n "${CODEX_AUTH:-}" ]]; then
+        mkdir -p "$HOME/.codex"
+        echo "$CODEX_AUTH" | base64 -d > "$HOME/.codex/auth.json"
+        chmod 600 "$HOME/.codex/auth.json"
+        log "restored codex/openai credentials"
     fi
 
     # GitHub CLI auth (using token)

@@ -6,6 +6,7 @@
 #   ./tools/secrets.sh edit       # Edit encrypted file in-place
 #   ./tools/secrets.sh view       # View decrypted contents
 #   ./tools/secrets.sh rotate     # Re-encrypt with new key
+#   ./tools/secrets.sh keygen     # Generate new age key + passphrase backup
 
 set -euo pipefail
 
@@ -89,6 +90,41 @@ rotate() {
     log "done!"
 }
 
+keygen() {
+    local key_backup="$BOX_DIR/tools/sops-key.age"
+
+    if [[ -f "$AGE_KEY_FILE" ]]; then
+        log "WARNING: age key already exists at $AGE_KEY_FILE"
+        read -p "overwrite and generate new key? [y/N] " -n 1 -r
+        echo
+        [[ $REPLY =~ ^[Yy]$ ]] || die "aborted"
+    fi
+
+    log "generating new age key..."
+    mkdir -p "$(dirname "$AGE_KEY_FILE")"
+    age-keygen -o "$AGE_KEY_FILE"
+    chmod 600 "$AGE_KEY_FILE"
+
+    local pubkey
+    pubkey=$(get_age_pubkey)
+    log "public key: $pubkey"
+
+    log "creating passphrase-protected backup..."
+    log "enter a memorable passphrase:"
+    age -p -o "$key_backup" "$AGE_KEY_FILE"
+    chmod 644 "$key_backup"
+
+    log "done!"
+    log "  age key: $AGE_KEY_FILE"
+    log "  backup:  $key_backup"
+    log ""
+    log "IMPORTANT: update .sops.yaml with new public key:"
+    log "  age: $pubkey"
+    log ""
+    log "then re-encrypt secrets:"
+    log "  ./tools/secrets.sh decrypt && ./tools/secrets.sh encrypt"
+}
+
 backup_mem() {
     [[ -d "$MEM_DIR" ]] || die "claude-mem directory not found at $MEM_DIR"
     log "backing up claude-mem (~$(du -sh "$MEM_DIR" | cut -f1))"
@@ -150,6 +186,7 @@ Commands:
   edit         Edit encrypted file in-place (recommended)
   view         View decrypted contents (stdout)
   rotate       Re-encrypt with updated keys
+  keygen       Generate new age key + passphrase backup
   backup-mem   Backup ~/.claude-mem (encrypted)
   restore-mem  Restore ~/.claude-mem from backup
   migrate      Help migrate from old .env.age format
@@ -178,6 +215,7 @@ case "${1:-help}" in
     edit) edit ;;
     view) view ;;
     rotate) rotate ;;
+    keygen) keygen ;;
     backup-mem) backup_mem ;;
     restore-mem) restore_mem ;;
     migrate) migrate_from_age ;;
