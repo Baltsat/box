@@ -46,28 +46,32 @@ install_homebrew() {
     eval "$(/opt/homebrew/bin/brew shellenv)"
 }
 
-# === SOPS + AGE Setup ===
-install_sops_tools() {
-    local need_age=false need_sops=false
-    has_cmd age || need_age=true
-    has_cmd sops || need_sops=true
-
-    [[ "$need_age" == "false" && "$need_sops" == "false" ]] && return 0
-
-    log "installing sops/age for secrets decryption"
-    if has_cmd brew; then
-        $need_age && brew install age
-        $need_sops && brew install sops
+# === SOPS + AGE Commands ===
+# Use nix run for one-time execution to avoid conflicts with home-manager
+# After home-manager runs, age/sops will be in PATH from shared.nix
+run_age() {
+    if has_cmd age; then
+        age "$@"
     elif has_cmd nix; then
-        local pkgs=()
-        $need_age && pkgs+=(nixpkgs#age)
-        $need_sops && pkgs+=(nixpkgs#sops)
-        nix --extra-experimental-features 'nix-command flakes' profile install "${pkgs[@]}"
-        # Re-source nix to get new commands in PATH
-        source_nix
-        export PATH="$HOME/.nix-profile/bin:$PATH"
+        nix --extra-experimental-features 'nix-command flakes' run nixpkgs#age -- "$@"
+    elif has_cmd brew; then
+        brew install age >/dev/null 2>&1
+        age "$@"
     else
-        die "cannot install sops/age: no package manager available"
+        die "cannot run age: no package manager available"
+    fi
+}
+
+run_sops() {
+    if has_cmd sops; then
+        sops "$@"
+    elif has_cmd nix; then
+        nix --extra-experimental-features 'nix-command flakes' run nixpkgs#sops -- "$@"
+    elif has_cmd brew; then
+        brew install sops >/dev/null 2>&1
+        sops "$@"
+    else
+        die "cannot run sops: no package manager available"
     fi
 }
 
@@ -101,7 +105,7 @@ decrypt_secrets() {
             log "decrypting age key from sops-key.age..."
             log "enter your passphrase:"
             mkdir -p "$(dirname "$SOPS_AGE_KEY_FILE")"
-            if ! age -d "$SCRIPT_DIR/tools/sops-key.age" >"$SOPS_AGE_KEY_FILE"; then
+            if ! run_age -d "$SCRIPT_DIR/tools/sops-key.age" >"$SOPS_AGE_KEY_FILE"; then
                 rm -f "$SOPS_AGE_KEY_FILE"
                 die "failed to decrypt age key (wrong passphrase?)"
             fi
@@ -113,7 +117,7 @@ decrypt_secrets() {
             return 1
         fi
     fi
-    sops --decrypt --input-type dotenv --output-type dotenv "$SCRIPT_DIR/.env.sops" >"$SCRIPT_DIR/.env"
+    run_sops --decrypt --input-type dotenv --output-type dotenv "$SCRIPT_DIR/.env.sops" >"$SCRIPT_DIR/.env"
     log "secrets decrypted to .env"
 }
 
@@ -378,7 +382,6 @@ source_nix
 install_homebrew
 install_nix
 source_nix
-install_sops_tools
 decrypt_secrets
 apply_config
 source_nix
