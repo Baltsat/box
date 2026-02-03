@@ -68,13 +68,16 @@ fmt_python() {
     log "python formatted"
 }
 
-# Encrypt secrets with SOPS
+# Encrypt secrets with SOPS (only if .env changed)
 run_sops() {
     [[ -f "$BOX_DIR/.env" ]] || return 0
-    [[ -f "$BOX_DIR/tools/secrets.sh" ]] && {
-        "$BOX_DIR/tools/secrets.sh" encrypt 2>/dev/null || true
-        log "secrets encrypted"
-    }
+    [[ -f "$BOX_DIR/tools/secrets.sh" ]] || return 0
+    # Skip if .env.sops exists and is newer than .env
+    if [[ -f "$BOX_DIR/.env.sops" ]] && [[ ! "$BOX_DIR/.env" -nt "$BOX_DIR/.env.sops" ]]; then
+        return 0
+    fi
+    "$BOX_DIR/tools/secrets.sh" encrypt 2>/dev/null || true
+    log "secrets encrypted"
 }
 
 # Install as git pre-commit hook
