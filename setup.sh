@@ -179,20 +179,37 @@ setup_shell_config() {
     *) return 0 ;;
     esac
 
-    # Add alias sourcing if not present
-    local alias_line="source \"$SCRIPT_DIR/tools/aliases.sh\""
-    if [[ -f "$shell_rc" ]] && ! grep -qF "box/tools/aliases.sh" "$shell_rc"; then
-        log "adding aliases to $shell_rc"
-        echo "" >>"$shell_rc"
-        echo "# Box aliases" >>"$shell_rc"
-        echo "[ -f \"$SCRIPT_DIR/tools/aliases.sh\" ] && $alias_line" >>"$shell_rc"
-    fi
+    # Linux + bash: use bashrc.sh (includes aliases.sh + one-time setup)
+    # macOS + zsh: use aliases.sh directly
+    if [[ "$(uname -s)" == "Linux" && "$(basename "$SHELL")" == "bash" ]]; then
+        local bashrc_line="source \"$SCRIPT_DIR/tools/bashrc.sh\""
+        if ! grep -qF "box/tools/bashrc.sh" "$shell_rc" 2>/dev/null; then
+            log "adding box bashrc to $shell_rc"
+            # Backup existing bashrc if it exists and isn't empty
+            if [[ -f "$shell_rc" && -s "$shell_rc" ]] && ! grep -qF "box/tools" "$shell_rc"; then
+                cp "$shell_rc" "$shell_rc.backup"
+                log "backed up existing bashrc to $shell_rc.backup"
+            fi
+            echo "" >>"$shell_rc"
+            echo "# Box bashrc (Linux)" >>"$shell_rc"
+            echo "[ -f \"$SCRIPT_DIR/tools/bashrc.sh\" ] && $bashrc_line" >>"$shell_rc"
+        fi
+    else
+        # macOS/zsh: source aliases.sh
+        local alias_line="source \"$SCRIPT_DIR/tools/aliases.sh\""
+        if [[ -f "$shell_rc" ]] && ! grep -qF "box/tools/aliases.sh" "$shell_rc"; then
+            log "adding aliases to $shell_rc"
+            echo "" >>"$shell_rc"
+            echo "# Box aliases" >>"$shell_rc"
+            echo "[ -f \"$SCRIPT_DIR/tools/aliases.sh\" ] && $alias_line" >>"$shell_rc"
+        fi
 
-    # Source .env if exists
-    local env_line="source \"$SCRIPT_DIR/.env\""
-    if [[ -f "$shell_rc" ]] && ! grep -qF "box/.env" "$shell_rc"; then
-        log "adding .env sourcing to $shell_rc"
-        echo "[ -f \"$SCRIPT_DIR/.env\" ] && set -a && $env_line && set +a" >>"$shell_rc"
+        # Source .env if exists (only for zsh, bashrc.sh handles this for bash)
+        local env_line="source \"$SCRIPT_DIR/.env\""
+        if [[ -f "$shell_rc" ]] && ! grep -qF "box/.env" "$shell_rc"; then
+            log "adding .env sourcing to $shell_rc"
+            echo "[ -f \"$SCRIPT_DIR/.env\" ] && set -a && $env_line && set +a" >>"$shell_rc"
+        fi
     fi
 }
 
@@ -213,6 +230,18 @@ install_cli_tools() {
     if ! has_cmd qwen; then
         log "installing qwen-code"
         npm install -g @qwen-code/qwen-code@latest || true
+    fi
+
+    # Happy Coder (mobile/web access to Claude Code)
+    if ! has_cmd happy; then
+        log "installing happy-coder"
+        npm install -g happy-coder || true
+    fi
+
+    # Omnara (AI agent control platform)
+    if ! has_cmd omnara; then
+        log "installing omnara"
+        curl -fsSL https://omnara.com/install/install.sh 2>/dev/null | bash || true
     fi
 }
 

@@ -19,6 +19,8 @@ const links: [string, string][] = [
   ['tools/starship.toml', '.config/starship.toml'],
   ['tools/gitconfig', '.gitconfig'],
   ['tools/aliases.sh', '.config/box/aliases.sh'],
+  // Bashrc (Linux only, but harmless on mac)
+  ['tools/bashrc.sh', '.config/box/bashrc.sh'],
   // Tmux
   ['tools/tmux.conf', '.tmux.conf'],
   // SSH

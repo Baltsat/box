@@ -79,6 +79,17 @@ alias preview='open -a "Preview"'
 # === Claude ===
 alias claude='claude --dangerously-skip-permissions'
 
+# === Happy Coder (mobile/web access) ===
+alias h='happy'
+alias hs='happy status'
+alias hd='happy daemon'
+
+# === Omnara (AI agent control) ===
+# Add omnara to PATH if installed
+[[ -d "$HOME/.omnara/bin" ]] && export PATH="$HOME/.omnara/bin:$PATH"
+alias om='omnara'
+alias omd='omnara daemon'
+
 # System context for Claude (used by c/cc wrappers)
 sys() {
     echo "<repos>"

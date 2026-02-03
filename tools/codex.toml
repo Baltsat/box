@@ -1,5 +1,5 @@
-model = "gpt-5.2-codex"
-model_reasoning_effort = "high"
+model = "gpt-5.2"
+model_reasoning_effort = "medium"
 model_personality = "pragmatic"
 web_search = "live"
 
@@ -22,3 +22,6 @@ shell_snapshot = true
 apps = true
 steer = true
 personality = true
+
+[notice.model_migrations]
+"gpt-5.2" = "gpt-5.2-codex"
