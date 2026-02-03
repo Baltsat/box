@@ -86,7 +86,10 @@ sys() {
     echo "</repos>"
     echo ""
     [[ -f "$HOME/box/GLOBAL.md" ]] && cat "$HOME/box/GLOBAL.md"
-    [[ -f "./CLAUDE.md" ]] && { echo ""; cat "./CLAUDE.md"; }
+    [[ -f "./CLAUDE.md" ]] && {
+        echo ""
+        cat "./CLAUDE.md"
+    }
 }
 
 # Claude with auto-context (cl = claude, clc = claude continue)
@@ -131,7 +134,7 @@ displayall() {
 
 # Find repos in home directory
 repos() {
-    fd -H -t d '^\.git$' ~ --max-depth 2 2>/dev/null | sed 's/\/\.git\/$//';
+    fd -H -t d '^\.git$' ~ --max-depth 2 2>/dev/null | sed 's/\/\.git\/$//'
 }
 
 # === Brew wrapper (reminder to update box) ===
@@ -141,11 +144,11 @@ brew() {
 
     # remind after install/uninstall
     case "$1" in
-        install|uninstall|remove|reinstall)
-            echo ""
-            echo "⚠️  remember to update ~/box/macos.nix!"
-            echo "   run: box-brew (to see drift)"
-            ;;
+    install | uninstall | remove | reinstall)
+        echo ""
+        echo "⚠️  remember to update ~/box/macos.nix!"
+        echo "   run: box-brew (to see drift)"
+        ;;
     esac
 
     return $ret
@@ -240,7 +243,7 @@ ans() {
     local f
     f=$(mktemp)
     trap "rm -f $f" EXIT
-    ${EDITOR:-vim} "$f" && pbcopy < "$f"
+    ${EDITOR:-vim} "$f" && pbcopy <"$f"
 }
 
 # === Linux: sudo with nix PATH ===

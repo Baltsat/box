@@ -81,7 +81,7 @@ run_sops() {
 install_hook() {
     local hook_path="$BOX_DIR/.git/hooks/pre-commit"
     mkdir -p "$(dirname "$hook_path")"
-    cat > "$hook_path" << 'EOF'
+    cat >"$hook_path" <<'EOF'
 #!/usr/bin/env bash
 exec "$(git rev-parse --show-toplevel)/script/precommit.sh" run
 EOF
@@ -103,7 +103,7 @@ run_all() {
 }
 
 show_help() {
-    cat << EOF
+    cat <<EOF
 Pre-commit hook for box
 
 Commands:
@@ -124,14 +124,14 @@ EOF
 }
 
 case "${1:-run}" in
-    run) run_all ;;
-    install) install_hook ;;
-    nix) fmt_nix ;;
-    shell) fmt_shell ;;
-    toml) fmt_toml ;;
-    json) fmt_json ;;
-    ts) fmt_typescript ;;
-    python) fmt_python ;;
-    sops) run_sops ;;
-    *) show_help ;;
+run) run_all ;;
+install) install_hook ;;
+nix) fmt_nix ;;
+shell) fmt_shell ;;
+toml) fmt_toml ;;
+json) fmt_json ;;
+ts) fmt_typescript ;;
+python) fmt_python ;;
+sops) run_sops ;;
+*) show_help ;;
 esac

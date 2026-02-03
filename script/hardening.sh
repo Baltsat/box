@@ -4,7 +4,10 @@
 set -euo pipefail
 
 log() { echo "[hardening] $*"; }
-die() { log "error: $*"; exit 1; }
+die() {
+    log "error: $*"
+    exit 1
+}
 has_cmd() { command -v "$1" &>/dev/null; }
 
 # Check if running as root or with sudo
@@ -47,7 +50,7 @@ setup_fail2ban() {
     fi
 
     # Create local config
-    cat > /etc/fail2ban/jail.local << 'EOF'
+    cat >/etc/fail2ban/jail.local <<'EOF'
 [DEFAULT]
 bantime = 1h
 findtime = 10m
@@ -79,7 +82,7 @@ setup_ssh() {
 
     # Create hardening config
     mkdir -p "$sshd_dir"
-    cat > "$sshd_dir/99-hardening.conf" << 'EOF'
+    cat >"$sshd_dir/99-hardening.conf" <<'EOF'
 # SSH Hardening
 PermitRootLogin prohibit-password
 PasswordAuthentication no
@@ -132,7 +135,7 @@ full_hardening() {
 }
 
 show_help() {
-    cat << EOF
+    cat <<EOF
 Linux Server Hardening
 
 Commands:
@@ -170,11 +173,11 @@ show_status() {
 }
 
 case "${1:-full}" in
-    full) full_hardening ;;
-    firewall) check_sudo && setup_firewall ;;
-    fail2ban) check_sudo && setup_fail2ban ;;
-    ssh) check_sudo && setup_ssh ;;
-    tools) check_sudo && setup_tools ;;
-    status) show_status ;;
-    *) show_help ;;
+full) full_hardening ;;
+firewall) check_sudo && setup_firewall ;;
+fail2ban) check_sudo && setup_fail2ban ;;
+ssh) check_sudo && setup_ssh ;;
+tools) check_sudo && setup_tools ;;
+status) show_status ;;
+*) show_help ;;
 esac

@@ -43,14 +43,14 @@
   "general": {
     "enableAutoUpdate": true,
     "previewFeatures": true,
-    "sessionRetention": {"enabled": true},
+    "sessionRetention": { "enabled": true },
     "enablePromptCompletion": true
   },
-  "output": {"format": "text"},
+  "output": { "format": "text" },
   "tools": {
-    "shell": {"showColor": true},
+    "shell": { "showColor": true },
     "autoAccept": true
   },
-  "ide": {"enabled": true},
-  "experimental": {"plan": true}
+  "ide": { "enabled": true },
+  "experimental": { "plan": true }
 }

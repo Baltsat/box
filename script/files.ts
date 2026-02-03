@@ -5,50 +5,50 @@
  * Run via: bun script/files.ts
  */
 
-import { dirname, join } from "path";
+import { dirname, join } from 'path';
 
 const { $ } = Bun;
 
 const home = Bun.env.HOME!;
 const root = dirname(dirname(Bun.main));
-const is_macos = process.platform === "darwin";
+const is_macos = process.platform === 'darwin';
 
 // [source in box/tools, destination in $HOME]
 const links: [string, string][] = [
   // Shell & prompt
-  ["tools/starship.toml", ".config/starship.toml"],
-  ["tools/gitconfig", ".gitconfig"],
-  ["tools/aliases.sh", ".config/box/aliases.sh"],
+  ['tools/starship.toml', '.config/starship.toml'],
+  ['tools/gitconfig', '.gitconfig'],
+  ['tools/aliases.sh', '.config/box/aliases.sh'],
   // Tmux
-  ["tools/tmux.conf", ".tmux.conf"],
+  ['tools/tmux.conf', '.tmux.conf'],
   // SSH
-  ["tools/ssh/config", ".ssh/config"],
+  ['tools/ssh/config', '.ssh/config'],
   // GitHub CLI
-  ["tools/gh/config.yml", ".config/gh/config.yml"],
+  ['tools/gh/config.yml', '.config/gh/config.yml'],
   // Claude global instructions
-  ["tools/CLAUDE.md", ".claude/CLAUDE.md"],
+  ['tools/CLAUDE.md', '.claude/CLAUDE.md'],
   // Zed
-  ["tools/zed/settings.json", ".config/zed/settings.json"],
+  ['tools/zed/settings.json', '.config/zed/settings.json'],
   // Zellij
-  ["tools/zellij.kdl", ".config/zellij/config.kdl"],
+  ['tools/zellij.kdl', '.config/zellij/config.kdl'],
   // Codex
-  ["tools/codex.toml", ".codex/config.toml"],
+  ['tools/codex.toml', '.codex/config.toml'],
 ];
 
 const macos_links: [string, string][] = [
   // Karabiner
-  ["tools/karabiner.json", ".config/karabiner/karabiner.json"],
+  ['tools/karabiner.json', '.config/karabiner/karabiner.json'],
   // Cursor
-  ["tools/cursor/settings.json", "Library/Application Support/Cursor/User/settings.json"],
-  ["tools/cursor/keybindings.json", "Library/Application Support/Cursor/User/keybindings.json"],
+  ['tools/cursor/settings.json', 'Library/Application Support/Cursor/User/settings.json'],
+  ['tools/cursor/keybindings.json', 'Library/Application Support/Cursor/User/keybindings.json'],
   // Windsurf
-  ["tools/windsurf/settings.json", "Library/Application Support/Windsurf/User/settings.json"],
+  ['tools/windsurf/settings.json', 'Library/Application Support/Windsurf/User/settings.json'],
   // VSCode
-  ["tools/vscode/settings.json", "Library/Application Support/Code/User/settings.json"],
+  ['tools/vscode/settings.json', 'Library/Application Support/Code/User/settings.json'],
   // Warp
-  ["tools/warp/keybindings.yaml", ".warp/keybindings.yaml"],
+  ['tools/warp/keybindings.yaml', '.warp/keybindings.yaml'],
   // Claude Code
-  ["tools/claude.json", ".claude/settings.json"],
+  ['tools/claude.json', '.claude/settings.json'],
 ];
 
 const all_links = is_macos ? [...links, ...macos_links] : links;
@@ -62,9 +62,7 @@ for (const [src, dst] of all_links) {
   await $`mkdir -p ${dst_dir}`.quiet();
 
   // Check if destination exists (as file or symlink)
-  const exists = await $`test -e ${dst_path} || test -L ${dst_path}`
-    .quiet()
-    .nothrow();
+  const exists = await $`test -e ${dst_path} || test -L ${dst_path}`.quiet().nothrow();
 
   if (exists.exitCode === 0) {
     // Check if it's already correctly linked

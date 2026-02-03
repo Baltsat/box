@@ -1,137 +1,134 @@
 {
-    "todo-tree.customHighlight": {
-        "TODO": {
-            "icon": "check",
-            "type": "line",
-            "iconColour": "yellow",
-            "foreground": "red",
-            "background": "yellow",
-        },
-        "FIXME": {
-            "icon": "beaker",
-            "iconColour": "red",
-            "foreground": "white",
-            "background": "red"
-        }
+  "todo-tree.customHighlight": {
+    "TODO": {
+      "icon": "check",
+      "type": "line",
+      "iconColour": "yellow",
+      "foreground": "red",
+      "background": "yellow"
     },
-    "workbench.editorAssociations": {
-        "*.ipynb": "jupyter.notebook.ipynb"
-    },
-    "security.workspace.trust.untrustedFiles": "open",
-    "[javascript]": {
-        "editor.defaultFormatter": "vscode.typescript-language-features"
-    },
-    "[html]": {
-        "editor.defaultFormatter": "vscode.html-language-features"
-    },
-    "workbench.preferredHighContrastLightColorTheme": "Visual Studio Light",
-    "editor.inlineSuggest.enabled": true,
-    "editor.snippetSuggestions": "inline",
-    "editor.linkedEditing": true,
-    "explorer.confirmDragAndDrop": false,
-    "github.copilot.enable": {
-        "*": true,
-        "plaintext": true,
-        "markdown": false,
-        "scminput": false,
-        "yaml": false,
-        "html": true
-    },
-    "window.autoDetectColorScheme": true,
-    "explorer.confirmDelete": false,
-    "liveServer.settings.donotShowInfoMsg": true,
-    "[python]": {
-        "editor.formatOnType": true,
-        "editor.defaultFormatter": "esbenp.prettier-vscode"
-    },
-    "[vue]": {
-        "editor.defaultFormatter": "esbenp.prettier-vscode"
-    },
-    "[json]": {
-        "editor.defaultFormatter": "vscode.json-language-features",
-        "editor.formatOnSave": true,
-        "editor.formatOnPaste": true,
-        "editor.formatOnType": true,
-        "editor.bracketPairColorization.enabled": true,
-        "editor.guides.bracketPairs": true,
-        "files.trimTrailingWhitespace": true
-    },
-    "[jsonc]": {
-        "editor.defaultFormatter": "vscode.json-language-features",
-        "editor.formatOnSave": true,
-        "editor.formatOnPaste": true,
-        "editor.formatOnType": true,
-        "editor.bracketPairColorization.enabled": true,
-        "editor.guides.bracketPairs": true,
-        "files.trimTrailingWhitespace": true
-    },
-    "json.format.enable": true,
-    "files.associations": {
-        "*.json": "json",
-        "*.jsonc": "jsonc"
-    },
-    "[scss]": {
-        "editor.defaultFormatter": "esbenp.prettier-vscode"
-    },
-    "[typescript]": {
-        "editor.defaultFormatter": "vscode.typescript-language-features"
-    },
-    "window.zoomLevel": 1,
-    "git.enableSmartCommit": true,
-    "terminal.integrated.enableMultiLinePasteWarning": false,
-    "editor.cursorSmoothCaretAnimation": "on",
-    "editor.accessibilitySupport": "off",
-    "editor.lineHeight": 0,
-    "editor.fontSize": 10,
-    "editor.minimap.autohide": "mouseover",
-    "workbench.activityBar.location": "top",
-    "security.promptForLocalFileProtocolHandling": false,
-    "autoHide.autoHideSideBar": false,
-    "autoHide.hideOnOpen": true,
-    "todo-tree.highlights.customHighlight": {
-        "TODO": {
-            "icon": "check",
-            "type": "line",
-            "iconColour": "yellow",
-            "foreground": "red",
-            "background": "yellow"
-        },
-        "FIXME": {
-            "icon": "beaker",
-            "iconColour": "red",
-            "foreground": "white",
-            "background": "red"
-        }
-    },
-    "editor.unicodeHighlight.ambiguousCharacters": false,
-    "prettier.tabWidth": 4,
+    "FIXME": {
+      "icon": "beaker",
+      "iconColour": "red",
+      "foreground": "white",
+      "background": "red"
+    }
+  },
+  "workbench.editorAssociations": {
+    "*.ipynb": "jupyter.notebook.ipynb"
+  },
+  "security.workspace.trust.untrustedFiles": "open",
+  "[javascript]": {
+    "editor.defaultFormatter": "vscode.typescript-language-features"
+  },
+  "[html]": {
+    "editor.defaultFormatter": "vscode.html-language-features"
+  },
+  "workbench.preferredHighContrastLightColorTheme": "Visual Studio Light",
+  "editor.inlineSuggest.enabled": true,
+  "editor.snippetSuggestions": "inline",
+  "editor.linkedEditing": true,
+  "explorer.confirmDragAndDrop": false,
+  "github.copilot.enable": {
+    "*": true,
+    "plaintext": true,
+    "markdown": false,
+    "scminput": false,
+    "yaml": false,
+    "html": true
+  },
+  "window.autoDetectColorScheme": true,
+  "explorer.confirmDelete": false,
+  "liveServer.settings.donotShowInfoMsg": true,
+  "[python]": {
+    "editor.formatOnType": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[vue]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[json]": {
+    "editor.defaultFormatter": "vscode.json-language-features",
     "editor.formatOnSave": true,
-    "[Dockerfile, yml]": {
-        "editor.formatOnSave": false
+    "editor.formatOnPaste": true,
+    "editor.formatOnType": true,
+    "editor.bracketPairColorization.enabled": true,
+    "editor.guides.bracketPairs": true,
+    "files.trimTrailingWhitespace": true
+  },
+  "[jsonc]": {
+    "editor.defaultFormatter": "vscode.json-language-features",
+    "editor.formatOnSave": true,
+    "editor.formatOnPaste": true,
+    "editor.formatOnType": true,
+    "editor.bracketPairColorization.enabled": true,
+    "editor.guides.bracketPairs": true,
+    "files.trimTrailingWhitespace": true
+  },
+  "json.format.enable": true,
+  "files.associations": {
+    "*.json": "json",
+    "*.jsonc": "jsonc"
+  },
+  "[scss]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "vscode.typescript-language-features"
+  },
+  "window.zoomLevel": 1,
+  "git.enableSmartCommit": true,
+  "terminal.integrated.enableMultiLinePasteWarning": false,
+  "editor.cursorSmoothCaretAnimation": "on",
+  "editor.accessibilitySupport": "off",
+  "editor.lineHeight": 0,
+  "editor.fontSize": 10,
+  "editor.minimap.autohide": "mouseover",
+  "workbench.activityBar.location": "top",
+  "security.promptForLocalFileProtocolHandling": false,
+  "autoHide.autoHideSideBar": false,
+  "autoHide.hideOnOpen": true,
+  "todo-tree.highlights.customHighlight": {
+    "TODO": {
+      "icon": "check",
+      "type": "line",
+      "iconColour": "yellow",
+      "foreground": "red",
+      "background": "yellow"
     },
-    "workbench.iconTheme": "vscode-icons",
-    "workbench.colorTheme": "Default Light Modern",
-    "github.copilot.editor.enableAutoCompletions": true,
-    "editor.inlineSuggest.suppressSuggestions": true,
-    "supermaven.enableFixWithSupermaven": false,
-    "editor.largeFileOptimizations": false,
-    "python.defaultInterpreterPath": "/opt/homebrew/opt/python/libexec/bin/python",
-    "supermaven.otherWarning": false,
-    "chat.editing.alwaysSaveWithGeneratedChanges": true,
-    "git.confirmSync": false,
-    "explorer.confirmPasteNative": false,
-    "vscode-autosave.disableProgressNotifications": true,
-    "workbench.sideBar.location": "right",
-    "jupyter.widgetScriptSources": [
-        "jsdelivr.com",
-        "unpkg.com"
-    ],
-    "windsurf.autocompleteSpeed": "fast",
-    "windsurf.autoExecutionPolicy": "auto",
-    "windsurf.chatFontSize": "default",
-    "windsurf.rememberLastModelSelection": true,
-    "windsurf.openRecentConversation": true,
-    "windsurf.explainAndFixInCurrentConversation": true,
-    "git.autofetch": true,
-    "vsicons.dontShowNewVersionMessage": true
+    "FIXME": {
+      "icon": "beaker",
+      "iconColour": "red",
+      "foreground": "white",
+      "background": "red"
+    }
+  },
+  "editor.unicodeHighlight.ambiguousCharacters": false,
+  "prettier.tabWidth": 4,
+  "editor.formatOnSave": true,
+  "[Dockerfile, yml]": {
+    "editor.formatOnSave": false
+  },
+  "workbench.iconTheme": "vscode-icons",
+  "workbench.colorTheme": "Default Light Modern",
+  "github.copilot.editor.enableAutoCompletions": true,
+  "editor.inlineSuggest.suppressSuggestions": true,
+  "supermaven.enableFixWithSupermaven": false,
+  "editor.largeFileOptimizations": false,
+  "python.defaultInterpreterPath": "/opt/homebrew/opt/python/libexec/bin/python",
+  "supermaven.otherWarning": false,
+  "chat.editing.alwaysSaveWithGeneratedChanges": true,
+  "git.confirmSync": false,
+  "explorer.confirmPasteNative": false,
+  "vscode-autosave.disableProgressNotifications": true,
+  "workbench.sideBar.location": "right",
+  "jupyter.widgetScriptSources": ["jsdelivr.com", "unpkg.com"],
+  "windsurf.autocompleteSpeed": "fast",
+  "windsurf.autoExecutionPolicy": "auto",
+  "windsurf.chatFontSize": "default",
+  "windsurf.rememberLastModelSelection": true,
+  "windsurf.openRecentConversation": true,
+  "windsurf.explainAndFixInCurrentConversation": true,
+  "git.autofetch": true,
+  "vsicons.dontShowNewVersionMessage": true
 }

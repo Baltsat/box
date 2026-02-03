@@ -21,11 +21,13 @@
       defaultUsername = "konstantinbaltsat";
 
       # Helper to create home-manager config for any user
-      mkHomeConfig = { system, username }: home-manager.lib.homeManagerConfiguration {
-        pkgs = import nixpkgs { inherit system; };
-        modules = [ ./linux.nix ];
-        extraSpecialArgs = { inherit username; };
-      };
+      mkHomeConfig =
+        { system, username }:
+        home-manager.lib.homeManagerConfiguration {
+          pkgs = import nixpkgs { inherit system; };
+          modules = [ ./linux.nix ];
+          extraSpecialArgs = { inherit username; };
+        };
     in
     {
       # macOS configuration (Apple Silicon)
@@ -38,10 +40,14 @@
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
             home-manager.users.${defaultUsername} = import ./shared.nix;
-            home-manager.extraSpecialArgs = { username = defaultUsername; };
+            home-manager.extraSpecialArgs = {
+              username = defaultUsername;
+            };
           }
         ];
-        specialArgs = { username = defaultUsername; };
+        specialArgs = {
+          username = defaultUsername;
+        };
       };
 
       # Linux configurations - default user

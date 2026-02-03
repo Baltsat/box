@@ -1,207 +1,204 @@
 {
-    "todo-tree.customHighlight": {
-        "TODO": {
-            "icon": "check",
-            "type": "line",
-            "iconColour": "yellow",
-            "foreground": "red",
-            "background": "yellow",
-        },
-        "FIXME": {
-            "icon": "beaker",
-            "iconColour": "red",
-            "foreground": "white",
-            "background": "red"
-        }
+  "todo-tree.customHighlight": {
+    "TODO": {
+      "icon": "check",
+      "type": "line",
+      "iconColour": "yellow",
+      "foreground": "red",
+      "background": "yellow"
     },
-    "workbench.editorAssociations": {
-        "*.ipynb": "jupyter.notebook.ipynb"
-    },
-    "security.workspace.trust.untrustedFiles": "open",
-    "[javascript]": {
-        "editor.defaultFormatter": "vscode.typescript-language-features"
-    },
-    "[html]": {
-        "editor.defaultFormatter": "vscode.html-language-features"
-    },
-    "workbench.preferredHighContrastLightColorTheme": "Visual Studio Light",
-    "editor.inlineSuggest.enabled": true,
-    "editor.snippetSuggestions": "inline",
-    "editor.linkedEditing": true,
-    "explorer.confirmDragAndDrop": false,
-    "window.autoDetectColorScheme": true,
-    "explorer.confirmDelete": false,
-    "liveServer.settings.donotShowInfoMsg": true,
-    "[python]": {
-        "editor.formatOnType": true,
-        "editor.defaultFormatter": "esbenp.prettier-vscode"
-    },
-    "[vue]": {
-        "editor.defaultFormatter": "esbenp.prettier-vscode"
-    },
-    "[json]": {
-        "editor.defaultFormatter": "vscode.json-language-features",
-        "editor.formatOnSave": true,
-        "editor.formatOnPaste": true,
-        "editor.formatOnType": true,
-        "editor.bracketPairColorization.enabled": true,
-        "editor.guides.bracketPairs": true,
-        "files.trimTrailingWhitespace": true
-    },
-    "[jsonc]": {
-        "editor.defaultFormatter": "vscode.json-language-features",
-        "editor.formatOnSave": true,
-        "editor.formatOnPaste": true,
-        "editor.formatOnType": true,
-        "editor.bracketPairColorization.enabled": true,
-        "editor.guides.bracketPairs": true,
-        "files.trimTrailingWhitespace": true
-    },
-    "json.format.enable": true,
-    "files.associations": {
-        "*.json": "json",
-        "*.jsonc": "jsonc"
-    },
-    "[scss]": {
-        "editor.defaultFormatter": "esbenp.prettier-vscode"
-    },
-    "[typescript]": {
-        "editor.defaultFormatter": "vscode.typescript-language-features"
-    },
-    "window.zoomLevel": 1,
-    "git.enableSmartCommit": true,
-    "terminal.integrated.enableMultiLinePasteWarning": false,
-    "editor.cursorSmoothCaretAnimation": "on",
-    "editor.accessibilitySupport": "off",
-    "editor.lineHeight": 0,
-    "editor.fontSize": 9,
-    "editor.minimap.autohide": "mouseover",
-    "workbench.activityBar.location": "top",
-    "security.promptForLocalFileProtocolHandling": false,
-    "autoHide.autoHideSideBar": false,
-    "autoHide.hideOnOpen": true,
-    "todo-tree.highlights.customHighlight": {
-        "TODO": {
-            "icon": "check",
-            "type": "line",
-            "iconColour": "yellow",
-            "foreground": "red",
-            "background": "yellow"
-        },
-        "FIXME": {
-            "icon": "beaker",
-            "iconColour": "red",
-            "foreground": "white",
-            "background": "red"
-        }
-    },
-    "editor.unicodeHighlight.ambiguousCharacters": false,
-    "prettier.tabWidth": 4,
+    "FIXME": {
+      "icon": "beaker",
+      "iconColour": "red",
+      "foreground": "white",
+      "background": "red"
+    }
+  },
+  "workbench.editorAssociations": {
+    "*.ipynb": "jupyter.notebook.ipynb"
+  },
+  "security.workspace.trust.untrustedFiles": "open",
+  "[javascript]": {
+    "editor.defaultFormatter": "vscode.typescript-language-features"
+  },
+  "[html]": {
+    "editor.defaultFormatter": "vscode.html-language-features"
+  },
+  "workbench.preferredHighContrastLightColorTheme": "Visual Studio Light",
+  "editor.inlineSuggest.enabled": true,
+  "editor.snippetSuggestions": "inline",
+  "editor.linkedEditing": true,
+  "explorer.confirmDragAndDrop": false,
+  "window.autoDetectColorScheme": true,
+  "explorer.confirmDelete": false,
+  "liveServer.settings.donotShowInfoMsg": true,
+  "[python]": {
+    "editor.formatOnType": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[vue]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[json]": {
+    "editor.defaultFormatter": "vscode.json-language-features",
     "editor.formatOnSave": true,
-    "[Dockerfile, yml]": {
-        "editor.formatOnSave": false
+    "editor.formatOnPaste": true,
+    "editor.formatOnType": true,
+    "editor.bracketPairColorization.enabled": true,
+    "editor.guides.bracketPairs": true,
+    "files.trimTrailingWhitespace": true
+  },
+  "[jsonc]": {
+    "editor.defaultFormatter": "vscode.json-language-features",
+    "editor.formatOnSave": true,
+    "editor.formatOnPaste": true,
+    "editor.formatOnType": true,
+    "editor.bracketPairColorization.enabled": true,
+    "editor.guides.bracketPairs": true,
+    "files.trimTrailingWhitespace": true
+  },
+  "json.format.enable": true,
+  "files.associations": {
+    "*.json": "json",
+    "*.jsonc": "jsonc"
+  },
+  "[scss]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "vscode.typescript-language-features"
+  },
+  "window.zoomLevel": 1,
+  "git.enableSmartCommit": true,
+  "terminal.integrated.enableMultiLinePasteWarning": false,
+  "editor.cursorSmoothCaretAnimation": "on",
+  "editor.accessibilitySupport": "off",
+  "editor.lineHeight": 0,
+  "editor.fontSize": 9,
+  "editor.minimap.autohide": "mouseover",
+  "workbench.activityBar.location": "top",
+  "security.promptForLocalFileProtocolHandling": false,
+  "autoHide.autoHideSideBar": false,
+  "autoHide.hideOnOpen": true,
+  "todo-tree.highlights.customHighlight": {
+    "TODO": {
+      "icon": "check",
+      "type": "line",
+      "iconColour": "yellow",
+      "foreground": "red",
+      "background": "yellow"
     },
-    "workbench.iconTheme": "vscode-icons",
-    "workbench.colorTheme": "Default Light Modern",
-    "github.copilot.editor.enableAutoCompletions": true,
-    "editor.inlineSuggest.suppressSuggestions": true,
-    "supermaven.enableFixWithSupermaven": false,
-    "editor.largeFileOptimizations": false,
-    "python.defaultInterpreterPath": "/opt/homebrew/opt/python/libexec/bin/python",
-    "supermaven.otherWarning": false,
-    "chat.editing.alwaysSaveWithGeneratedChanges": true,
-    "git.confirmSync": false,
-    "explorer.confirmPasteNative": false,
-    "vscode-autosave.disableProgressNotifications": true,
-    "workbench.sideBar.location": "right",
-    "jupyter.widgetScriptSources": [
-        "jsdelivr.com",
-        "unpkg.com"
-    ],
-    "mssql.enableRichExperiences": true,
-    "[markdown]": {
-        "editor.defaultFormatter": "DavidAnson.vscode-markdownlint"
+    "FIXME": {
+      "icon": "beaker",
+      "iconColour": "red",
+      "foreground": "white",
+      "background": "red"
+    }
+  },
+  "editor.unicodeHighlight.ambiguousCharacters": false,
+  "prettier.tabWidth": 4,
+  "editor.formatOnSave": true,
+  "[Dockerfile, yml]": {
+    "editor.formatOnSave": false
+  },
+  "workbench.iconTheme": "vscode-icons",
+  "workbench.colorTheme": "Default Light Modern",
+  "github.copilot.editor.enableAutoCompletions": true,
+  "editor.inlineSuggest.suppressSuggestions": true,
+  "supermaven.enableFixWithSupermaven": false,
+  "editor.largeFileOptimizations": false,
+  "python.defaultInterpreterPath": "/opt/homebrew/opt/python/libexec/bin/python",
+  "supermaven.otherWarning": false,
+  "chat.editing.alwaysSaveWithGeneratedChanges": true,
+  "git.confirmSync": false,
+  "explorer.confirmPasteNative": false,
+  "vscode-autosave.disableProgressNotifications": true,
+  "workbench.sideBar.location": "right",
+  "jupyter.widgetScriptSources": ["jsdelivr.com", "unpkg.com"],
+  "mssql.enableRichExperiences": true,
+  "[markdown]": {
+    "editor.defaultFormatter": "DavidAnson.vscode-markdownlint"
+  },
+  "mssql.connectionGroups": [
+    {
+      "name": "ROOT",
+      "id": "54EE03FC-E7DE-44AD-AD8E-D48355E9BE1B"
+    }
+  ],
+  "mssql.connections": [],
+  "jupyter.allowUnauthorizedRemoteConnection": true,
+  "github.copilot.nextEditSuggestions.enabled": true,
+  "chat.instructionsFilesLocations": {
+    ".github/instructions": true,
+    "/var/folders/21/y86c10js68qf99_cy3_2n_gm0000gn/T/postman-collections-post-response.instructions.md": true,
+    "/var/folders/21/y86c10js68qf99_cy3_2n_gm0000gn/T/postman-collections-pre-request.instructions.md": true,
+    "/var/folders/21/y86c10js68qf99_cy3_2n_gm0000gn/T/postman-folder-post-response.instructions.md": true,
+    "/var/folders/21/y86c10js68qf99_cy3_2n_gm0000gn/T/postman-folder-pre-request.instructions.md": true,
+    "/var/folders/21/y86c10js68qf99_cy3_2n_gm0000gn/T/postman-http-request-post-response.instructions.md": true,
+    "/var/folders/21/y86c10js68qf99_cy3_2n_gm0000gn/T/postman-http-request-pre-request.instructions.md": true
+  },
+  "vsicons.dontShowNewVersionMessage": true,
+  "kilo-code.allowedCommands": [
+    "git log",
+    "git diff",
+    "git show",
+    "ls",
+    "ls -la .env",
+    "tail",
+    "wc",
+    "wc -l .repomixignore"
+  ],
+  "kilo-code.deniedCommands": [],
+  "[dockercompose]": {
+    "editor.insertSpaces": true,
+    "editor.tabSize": 2,
+    "editor.autoIndent": "advanced",
+    "editor.quickSuggestions": {
+      "other": true,
+      "comments": false,
+      "strings": true
     },
-    "mssql.connectionGroups": [
-        {
-            "name": "ROOT",
-            "id": "54EE03FC-E7DE-44AD-AD8E-D48355E9BE1B"
-        }
-    ],
-    "mssql.connections": [],
-    "jupyter.allowUnauthorizedRemoteConnection": true,
-    "github.copilot.nextEditSuggestions.enabled": true,
-    "chat.instructionsFilesLocations": {
-        ".github/instructions": true,
-        "/var/folders/21/y86c10js68qf99_cy3_2n_gm0000gn/T/postman-collections-post-response.instructions.md": true,
-        "/var/folders/21/y86c10js68qf99_cy3_2n_gm0000gn/T/postman-collections-pre-request.instructions.md": true,
-        "/var/folders/21/y86c10js68qf99_cy3_2n_gm0000gn/T/postman-folder-post-response.instructions.md": true,
-        "/var/folders/21/y86c10js68qf99_cy3_2n_gm0000gn/T/postman-folder-pre-request.instructions.md": true,
-        "/var/folders/21/y86c10js68qf99_cy3_2n_gm0000gn/T/postman-http-request-post-response.instructions.md": true,
-        "/var/folders/21/y86c10js68qf99_cy3_2n_gm0000gn/T/postman-http-request-pre-request.instructions.md": true
-    },
-    "vsicons.dontShowNewVersionMessage": true,
-    "kilo-code.allowedCommands": [
-        "git log",
-        "git diff",
-        "git show",
-        "ls",
-        "ls -la .env",
-        "tail",
-        "wc",
-        "wc -l .repomixignore"
-    ],
-    "kilo-code.deniedCommands": [],
-    "[dockercompose]": {
-        "editor.insertSpaces": true,
-        "editor.tabSize": 2,
-        "editor.autoIndent": "advanced",
-        "editor.quickSuggestions": {
-            "other": true,
-            "comments": false,
-            "strings": true
-        },
-        "editor.defaultFormatter": "redhat.vscode-yaml"
-    },
-    "[github-actions-workflow]": {
-        "editor.defaultFormatter": "redhat.vscode-yaml"
-    },
-    "docker.extension.enableComposeLanguageServer": false,
-    "roo-cline.allowedCommands": [
-        "git log",
-        "git diff",
-        "git show",
-        "ls",
-        "cd",
-        "cat",
-        "touch",
-        "mkdir",
-        "pwd",
-        "npm",
-        "head -20",
-        "find",
-        "cd apps/chat-analytics",
-        "find src/pipeline/aggregate/blocks -name \"*.ts\"",
-        "head"
-    ],
-    "roo-cline.deniedCommands": [],
-    "python.analysis.typeCheckingMode": "basic",
-    "mssql.autoDisableNonTSqlLanguageService": false,
-    "chat.tools.terminal.autoApprove": {
-        "mkdir": true,
-        "npm run build": {
-            "approve": true,
-            "matchCommandLine": true
-        }
-    },
-    "geminicodeassist.project": "stalwart-tempo-f8sqz",
-    "geminicodeassist.displayInlineContextHint": false,
-    "remote.SSH.remotePlatform": {
-        "coder-vscode.coder.tail645fbe.ts.net--Baltsat--baltsat-test.main": "linux",
-        "coder-vscode.coder.tail645fbe.ts.net--Baltsat--main.main": "linux",
-        "coder-vscode.coder.tail645fbe.ts.net--baltsat--main.main": "linux",
-        "coder-vscode.coder.tail645fbe.ts.net--Baltsat--tpu.main": "linux"
-    },
-    "remote.SSH.connectTimeout": 1800,
-    "claudeCode.preferredLocation": "panel"
+    "editor.defaultFormatter": "redhat.vscode-yaml"
+  },
+  "[github-actions-workflow]": {
+    "editor.defaultFormatter": "redhat.vscode-yaml"
+  },
+  "docker.extension.enableComposeLanguageServer": false,
+  "roo-cline.allowedCommands": [
+    "git log",
+    "git diff",
+    "git show",
+    "ls",
+    "cd",
+    "cat",
+    "touch",
+    "mkdir",
+    "pwd",
+    "npm",
+    "head -20",
+    "find",
+    "cd apps/chat-analytics",
+    "find src/pipeline/aggregate/blocks -name \"*.ts\"",
+    "head"
+  ],
+  "roo-cline.deniedCommands": [],
+  "python.analysis.typeCheckingMode": "basic",
+  "mssql.autoDisableNonTSqlLanguageService": false,
+  "chat.tools.terminal.autoApprove": {
+    "mkdir": true,
+    "npm run build": {
+      "approve": true,
+      "matchCommandLine": true
+    }
+  },
+  "geminicodeassist.project": "stalwart-tempo-f8sqz",
+  "geminicodeassist.displayInlineContextHint": false,
+  "remote.SSH.remotePlatform": {
+    "coder-vscode.coder.tail645fbe.ts.net--Baltsat--baltsat-test.main": "linux",
+    "coder-vscode.coder.tail645fbe.ts.net--Baltsat--main.main": "linux",
+    "coder-vscode.coder.tail645fbe.ts.net--baltsat--main.main": "linux",
+    "coder-vscode.coder.tail645fbe.ts.net--Baltsat--tpu.main": "linux"
+  },
+  "remote.SSH.connectTimeout": 1800,
+  "claudeCode.preferredLocation": "panel"
 }

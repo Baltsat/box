@@ -74,7 +74,7 @@ decrypt_secrets() {
             log "age key not found, decrypting from sops-key.age..."
             log "enter your passphrase:"
             mkdir -p "$(dirname "$SOPS_AGE_KEY_FILE")"
-            age -d "$SCRIPT_DIR/tools/sops-key.age" > "$SOPS_AGE_KEY_FILE"
+            age -d "$SCRIPT_DIR/tools/sops-key.age" >"$SOPS_AGE_KEY_FILE"
             chmod 600 "$SOPS_AGE_KEY_FILE"
             log "age key restored"
         else
@@ -83,7 +83,7 @@ decrypt_secrets() {
             return 1
         fi
     fi
-    sops --decrypt --input-type dotenv --output-type dotenv "$SCRIPT_DIR/.env.sops" > "$SCRIPT_DIR/.env"
+    sops --decrypt --input-type dotenv --output-type dotenv "$SCRIPT_DIR/.env.sops" >"$SCRIPT_DIR/.env"
     log "secrets decrypted to .env"
 }
 
@@ -174,25 +174,25 @@ set_shell() {
 setup_shell_config() {
     local shell_rc
     case "$(basename "$SHELL")" in
-        zsh)  shell_rc="$HOME/.zshrc" ;;
-        bash) shell_rc="$HOME/.bashrc" ;;
-        *)    return 0 ;;
+    zsh) shell_rc="$HOME/.zshrc" ;;
+    bash) shell_rc="$HOME/.bashrc" ;;
+    *) return 0 ;;
     esac
 
     # Add alias sourcing if not present
     local alias_line="source \"$SCRIPT_DIR/tools/aliases.sh\""
     if [[ -f "$shell_rc" ]] && ! grep -qF "box/tools/aliases.sh" "$shell_rc"; then
         log "adding aliases to $shell_rc"
-        echo "" >> "$shell_rc"
-        echo "# Box aliases" >> "$shell_rc"
-        echo "[ -f \"$SCRIPT_DIR/tools/aliases.sh\" ] && $alias_line" >> "$shell_rc"
+        echo "" >>"$shell_rc"
+        echo "# Box aliases" >>"$shell_rc"
+        echo "[ -f \"$SCRIPT_DIR/tools/aliases.sh\" ] && $alias_line" >>"$shell_rc"
     fi
 
     # Source .env if exists
     local env_line="source \"$SCRIPT_DIR/.env\""
     if [[ -f "$shell_rc" ]] && ! grep -qF "box/.env" "$shell_rc"; then
         log "adding .env sourcing to $shell_rc"
-        echo "[ -f \"$SCRIPT_DIR/.env\" ] && set -a && $env_line && set +a" >> "$shell_rc"
+        echo "[ -f \"$SCRIPT_DIR/.env\" ] && set -a && $env_line && set +a" >>"$shell_rc"
     fi
 }
 
@@ -233,12 +233,12 @@ apply_tool_configs() {
 
     # Restore SSH keys from .env (base64 encoded)
     if [[ -n "${SSH_KEY_GITHUB:-}" ]]; then
-        echo "$SSH_KEY_GITHUB" | base64 -d > "$HOME/.ssh/github"
+        echo "$SSH_KEY_GITHUB" | base64 -d >"$HOME/.ssh/github"
         chmod 600 "$HOME/.ssh/github"
         log "restored ~/.ssh/github"
     fi
     if [[ -n "${SSH_KEY_ID_ED25519:-}" ]]; then
-        echo "$SSH_KEY_ID_ED25519" | base64 -d > "$HOME/.ssh/id_ed25519"
+        echo "$SSH_KEY_ID_ED25519" | base64 -d >"$HOME/.ssh/id_ed25519"
         chmod 600 "$HOME/.ssh/id_ed25519"
         log "restored ~/.ssh/id_ed25519"
     fi
@@ -247,7 +247,7 @@ apply_tool_configs() {
     if [[ -f "$SCRIPT_DIR/tools/gemini/settings.json" ]]; then
         mkdir -p "$HOME/.gemini"
         if has_cmd envsubst; then
-            envsubst < "$SCRIPT_DIR/tools/gemini/settings.json" > "$HOME/.gemini/settings.json"
+            envsubst <"$SCRIPT_DIR/tools/gemini/settings.json" >"$HOME/.gemini/settings.json"
         else
             cp "$SCRIPT_DIR/tools/gemini/settings.json" "$HOME/.gemini/settings.json"
         fi
@@ -257,7 +257,7 @@ apply_tool_configs() {
     # Gemini OAuth creds (restore from base64)
     if [[ -n "${GEMINI_OAUTH_CREDS:-}" ]]; then
         mkdir -p "$HOME/.gemini"
-        echo "$GEMINI_OAUTH_CREDS" | base64 -d > "$HOME/.gemini/oauth_creds.json"
+        echo "$GEMINI_OAUTH_CREDS" | base64 -d >"$HOME/.gemini/oauth_creds.json"
         chmod 600 "$HOME/.gemini/oauth_creds.json"
         log "restored gemini oauth credentials"
     fi
@@ -265,7 +265,7 @@ apply_tool_configs() {
     # Codex/OpenAI auth (restore from base64)
     if [[ -n "${CODEX_AUTH:-}" ]]; then
         mkdir -p "$HOME/.codex"
-        echo "$CODEX_AUTH" | base64 -d > "$HOME/.codex/auth.json"
+        echo "$CODEX_AUTH" | base64 -d >"$HOME/.codex/auth.json"
         chmod 600 "$HOME/.codex/auth.json"
         log "restored codex/openai credentials"
     fi
@@ -290,8 +290,8 @@ apply_tool_configs() {
             coder_dir="$HOME/.config/coderv2"
         fi
         mkdir -p "$coder_dir"
-        echo "$CODER_URL" > "$coder_dir/url"
-        echo "$CODER_SESSION" > "$coder_dir/session"
+        echo "$CODER_URL" >"$coder_dir/url"
+        echo "$CODER_SESSION" >"$coder_dir/session"
         chmod 600 "$coder_dir/session"
         log "restored coder credentials"
     fi

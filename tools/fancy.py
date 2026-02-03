@@ -13,6 +13,7 @@ Example:
     fancy left foo.md 5:10 5:25
     fancy right foo.md 5:15 5:30
 """
+
 import sys
 from pathlib import Path
 
@@ -51,7 +52,7 @@ def main():
             if 0 <= line_idx < len(lines):
                 line = lines[line_idx]
                 if 0 <= col_idx < len(line):
-                    lines[line_idx] = line[:col_idx] + char + line[col_idx + 1:]
+                    lines[line_idx] = line[:col_idx] + char + line[col_idx + 1 :]
                     count += 1
         except ValueError:
             print(f"invalid position: {pos} (use line:char format)")

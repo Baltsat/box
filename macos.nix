@@ -22,7 +22,7 @@
       autohide = true;
       autohide-time-modifier = 0.25;
       show-recents = false;
-      tilesize = 32;  # current system value
+      tilesize = 32; # current system value
       largesize = 30;
       magnification = true;
       mineffect = "genie";
@@ -37,11 +37,11 @@
     finder = {
       AppleShowAllExtensions = true;
       AppleShowAllFiles = true;
-      ShowPathbar = false;  # current system
+      ShowPathbar = false; # current system
       ShowStatusBar = true;
       FXEnableExtensionChangeWarning = false;
       CreateDesktop = true;
-      FXPreferredViewStyle = "icnv";  # icon view (current system)
+      FXPreferredViewStyle = "icnv"; # icon view (current system)
       _FXShowPosixPathInTitle = true;
     };
 
@@ -55,19 +55,19 @@
     # Global settings
     NSGlobalDomain = {
       AppleShowAllExtensions = true;
-      InitialKeyRepeat = 30;  # current system (lower = faster)
-      KeyRepeat = 5;  # current system (lower = faster)
-      ApplePressAndHoldEnabled = false;  # Enable key repeat
-      AppleInterfaceStyleSwitchesAutomatically = true;  # Auto dark mode
-      AppleICUForce24HourTime = true;  # 24 hour time
+      InitialKeyRepeat = 30; # current system (lower = faster)
+      KeyRepeat = 5; # current system (lower = faster)
+      ApplePressAndHoldEnabled = false; # Enable key repeat
+      AppleInterfaceStyleSwitchesAutomatically = true; # Auto dark mode
+      AppleICUForce24HourTime = true; # 24 hour time
       AppleTemperatureUnit = "Celsius";
       AppleWindowTabbingMode = "always";
-      AppleKeyboardUIMode = 2;  # Full keyboard access
+      AppleKeyboardUIMode = 2; # Full keyboard access
       NSAutomaticSpellingCorrectionEnabled = false;
-      NSAutomaticCapitalizationEnabled = true;  # current system
-      NSAutomaticDashSubstitutionEnabled = true;  # current system
+      NSAutomaticCapitalizationEnabled = true; # current system
+      NSAutomaticDashSubstitutionEnabled = true; # current system
       NSAutomaticPeriodSubstitutionEnabled = false;
-      NSAutomaticQuoteSubstitutionEnabled = true;  # current system
+      NSAutomaticQuoteSubstitutionEnabled = true; # current system
       NSAutomaticInlinePredictionEnabled = false;
     };
 
@@ -82,7 +82,7 @@
     # Menu bar clock
     menuExtraClock = {
       Show24Hour = true;
-      ShowDate = 2;  # Always show date
+      ShowDate = 2; # Always show date
       ShowDayOfWeek = false;
       ShowSeconds = false;
     };
@@ -131,7 +131,7 @@
       # Git extras (delta/gitui better via brew)
       "git-delta"
       "gitui"
-      "lsd"  # ls alternative
+      "lsd" # ls alternative
 
       # Node/JS ecosystem (brew manages versions better)
       "node"
@@ -170,7 +170,7 @@
 
       # Misc tools
       "act"
-      "sops"  # needed for precommit hook
+      "sops" # needed for precommit hook
       "repomix"
       "commitizen"
       "sshpass"
@@ -189,7 +189,7 @@
       "php"
 
       # Media (macOS specific libs)
-      "ffmpeg@6"  # specific version
+      "ffmpeg@6" # specific version
       "graphicsmagick"
       "telegram-downloader"
       "vips"
@@ -349,7 +349,6 @@
 
       # UI tools
       "ui-tars"
-
 
       # Yandex
       "yandex"

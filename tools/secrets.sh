@@ -20,7 +20,10 @@ AGE_KEY_FILE="$HOME/.config/sops/age/keys.txt"
 export SOPS_AGE_KEY_FILE="$AGE_KEY_FILE"
 
 log() { echo "[secrets] $*"; }
-die() { log "error: $*"; exit 1; }
+die() {
+    log "error: $*"
+    exit 1
+}
 
 has_cmd() { command -v "$1" >/dev/null 2>&1; }
 has_cmd sops || die "sops not installed. Run: brew install sops"
@@ -44,7 +47,7 @@ encrypt() {
 decrypt() {
     [[ -f "$ENCRYPTED_FILE" ]] || die ".env.sops not found"
     log "decrypting .env.sops -> .env"
-    sops --decrypt --input-type dotenv --output-type dotenv "$ENCRYPTED_FILE" > "$ENV_FILE"
+    sops --decrypt --input-type dotenv --output-type dotenv "$ENCRYPTED_FILE" >"$ENV_FILE"
     log "done! .env created (do not commit)"
 }
 
@@ -55,7 +58,7 @@ edit() {
             encrypt
         else
             log "creating new secrets file..."
-            cat > "$ENV_FILE" << 'TEMPLATE'
+            cat >"$ENV_FILE" <<'TEMPLATE'
 # Secrets - this file will be encrypted with SOPS
 # Add your API keys and sensitive data here
 
@@ -158,7 +161,7 @@ restore_mem() {
     tmp_file=$(mktemp)
     trap "rm -f $tmp_file" EXIT
 
-    sops --decrypt "$MEM_BACKUP" > "$tmp_file"
+    sops --decrypt "$MEM_BACKUP" >"$tmp_file"
 
     # Extract
     tar -xzf "$tmp_file" -C "$HOME"
@@ -177,7 +180,7 @@ migrate_from_age() {
 }
 
 show_help() {
-    cat << EOF
+    cat <<EOF
 Secrets management for box (SOPS + age)
 
 Commands:
@@ -210,14 +213,14 @@ EOF
 }
 
 case "${1:-help}" in
-    encrypt) encrypt ;;
-    decrypt) decrypt ;;
-    edit) edit ;;
-    view) view ;;
-    rotate) rotate ;;
-    keygen) keygen ;;
-    backup-mem) backup_mem ;;
-    restore-mem) restore_mem ;;
-    migrate) migrate_from_age ;;
-    *) show_help ;;
+encrypt) encrypt ;;
+decrypt) decrypt ;;
+edit) edit ;;
+view) view ;;
+rotate) rotate ;;
+keygen) keygen ;;
+backup-mem) backup_mem ;;
+restore-mem) restore_mem ;;
+migrate) migrate_from_age ;;
+*) show_help ;;
 esac
