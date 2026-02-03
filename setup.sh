@@ -46,16 +46,28 @@ install_homebrew() {
     eval "$(/opt/homebrew/bin/brew shellenv)"
 }
 
-# === AGE Setup ===
-install_age() {
-    has_cmd age && return 0
-    log "installing age for secrets decryption"
+# === SOPS + AGE Setup ===
+install_sops_tools() {
+    local need_age=false need_sops=false
+    has_cmd age || need_age=true
+    has_cmd sops || need_sops=true
+
+    [[ "$need_age" == "false" && "$need_sops" == "false" ]] && return 0
+
+    log "installing sops/age for secrets decryption"
     if has_cmd brew; then
-        brew install age
+        $need_age && brew install age
+        $need_sops && brew install sops
     elif has_cmd nix; then
-        nix --extra-experimental-features 'nix-command flakes' profile install nixpkgs#age
+        local pkgs=()
+        $need_age && pkgs+=(nixpkgs#age)
+        $need_sops && pkgs+=(nixpkgs#sops)
+        nix --extra-experimental-features 'nix-command flakes' profile install "${pkgs[@]}"
+        # Re-source nix to get new commands in PATH
+        source_nix
+        export PATH="$HOME/.nix-profile/bin:$PATH"
     else
-        die "cannot install age: no package manager available"
+        die "cannot install sops/age: no package manager available"
     fi
 }
 
@@ -348,7 +360,7 @@ source_nix
 install_homebrew
 install_nix
 source_nix
-install_age
+install_sops_tools
 decrypt_secrets
 apply_config
 source_nix
