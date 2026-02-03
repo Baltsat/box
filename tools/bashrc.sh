@@ -156,6 +156,14 @@ TMUX_CONF
         command -v omnara &>/dev/null && echo "[box] omnara installed"
     fi
 
+    # Auto-auth GitHub if GH_TOKEN available
+    if command -v gh &>/dev/null && ! gh auth status &>/dev/null 2>&1; then
+        if [[ -n "${GH_TOKEN:-}" ]]; then
+            echo "[box] auto-authenticating github cli..."
+            echo "$GH_TOKEN" | gh auth login --with-token 2>/dev/null && echo "[box] github authenticated!" || true
+        fi
+    fi
+
     # Auth reminders (prominent banner)
     local need_auth=()
     command -v gh &>/dev/null && ! gh auth status &>/dev/null 2>&1 && need_auth+=("gh auth login")
