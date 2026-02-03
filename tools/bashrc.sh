@@ -156,15 +156,22 @@ TMUX_CONF
         command -v omnara &>/dev/null && echo "[box] omnara installed"
     fi
 
-    # Auth reminders
-    if command -v gh &>/dev/null && ! gh auth status &>/dev/null 2>&1; then
-        echo "[box] github cli not authenticated. run: gh auth login"
-    fi
-    if command -v happy &>/dev/null && ! happy auth status &>/dev/null 2>&1; then
-        echo "[box] happy-coder not authenticated. run: happy auth"
-    fi
-    if command -v omnara &>/dev/null; then
-        echo "[box] omnara installed. run: omnara login"
+    # Auth reminders (prominent banner)
+    local need_auth=()
+    command -v gh &>/dev/null && ! gh auth status &>/dev/null 2>&1 && need_auth+=("gh auth login")
+    command -v happy &>/dev/null && ! happy auth status &>/dev/null 2>&1 && need_auth+=("happy auth")
+    command -v omnara &>/dev/null && [[ ! -f "$HOME/.omnara/auth.json" ]] && need_auth+=("omnara auth")
+
+    if [[ ${#need_auth[@]} -gt 0 ]]; then
+        echo ""
+        echo "╔══════════════════════════════════════════════════════════════╗"
+        echo "║  📋 MANUAL AUTH REQUIRED (one-time per machine)              ║"
+        echo "╠══════════════════════════════════════════════════════════════╣"
+        for cmd in "${need_auth[@]}"; do
+            printf "║  → %-58s ║\n" "$cmd"
+        done
+        echo "╚══════════════════════════════════════════════════════════════╝"
+        echo ""
     fi
 
     # Create lock file
