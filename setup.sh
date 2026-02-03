@@ -53,7 +53,7 @@ install_age() {
     if has_cmd brew; then
         brew install age
     elif has_cmd nix; then
-        nix-env -iA nixpkgs.age
+        nix --extra-experimental-features 'nix-command flakes' profile install nixpkgs#age
     else
         die "cannot install age: no package manager available"
     fi
