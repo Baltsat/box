@@ -1,0 +1,21 @@
+model = "gpt-5.2-codex"
+model_reasoning_effort = "high"
+model_personality = "pragmatic"
+
+[projects."~/box"]
+trust_level = "trusted"
+auto_update = false
+
+[projects."/Users/konstantinbaltsat"]
+trust_level = "trusted"
+
+[features]
+approve_all = true
+web_search = "live"
+plan_tool = true
+unified_exec = true
+streamable_shell = true
+shell_snapshot = true
+apps = true
+steer = true
+personality = true

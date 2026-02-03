@@ -29,6 +29,10 @@ const links: [string, string][] = [
   ["tools/CLAUDE.md", ".claude/CLAUDE.md"],
   // Zed
   ["tools/zed/settings.json", ".config/zed/settings.json"],
+  // Zellij
+  ["tools/zellij.kdl", ".config/zellij/config.kdl"],
+  // Codex
+  ["tools/codex.toml", ".codex/config.toml"],
 ];
 
 const macos_links: [string, string][] = [
@@ -57,7 +61,7 @@ for (const [src, dst] of all_links) {
   // Create destination directory
   await $`mkdir -p ${dst_dir}`.quiet();
 
-  // Check if destination exists
+  // Check if destination exists (as file or symlink)
   const exists = await $`test -e ${dst_path} || test -L ${dst_path}`
     .quiet()
     .nothrow();
@@ -66,8 +70,25 @@ for (const [src, dst] of all_links) {
     // Check if it's already correctly linked
     const link = await $`readlink ${dst_path}`.quiet().nothrow();
     if (link.exitCode === 0 && link.text().trim() === src_path) continue;
-    // Remove existing file/link
-    await $`rm -rf ${dst_path}`.quiet();
+
+    // Check if it's a real file (not a symlink)
+    const is_symlink = await $`test -L ${dst_path}`.quiet().nothrow();
+    if (is_symlink.exitCode !== 0) {
+      // It's a real file - backup before replacing
+      const backup_path = `${dst_path}.backup`;
+      await $`mv ${dst_path} ${backup_path}`.quiet();
+      console.log(`[files] ⚠️  backed up existing file: ${dst} -> ${dst}.backup`);
+    } else {
+      // It's a different symlink - safe to remove
+      await $`rm -f ${dst_path}`.quiet();
+    }
+  }
+
+  // Check if source exists in box
+  const src_exists = await $`test -e ${src_path}`.quiet().nothrow();
+  if (src_exists.exitCode !== 0) {
+    console.log(`[files] ⚠️  skipped (source missing): ${src}`);
+    continue;
   }
 
   // Create symlink

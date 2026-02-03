@@ -4,18 +4,44 @@
 command_timeout = 1000
 add_newline = false
 
-[character]
-success_symbol = "[➜](bold green)"
-error_symbol = "[➜](bold red)"
+format = """
+$python\
+$hostname\
+$directory\
+$git_branch\
+$git_status\
+$character"""
+
+[hostname]
+style = "fg:white"
+format = "[$hostname]($style) "
+ssh_only = false
 
 [directory]
+style = "fg:white"
+format = "[$path]($style) "
 truncation_length = 3
 truncate_to_repo = true
 
 [git_branch]
-symbol = " "
+style = "fg:215"
+symbol = ""
+format = "[$branch]($style)"
 
 [git_status]
+style = "fg:215"
 ahead = "⇡${count}"
 behind = "⇣${count}"
 diverged = "⇕⇡${ahead_count}⇣${behind_count}"
+format = "[$all_status$ahead_behind]($style) "
+
+[python]
+style = "fg:245"
+format = "[($virtualenv) ]($style)"
+detect_extensions = []
+detect_files = []
+detect_folders = []
+
+[character]
+success_symbol = "[❯](bold green)"
+error_symbol = "[❯](bold red)"

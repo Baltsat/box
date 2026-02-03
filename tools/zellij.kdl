@@ -1,0 +1,51 @@
+// Zellij configuration
+// Symlink: ~/.config/zellij/config.kdl
+
+keybinds {
+    // Unbind defaults that conflict
+    unbind "Ctrl g"
+    unbind "Ctrl b"
+
+    // Alt+G toggles locked mode (no keybinds intercepted)
+    shared_except "locked" {
+        bind "Alt g" { SwitchToMode "Locked"; }
+    }
+
+    locked {
+        bind "Alt g" { SwitchToMode "Normal"; }
+    }
+
+    normal {
+        unbind "Ctrl q"
+        bind "Alt i" { Quit; }
+    }
+
+    // Vim-style navigation with Alt
+    shared_except "locked" {
+        unbind "Alt h" "Alt Left"
+        unbind "Alt l" "Alt Right"
+        unbind "Alt j" "Alt Down"
+        unbind "Alt k" "Alt Up"
+        unbind "Alt Right"
+
+        bind "Alt j" { MoveFocusOrTab "Left"; }
+        bind "Alt k" { MoveFocus "Down"; }
+        bind "Alt l" { MoveFocus "Up"; }
+        bind "Alt ;" { MoveFocusOrTab "Right"; }
+    }
+}
+
+// Theme
+theme "default"
+
+// Default layout
+default_layout "compact"
+
+// Mouse support
+mouse_mode true
+
+// Copy on select
+copy_on_select true
+
+// Scrollback
+scroll_buffer_size 50000
