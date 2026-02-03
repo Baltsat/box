@@ -1,7 +1,8 @@
-{ pkgs, config, ... }:
+{ pkgs, config, lib, ... }:
 
 {
-  home.stateVersion = "24.11";
+  # Use mkDefault so linux.nix can override with its own version
+  home.stateVersion = lib.mkDefault "24.11";
   home.enableNixpkgsReleaseCheck = false;
 
   # Packages installed for the user
