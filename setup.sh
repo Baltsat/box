@@ -121,6 +121,20 @@ decrypt_secrets() {
     log "secrets decrypted to .env"
 }
 
+# === Clean up conflicting nix profile packages ===
+cleanup_nix_profile() {
+    # Remove packages that conflict with home-manager's shared.nix
+    # These may have been installed by previous setup.sh runs or manually
+    local conflicting_pkgs=(age sops)
+
+    for pkg in "${conflicting_pkgs[@]}"; do
+        if nix profile list 2>/dev/null | grep -q "$pkg"; then
+            log "removing conflicting package from nix profile: $pkg"
+            nix profile remove "$pkg" 2>/dev/null || true
+        fi
+    done
+}
+
 # === Apply Nix Configuration ===
 apply_config() {
     local arch
@@ -137,6 +151,10 @@ apply_config() {
         ;;
     Linux)
         log "applying home-manager config"
+
+        # Clean up any conflicting packages before home-manager
+        cleanup_nix_profile
+
         # Use generic config (auto-detects $USER) or specific arch
         local config
         if [[ "$arch" == "x86_64" ]]; then
