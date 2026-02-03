@@ -343,12 +343,36 @@ apply_tool_configs() {
         log "restored gemini oauth credentials"
     fi
 
+    # Qwen OAuth creds (restore from base64)
+    if [[ -n "${QWEN_OAUTH_CREDS:-}" ]]; then
+        mkdir -p "$HOME/.qwen"
+        echo "$QWEN_OAUTH_CREDS" | base64 -d >"$HOME/.qwen/oauth_creds.json"
+        chmod 600 "$HOME/.qwen/oauth_creds.json"
+        log "restored qwen oauth credentials"
+    fi
+
     # Codex/OpenAI auth (restore from base64)
     if [[ -n "${CODEX_AUTH:-}" ]]; then
         mkdir -p "$HOME/.codex"
         echo "$CODEX_AUTH" | base64 -d >"$HOME/.codex/auth.json"
         chmod 600 "$HOME/.codex/auth.json"
         log "restored codex/openai credentials"
+    fi
+
+    # Happy Coder auth (restore from base64)
+    if [[ -n "${HAPPY_AUTH:-}" ]]; then
+        mkdir -p "$HOME/.happy"
+        echo "$HAPPY_AUTH" | base64 -d >"$HOME/.happy/access.key"
+        chmod 600 "$HOME/.happy/access.key"
+        log "restored happy-coder credentials"
+    fi
+
+    # Claude Code auth (restore from base64)
+    if [[ -n "${CLAUDE_AUTH:-}" ]]; then
+        mkdir -p "$HOME/.claude"
+        echo "$CLAUDE_AUTH" | base64 -d >"$HOME/.claude/.claude.json"
+        chmod 600 "$HOME/.claude/.claude.json"
+        log "restored claude-code credentials"
     fi
 
     # GitHub CLI auth (using token)
