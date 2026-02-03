@@ -164,33 +164,6 @@ TMUX_CONF
         fi
     fi
 
-    # Auth reminders (prominent banner) - only for services that need MANUAL auth
-    local need_auth=()
-    # gh: only remind if no GH_TOKEN (otherwise auto-auth handles it)
-    if command -v gh &>/dev/null && ! gh auth status &>/dev/null 2>&1 && [[ -z "${GH_TOKEN:-}" ]]; then
-        need_auth+=("gh auth login")
-    fi
-    # happy: always manual (device registration)
-    if command -v happy &>/dev/null && ! happy auth status &>/dev/null 2>&1; then
-        need_auth+=("happy auth")
-    fi
-    # omnara: always manual (device registration)
-    if command -v omnara &>/dev/null && [[ ! -f "$HOME/.omnara/auth.json" ]]; then
-        need_auth+=("omnara auth")
-    fi
-
-    if [[ ${#need_auth[@]} -gt 0 ]]; then
-        echo ""
-        echo "╔══════════════════════════════════════════════════════════════╗"
-        echo "║  📋 MANUAL AUTH REQUIRED (one-time per machine)              ║"
-        echo "╠══════════════════════════════════════════════════════════════╣"
-        for cmd in "${need_auth[@]}"; do
-            printf "║  → %-58s ║\n" "$cmd"
-        done
-        echo "╚══════════════════════════════════════════════════════════════╝"
-        echo ""
-    fi
-
     # Create lock file
     if [[ $failed -eq 0 ]]; then
         touch "$lock_file"
