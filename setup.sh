@@ -410,17 +410,17 @@ set_shell
 setup_shell_config
 
 log "============================================"
-log "  DONE! restart your terminal to apply     "
+log "              DONE! setup complete         "
 log "============================================"
 log ""
 log "installed:"
 log "  - nix + home-manager/nix-darwin"
 log "  - homebrew packages (macOS)"
-log "  - gemini-cli, qwen-code"
+log "  - cli tools (gemini, qwen, happy, omnara)"
 log "  - ssh keys restored"
 log "  - all tool configs applied"
 log ""
-log "next steps:"
-log "  1. restart terminal"
-log "  2. run 'gemini' to auth with Google (if needed)"
-log "  3. run 'qwen' to auth with Alibaba (if needed)"
+
+# Reload shell with new config (replaces current process)
+log "reloading shell..."
+exec "$SHELL" -l
