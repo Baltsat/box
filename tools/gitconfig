@@ -6,8 +6,9 @@
 	name = Konstantin Baltsat
 	email = baltsat2002@mail.ru
 
-[credential]
-	helper = osxkeychain
+# Credential helper is platform-specific:
+# macOS: osxkeychain (set by nix-darwin)
+# Linux: uses GH_TOKEN via gh auth setup-git
 
 [alias]
 	lg = log --color --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit

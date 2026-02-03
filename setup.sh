@@ -402,6 +402,8 @@ apply_tool_configs() {
         else
             log "github cli already authenticated"
         fi
+        # Configure git to use gh for auth (works on Linux without osxkeychain)
+        gh auth setup-git 2>/dev/null || true
     fi
 
     # Coder config
