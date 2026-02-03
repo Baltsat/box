@@ -80,13 +80,31 @@ decrypt_secrets() {
     }
     log "decrypting secrets with SOPS..."
     export SOPS_AGE_KEY_FILE="$HOME/.config/sops/age/keys.txt"
+
+    # Check if key file exists AND is valid (non-empty, contains AGE-SECRET-KEY)
+    local need_key=false
     if [[ ! -f "$SOPS_AGE_KEY_FILE" ]]; then
+        need_key=true
+    elif [[ ! -s "$SOPS_AGE_KEY_FILE" ]]; then
+        log "age key file is empty, regenerating..."
+        rm -f "$SOPS_AGE_KEY_FILE"
+        need_key=true
+    elif ! grep -q "AGE-SECRET-KEY-" "$SOPS_AGE_KEY_FILE" 2>/dev/null; then
+        log "age key file is invalid, regenerating..."
+        rm -f "$SOPS_AGE_KEY_FILE"
+        need_key=true
+    fi
+
+    if [[ "$need_key" == "true" ]]; then
         # Try to decrypt age key from passphrase-protected file
         if [[ -f "$SCRIPT_DIR/tools/sops-key.age" ]]; then
-            log "age key not found, decrypting from sops-key.age..."
+            log "decrypting age key from sops-key.age..."
             log "enter your passphrase:"
             mkdir -p "$(dirname "$SOPS_AGE_KEY_FILE")"
-            age -d "$SCRIPT_DIR/tools/sops-key.age" >"$SOPS_AGE_KEY_FILE"
+            if ! age -d "$SCRIPT_DIR/tools/sops-key.age" >"$SOPS_AGE_KEY_FILE"; then
+                rm -f "$SOPS_AGE_KEY_FILE"
+                die "failed to decrypt age key (wrong passphrase?)"
+            fi
             chmod 600 "$SOPS_AGE_KEY_FILE"
             log "age key restored"
         else
