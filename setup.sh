@@ -61,14 +61,19 @@ install_age() {
 
 # === Secrets Decryption ===
 decrypt_secrets() {
-    [[ ! -f "$SCRIPT_DIR/.env.age" ]] && return 0
+    [[ ! -f "$SCRIPT_DIR/.env.sops" ]] && return 0
     [[ -f "$SCRIPT_DIR/.env" ]] && {
         log "secrets already decrypted (.env exists)"
         return 0
     }
-    log "decrypting secrets..."
-    log "enter your password:"
-    age -d -o "$SCRIPT_DIR/.env" "$SCRIPT_DIR/.env.age"
+    log "decrypting secrets with SOPS..."
+    export SOPS_AGE_KEY_FILE="$HOME/.config/sops/age/keys.txt"
+    if [[ ! -f "$SOPS_AGE_KEY_FILE" ]]; then
+        warn "no age key found at $SOPS_AGE_KEY_FILE"
+        warn "run: mkdir -p ~/.config/sops/age && age-keygen -o ~/.config/sops/age/keys.txt"
+        return 1
+    fi
+    sops --decrypt --input-type dotenv --output-type dotenv "$SCRIPT_DIR/.env.sops" > "$SCRIPT_DIR/.env"
     log "secrets decrypted to .env"
 }
 

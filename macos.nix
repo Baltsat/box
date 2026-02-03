@@ -22,7 +22,7 @@
       autohide = true;
       autohide-time-modifier = 0.25;
       show-recents = false;
-      tilesize = 48;
+      tilesize = 32;  # current system value
       largesize = 30;
       magnification = true;
       mineffect = "genie";
@@ -37,11 +37,11 @@
     finder = {
       AppleShowAllExtensions = true;
       AppleShowAllFiles = true;
-      ShowPathbar = true;
+      ShowPathbar = false;  # current system
       ShowStatusBar = true;
       FXEnableExtensionChangeWarning = false;
       CreateDesktop = true;
-      FXPreferredViewStyle = "Nlsv";  # List view
+      FXPreferredViewStyle = "icnv";  # icon view (current system)
       _FXShowPosixPathInTitle = true;
     };
 
@@ -55,8 +55,8 @@
     # Global settings
     NSGlobalDomain = {
       AppleShowAllExtensions = true;
-      InitialKeyRepeat = 15;
-      KeyRepeat = 2;
+      InitialKeyRepeat = 30;  # current system (lower = faster)
+      KeyRepeat = 5;  # current system (lower = faster)
       ApplePressAndHoldEnabled = false;  # Enable key repeat
       AppleInterfaceStyleSwitchesAutomatically = true;  # Auto dark mode
       AppleICUForce24HourTime = true;  # 24 hour time
@@ -65,10 +65,10 @@
       AppleActionOnDoubleClick = "Maximize";
       AppleKeyboardUIMode = 2;  # Full keyboard access
       NSAutomaticSpellingCorrectionEnabled = false;
-      NSAutomaticCapitalizationEnabled = false;
-      NSAutomaticDashSubstitutionEnabled = false;
+      NSAutomaticCapitalizationEnabled = true;  # current system
+      NSAutomaticDashSubstitutionEnabled = true;  # current system
       NSAutomaticPeriodSubstitutionEnabled = false;
-      NSAutomaticQuoteSubstitutionEnabled = false;
+      NSAutomaticQuoteSubstitutionEnabled = true;  # current system
       NSAutomaticInlinePredictionEnabled = false;
       NSAllowContinuousSpellChecking = false;
     };
@@ -140,18 +140,29 @@
       "wget"
       "git"
       "git-lfs"
+      "git-delta"
       "gh"
+      "gitui"
 
       # Search & navigation
       "ripgrep"
       "fd"
       "fzf"
       "tree"
+      "eza"
       "lsd"
       "zoxide"
 
       # Data processing
       "jq"
+
+      # Formatters & linters
+      "nixfmt"
+      "shfmt"
+      "shellcheck"
+      "taplo"
+      "prettier"
+      "ruff"
 
       # Development
       "neovim"
@@ -191,6 +202,7 @@
       "docker"
       "docker-compose"
       "tailscale"
+      "cloudflared"
 
       # Network tools
       "tcpdump"

@@ -10,7 +10,7 @@ result-*
 .env
 .env.local
 .env.*.local
-# Note: .env.age is encrypted and SAFE to commit
+# Note: .env.sops is encrypted with SOPS and SAFE to commit
 
 # Editor
 .idea/

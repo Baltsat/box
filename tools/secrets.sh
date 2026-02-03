@@ -1,56 +1,61 @@
 #!/usr/bin/env bash
-# Secrets management using AGE encryption with password
+# Secrets management using SOPS with age encryption
 # Usage:
-#   ./tools/secrets.sh encrypt    # Encrypt .env to .env.age
-#   ./tools/secrets.sh decrypt    # Decrypt .env.age to .env
-#   ./tools/secrets.sh edit       # Decrypt, edit, re-encrypt
-#   ./tools/secrets.sh rekey      # Re-encrypt with new password
+#   ./tools/secrets.sh encrypt    # Encrypt .env to .env.sops
+#   ./tools/secrets.sh decrypt    # Decrypt .env.sops to .env
+#   ./tools/secrets.sh edit       # Edit encrypted file in-place
+#   ./tools/secrets.sh view       # View decrypted contents
+#   ./tools/secrets.sh rotate     # Re-encrypt with new key
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BOX_DIR="$(dirname "$SCRIPT_DIR")"
 ENV_FILE="$BOX_DIR/.env"
-ENCRYPTED_FILE="$BOX_DIR/.env.age"
+ENCRYPTED_FILE="$BOX_DIR/.env.sops"
 MEM_DIR="$HOME/.claude-mem"
-MEM_BACKUP="$BOX_DIR/claude-mem.tar.gz.age"
+MEM_BACKUP="$BOX_DIR/claude-mem.tar.gz.sops"
+AGE_KEY_FILE="$HOME/.config/sops/age/keys.txt"
+export SOPS_AGE_KEY_FILE="$AGE_KEY_FILE"
 
 log() { echo "[secrets] $*"; }
 die() { log "error: $*"; exit 1; }
 
 has_cmd() { command -v "$1" >/dev/null 2>&1; }
+has_cmd sops || die "sops not installed. Run: brew install sops"
 has_cmd age || die "age not installed. Run: brew install age"
+
+# Get public key from age key file
+get_age_pubkey() {
+    [[ -f "$AGE_KEY_FILE" ]] || die "age key not found at $AGE_KEY_FILE. Run: mkdir -p ~/.config/sops/age && age-keygen -o ~/.config/sops/age/keys.txt"
+    grep "^# public key:" "$AGE_KEY_FILE" | cut -d: -f2 | tr -d ' '
+}
 
 encrypt() {
     [[ -f "$ENV_FILE" ]] || die ".env file not found"
-    log "Encrypting .env -> .env.age"
-    log "Enter your encryption password:"
-    age -p -o "$ENCRYPTED_FILE" "$ENV_FILE"
-    log "Done! .env.age created (safe to commit)"
+    local pubkey
+    pubkey=$(get_age_pubkey)
+    log "encrypting .env -> .env.sops (age key: ${pubkey:0:20}...)"
+    sops --encrypt --age "$pubkey" --input-type dotenv --output-type dotenv --output "$ENCRYPTED_FILE" "$ENV_FILE"
+    log "done! .env.sops created (safe to commit)"
 }
 
 decrypt() {
-    [[ -f "$ENCRYPTED_FILE" ]] || die ".env.age not found"
-    log "Decrypting .env.age -> .env"
-    log "Enter your decryption password:"
-    age -d -o "$ENV_FILE" "$ENCRYPTED_FILE"
-    log "Done! .env created (do not commit)"
+    [[ -f "$ENCRYPTED_FILE" ]] || die ".env.sops not found"
+    log "decrypting .env.sops -> .env"
+    sops --decrypt --input-type dotenv --output-type dotenv "$ENCRYPTED_FILE" > "$ENV_FILE"
+    log "done! .env created (do not commit)"
 }
 
 edit() {
-    local tmp_file
-    tmp_file=$(mktemp)
-    trap "rm -f $tmp_file" EXIT
-
-    if [[ -f "$ENCRYPTED_FILE" ]]; then
-        log "Decrypting for editing..."
-        age -d -o "$tmp_file" "$ENCRYPTED_FILE"
-    elif [[ -f "$ENV_FILE" ]]; then
-        cp "$ENV_FILE" "$tmp_file"
-    else
-        log "Creating new secrets file..."
-        cat > "$tmp_file" << 'TEMPLATE'
-# Secrets - this file will be encrypted
+    if [[ ! -f "$ENCRYPTED_FILE" ]]; then
+        if [[ -f "$ENV_FILE" ]]; then
+            log "no .env.sops found, encrypting existing .env first..."
+            encrypt
+        else
+            log "creating new secrets file..."
+            cat > "$ENV_FILE" << 'TEMPLATE'
+# Secrets - this file will be encrypted with SOPS
 # Add your API keys and sensitive data here
 
 # OpenAI
@@ -64,57 +69,52 @@ ANTHROPIC_API_KEY=
 
 # Add more secrets as needed...
 TEMPLATE
+            encrypt
+        fi
     fi
-
-    ${EDITOR:-vim} "$tmp_file"
-
-    log "Re-encrypting..."
-    age -p -o "$ENCRYPTED_FILE" "$tmp_file"
-    log "Done! .env.age updated"
+    log "editing .env.sops (decrypts in memory, re-encrypts on save)"
+    sops --input-type dotenv --output-type dotenv "$ENCRYPTED_FILE"
+    log "done!"
 }
 
-rekey() {
-    [[ -f "$ENCRYPTED_FILE" ]] || die ".env.age not found"
-    log "Re-keying secrets with new password"
-    log "First, enter your CURRENT password to decrypt:"
+view() {
+    [[ -f "$ENCRYPTED_FILE" ]] || die ".env.sops not found"
+    sops --decrypt --input-type dotenv --output-type dotenv "$ENCRYPTED_FILE"
+}
 
-    local tmp_file
-    tmp_file=$(mktemp)
-    trap "rm -f $tmp_file" EXIT
-
-    age -d -o "$tmp_file" "$ENCRYPTED_FILE"
-
-    log "Now enter your NEW password to encrypt:"
-    age -p -o "$ENCRYPTED_FILE" "$tmp_file"
-    log "Done! .env.age re-encrypted with new password"
+rotate() {
+    [[ -f "$ENCRYPTED_FILE" ]] || die ".env.sops not found"
+    log "rotating keys (re-encrypting)..."
+    sops updatekeys "$ENCRYPTED_FILE"
+    log "done!"
 }
 
 backup_mem() {
     [[ -d "$MEM_DIR" ]] || die "claude-mem directory not found at $MEM_DIR"
-    log "Backing up claude-mem (~$(du -sh "$MEM_DIR" | cut -f1))"
+    log "backing up claude-mem (~$(du -sh "$MEM_DIR" | cut -f1))"
 
-    local tmp_file
+    local tmp_file pubkey
     tmp_file=$(mktemp)
     trap "rm -f $tmp_file" EXIT
+    pubkey=$(get_age_pubkey)
 
     # Compress
     tar -czf "$tmp_file" -C "$HOME" .claude-mem
 
-    # Encrypt
-    log "Enter encryption password:"
-    age -p -o "$MEM_BACKUP" "$tmp_file"
+    # Encrypt with SOPS (treats as binary)
+    sops --encrypt --age "$pubkey" --output "$MEM_BACKUP" "$tmp_file"
 
-    log "Done! claude-mem.tar.gz.age created ($(du -sh "$MEM_BACKUP" | cut -f1))"
+    log "done! claude-mem.tar.gz.sops created ($(du -sh "$MEM_BACKUP" | cut -f1))"
 }
 
 restore_mem() {
-    [[ -f "$MEM_BACKUP" ]] || die "claude-mem.tar.gz.age not found"
+    [[ -f "$MEM_BACKUP" ]] || die "claude-mem.tar.gz.sops not found"
 
     if [[ -d "$MEM_DIR" ]]; then
         log "WARNING: $MEM_DIR already exists"
-        read -p "Overwrite? [y/N] " -n 1 -r
+        read -p "overwrite? [y/N] " -n 1 -r
         echo
-        [[ $REPLY =~ ^[Yy]$ ]] || die "Aborted"
+        [[ $REPLY =~ ^[Yy]$ ]] || die "aborted"
         rm -rf "$MEM_DIR"
     fi
 
@@ -122,39 +122,53 @@ restore_mem() {
     tmp_file=$(mktemp)
     trap "rm -f $tmp_file" EXIT
 
-    log "Enter decryption password:"
-    age -d -o "$tmp_file" "$MEM_BACKUP"
+    sops --decrypt "$MEM_BACKUP" > "$tmp_file"
 
     # Extract
     tar -xzf "$tmp_file" -C "$HOME"
 
-    log "Done! claude-mem restored to $MEM_DIR"
+    log "done! claude-mem restored to $MEM_DIR"
+}
+
+migrate_from_age() {
+    [[ -f "$BOX_DIR/.env.age" ]] || die ".env.age not found"
+    log "migrating from age to SOPS..."
+    log "first, decrypt your .env.age manually:"
+    echo "  age -d -o .env .env.age"
+    echo "then run:"
+    echo "  ./tools/secrets.sh encrypt"
+    echo "after verifying .env.sops works, delete .env.age"
 }
 
 show_help() {
     cat << EOF
-Secrets management for box
+Secrets management for box (SOPS + age)
 
 Commands:
-  encrypt      Encrypt .env to .env.age
-  decrypt      Decrypt .env.age to .env
-  edit         Decrypt, edit in \$EDITOR, re-encrypt
-  rekey        Re-encrypt with a new password
+  encrypt      Encrypt .env to .env.sops
+  decrypt      Decrypt .env.sops to .env
+  edit         Edit encrypted file in-place (recommended)
+  view         View decrypted contents (stdout)
+  rotate       Re-encrypt with updated keys
   backup-mem   Backup ~/.claude-mem (encrypted)
   restore-mem  Restore ~/.claude-mem from backup
+  migrate      Help migrate from old .env.age format
 
 Files:
-  .env                    Plaintext secrets (gitignored)
-  .env.age                Encrypted secrets (committed)
-  claude-mem.tar.gz.age   Encrypted claude-mem backup (committed)
+  .env                       Plaintext secrets (gitignored)
+  .env.sops                  Encrypted secrets (committed)
+  claude-mem.tar.gz.sops     Encrypted claude-mem backup (committed)
+  ~/.config/sops/age/keys.txt  Your age private key (NEVER commit)
+
+Key management:
+  Your age key: $AGE_KEY_FILE
+  Public key configured in: .sops.yaml
 
 Usage:
-  ./tools/secrets.sh encrypt
-  ./tools/secrets.sh decrypt
-  ./tools/secrets.sh edit
-  ./tools/secrets.sh rekey
-  ./tools/secrets.sh backup-mem
-  ./tools/secrets.sh restore-mem
+  ./tools/secrets.sh edit           # recommended: edit in-place
+  ./tools/secrets.sh encrypt        # after editing .env manually
+  ./tools/secrets.sh decrypt        # get plaintext .env
+  ./tools/secrets.sh view           # view without creating file
 EOF
 }
 
@@ -162,8 +176,10 @@ case "${1:-help}" in
     encrypt) encrypt ;;
     decrypt) decrypt ;;
     edit) edit ;;
-    rekey) rekey ;;
+    view) view ;;
+    rotate) rotate ;;
     backup-mem) backup_mem ;;
     restore-mem) restore_mem ;;
+    migrate) migrate_from_age ;;
     *) show_help ;;
 esac

@@ -1,0 +1,9 @@
+creation_rules:
+  - path_regex: \.env\.sops$
+    age: age1v8tcksct4e65c9eawd3xxlcx50cq4vq3rkdqfldgcqgddls7jq7qgxzsnm
+  - path_regex: \.env$
+    age: age1v8tcksct4e65c9eawd3xxlcx50cq4vq3rkdqfldgcqgddls7jq7qgxzsnm
+  - path_regex: \.sops$
+    age: age1v8tcksct4e65c9eawd3xxlcx50cq4vq3rkdqfldgcqgddls7jq7qgxzsnm
+  - path_regex: secrets\.yaml$
+    age: age1v8tcksct4e65c9eawd3xxlcx50cq4vq3rkdqfldgcqgddls7jq7qgxzsnm

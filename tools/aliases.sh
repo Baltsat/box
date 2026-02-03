@@ -34,7 +34,8 @@ alias grs="git restore --staged"
 alias gitl="git log --color --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit"
 
 # Quick commit and push
-gg() {
+# usage: gacp "commit message" or just gacp for "update"
+gacp() {
     local msg="${*:-update}"
     git add . && git commit -m "$msg" && git push
 }
@@ -78,6 +79,27 @@ alias preview='open -a "Preview"'
 # === Claude ===
 alias claude='claude --dangerously-skip-permissions'
 
+# System context for Claude (used by c/cc wrappers)
+sys() {
+    echo "<repos>"
+    repos 2>/dev/null
+    echo "</repos>"
+    echo ""
+    [[ -f "$HOME/box/GLOBAL.md" ]] && cat "$HOME/box/GLOBAL.md"
+    [[ -f "./CLAUDE.md" ]] && { echo ""; cat "./CLAUDE.md"; }
+}
+
+# Claude with auto-context (cl = claude, clc = claude continue)
+cl() {
+    command claude --dangerously-skip-permissions \
+        --append-system-prompt "$(sys)" "$@"
+}
+
+clc() {
+    command claude --dangerously-skip-permissions \
+        --append-system-prompt "$(sys)" -c "$@"
+}
+
 # === Zoxide (smart cd) ===
 if command -v zoxide &>/dev/null; then
     alias z='zoxide query'
@@ -86,6 +108,9 @@ fi
 
 # === Direnv ===
 alias da='direnv allow .'
+
+# === Git UI ===
+alias gr='gitui'
 
 # === Nix ===
 # Quick nix shell with packages
@@ -189,6 +214,33 @@ box-check() {
     else
         echo "⚠ $broken broken symlinks. run: cd ~/box && bun script/files.ts"
     fi
+}
+
+# === Cloudflare Tunnel ===
+# Quick tunnel localhost to internet
+dev() {
+    local port="${1:-3000}"
+    if ! command -v cloudflared &>/dev/null; then
+        echo "cloudflared not installed. run: brew install cloudflared"
+        return 1
+    fi
+    echo "[dev] tunneling localhost:$port..."
+    cloudflared tunnel --url "http://localhost:$port"
+}
+
+# === Fancy Quotes ===
+# Convert straight quotes to curly quotes in files
+fancy() {
+    [[ -f ~/box/tools/fancy.py ]] && uv run ~/box/tools/fancy.py "$@"
+}
+
+# === Quick Note to Clipboard ===
+# Open temp file in editor, copy to clipboard on save
+ans() {
+    local f
+    f=$(mktemp)
+    trap "rm -f $f" EXIT
+    ${EDITOR:-vim} "$f" && pbcopy < "$f"
 }
 
 # === Tool Initialization (call once in shell rc) ===

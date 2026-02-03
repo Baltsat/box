@@ -30,7 +30,7 @@ Enter password when prompted. Done.
 ├── setup.sh        # One-command setup
 ├── tools/          # Configs (starship, karabiner, aliases, etc.)
 ├── script/         # Utility scripts
-└── .env.age        # Encrypted secrets
+└── .env.sops        # Encrypted secrets
 ```
 
 ## Updating
@@ -45,7 +45,7 @@ After editing nix files:
 
 ```bash
 ~/box/tools/secrets.sh decrypt  # Decrypt to .env
-~/box/tools/secrets.sh encrypt  # Encrypt .env to .env.age
+~/box/tools/secrets.sh encrypt  # Encrypt .env to .env.sops
 ~/box/tools/secrets.sh edit     # Edit secrets
 ~/box/tools/secrets.sh rekey    # Change password
 ```

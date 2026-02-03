@@ -23,7 +23,7 @@ This file provides guidance to Claude Code when working in this repository.
 
 ## Critical Rules
 
-1. **NEVER COMMIT SECRETS** - `.env` is gitignored. Only `.env.age` (encrypted) is committed. Never add API keys, tokens, or passwords to tracked files.
+1. **NEVER COMMIT SECRETS** - `.env` is gitignored. Only `.env.sops` (encrypted) is committed. Never add API keys, tokens, or passwords to tracked files.
 
 2. **NEVER COMMIT WITHOUT ASKING** - Always ask user for approval before running `git commit`. Never commit automatically.
 
@@ -55,7 +55,7 @@ box/
 │   └── cursor/         # Cursor editor configs
 ├── script/
 │   └── files.ts        # Symlinks configs to proper locations
-├── .env.age            # Encrypted secrets (committed)
+├── .env.sops            # Encrypted secrets (committed)
 ├── .env.template       # Template for secrets (committed)
 └── .env                # Decrypted secrets (gitignored, local only)
 ```
@@ -89,7 +89,7 @@ alias myalias='my-command'
 1. Add to `.env.template`: `NEW_SECRET=`
 2. Add value to `.env`: `NEW_SECRET=actual_value`
 3. Encrypt: `./tools/secrets.sh encrypt`
-4. Commit `.env.age` and `.env.template`
+4. Commit `.env.sops` and `.env.template`
 
 ### Testing changes
 
@@ -154,9 +154,9 @@ nix profile remove <package>
 
 ### Secrets won't decrypt
 
-- Check password is correct
-- Verify `.env.age` exists and isn't corrupted
-- Try: `age -d .env.age` manually
+- Verify age key exists: `~/.config/sops/age/keys.txt`
+- Verify `.env.sops` exists and isn't corrupted
+- Try: `SOPS_AGE_KEY_FILE=~/.config/sops/age/keys.txt sops --decrypt .env.sops`
 
 ## Code Style
 
