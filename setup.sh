@@ -381,14 +381,17 @@ apply_tool_configs() {
     fi
 
     # Gemini settings (needs envsubst for tokens - can't symlink)
-    if [[ -f "$SCRIPT_DIR/tools/gemini/settings.json" ]]; then
+    # Only create if doesn't exist (preserve user's custom settings)
+    if [[ -f "$SCRIPT_DIR/tools/gemini/settings.json" ]] && [[ ! -f "$HOME/.gemini/settings.json" ]]; then
         mkdir -p "$HOME/.gemini"
         if has_cmd envsubst; then
             envsubst <"$SCRIPT_DIR/tools/gemini/settings.json" >"$HOME/.gemini/settings.json"
         else
             cp "$SCRIPT_DIR/tools/gemini/settings.json" "$HOME/.gemini/settings.json"
         fi
-        log "applied gemini settings (with token substitution)"
+        log "created gemini settings"
+    elif [[ -f "$HOME/.gemini/settings.json" ]]; then
+        log "gemini settings exists, skipping"
     fi
 
     # === Auth/Credentials restoration ===
