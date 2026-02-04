@@ -379,3 +379,327 @@ alias hs='happy_session'
 # =============================================================================
 alias happy='happy --yolo'
 alias claude='claude --dangerously-skip-permissions'
+
+# =============================================================================
+# HAWAII CLI AUTO-UPDATE
+# =============================================================================
+_hawaii_auto_update() {
+    local check_file="$HOME/.cache/hawaii_last_update_check"
+    local now
+    now=$(date +%s)
+    local last_check=0
+
+    [[ -f "$check_file" ]] && last_check=$(cat "$check_file" 2>/dev/null || echo 0)
+
+    # Check once per day
+    if [[ $((now - last_check)) -gt 86400 ]]; then
+        (
+            if command -v hawaii &>/dev/null; then
+                local result
+                result=$(hawaii self check 2>&1)
+                if echo "$result" | grep -q "Update available"; then
+                    echo ""
+                    echo "[hawaii] update available - auto-updating..."
+                    UV_INDEX="https://api.pyx.dev/simple/preference-model/main" uv tool upgrade pm-hawaii-cli 2>&1 | tail -3
+                    echo "[hawaii] updated!"
+                fi
+            fi
+            echo "$now" >"$check_file"
+        ) &
+    fi
+}
+
+# Run hawaii auto-update (non-blocking)
+command -v hawaii &>/dev/null && _hawaii_auto_update
+
+# =============================================================================
+# CODE - Workspace management with tmux windows
+# =============================================================================
+CODE_HISTORY_FILE="$HOME/.code_history"
+
+code() {
+    local create_new=false
+    local show_list=false
+    local list_select=""
+    local window_select=""
+    local window_name=""
+    local current_dir
+    current_dir="$(pwd)"
+    local dir_name
+    dir_name="$(basename "$current_dir")"
+    local prompt=""
+
+    [[ "$dir_name" == "/" ]] && dir_name="root"
+    [[ -z "$dir_name" ]] && dir_name="unknown"
+
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            -n|--new) create_new=true; shift ;;
+            -l|--list)
+                show_list=true; shift
+                [[ $# -gt 0 && "$1" =~ ^[0-9]+$ ]] && { list_select="$1"; shift; }
+                ;;
+            -w|--window)
+                shift
+                [[ $# -gt 0 ]] && { window_select="$1"; shift; } || { echo "error: -w requires window name"; return 1; }
+                ;;
+            @*) window_select="${1:1}"; shift ;;
+            -h|--help)
+                cat << 'EOF'
+CODE - Workspace management
+
+USAGE: code [OPTIONS] [PROMPT]
+
+  code              Open/continue workspace
+  code "prompt"     Start with prompt
+  code -n           New window
+  code -l           List windows for current dir
+  code -l N         Open Nth window
+  code -w NAME      Open window by name
+  code @NAME        Same as -w
+
+ALIASES: c=code, cn=code -n, cl=code_list, ch=code_history
+EOF
+                return 0
+                ;;
+            *) prompt="$*"; break ;;
+        esac
+    done
+
+    # Helper: get windows for current directory
+    _code_get_windows() {
+        local current_dir="$1"
+        [[ ! -f "$CODE_HISTORY_FILE" ]] && return 1
+        declare -A shown_windows
+        while IFS='|' read -r session window dir last_prompt; do
+            if [[ "$dir" == "$current_dir" ]]; then
+                local key="${session}:${window}"
+                if [[ -z "${shown_windows[$key]}" ]]; then
+                    shown_windows[$key]=1
+                    local status="inactive"
+                    if tmux has-session -t "$session" 2>/dev/null; then
+                        tmux list-windows -t "$session" -F '#W' 2>/dev/null | grep -q "^${window}$" && status="active"
+                    fi
+                    echo "${session}|${window}|${status}|${last_prompt}"
+                fi
+            fi
+        done < <(tac "$CODE_HISTORY_FILE" 2>/dev/null)
+    }
+
+    # Helper: switch to window
+    _code_switch_to_window() {
+        local target_session="$1" target_window="$2"
+        if ! tmux has-session -t "$target_session" 2>/dev/null; then
+            echo "error: session '$target_session' does not exist"
+            return 1
+        fi
+        if ! tmux list-windows -t "$target_session" -F '#W' 2>/dev/null | grep -q "^${target_window}$"; then
+            echo "error: window '$target_window' does not exist"
+            return 1
+        fi
+        if [[ -z "$TMUX" ]]; then
+            tmux attach-session -t "$target_session" \; select-window -t "$target_window"
+        else
+            local current_session
+            current_session=$(tmux display-message -p '#S')
+            if [[ "$current_session" == "$target_session" ]]; then
+                tmux select-window -t "$target_window"
+            else
+                tmux switch-client -t "$target_session" \; select-window -t "$target_window"
+            fi
+        fi
+    }
+
+    # Handle -w/@: open by name
+    if [[ -n "$window_select" ]]; then
+        local found_session="" found_window=""
+        while IFS='|' read -r session window status lprompt; do
+            [[ "$window" == "$window_select" ]] && { found_session="$session"; found_window="$window"; break; }
+        done < <(_code_get_windows "$current_dir")
+
+        if [[ -z "$found_session" ]] && [[ -f "$CODE_HISTORY_FILE" ]]; then
+            while IFS='|' read -r session window dir lprompt; do
+                if [[ "$window" == "$window_select" ]] && tmux has-session -t "$session" 2>/dev/null; then
+                    tmux list-windows -t "$session" -F '#W' 2>/dev/null | grep -q "^${window}$" && { found_session="$session"; found_window="$window"; break; }
+                fi
+            done < <(tac "$CODE_HISTORY_FILE" 2>/dev/null)
+        fi
+
+        [[ -n "$found_session" ]] && { _code_switch_to_window "$found_session" "$found_window"; return $?; }
+        echo "error: window '$window_select' not found"
+        return 1
+    fi
+
+    # Handle -l: list windows
+    if [[ "$show_list" == true ]]; then
+        [[ ! -f "$CODE_HISTORY_FILE" ]] && { echo "no history"; return 1; }
+        local -a win_sessions=() win_names=() win_statuses=() win_prompts=()
+        while IFS='|' read -r session window status lprompt; do
+            win_sessions+=("$session")
+            win_names+=("$window")
+            win_statuses+=("$status")
+            win_prompts+=("$lprompt")
+        done < <(_code_get_windows "$current_dir")
+
+        local total=${#win_names[@]}
+        [[ $total -eq 0 ]] && { echo "no windows for this directory"; return 1; }
+
+        if [[ -n "$list_select" ]]; then
+            [[ "$list_select" -lt 1 ]] || [[ "$list_select" -gt $total ]] && { echo "invalid: 1-$total"; return 1; }
+            local idx=$((list_select - 1))
+            [[ "${win_statuses[$idx]}" != "active" ]] && { echo "window not active"; return 1; }
+            _code_switch_to_window "${win_sessions[$idx]}" "${win_names[$idx]}"
+            return $?
+        fi
+
+        echo "windows for: $(basename "$current_dir")"
+        printf "%-3s | %-15s | %-23s | %-8s | %s\n" "#" "Session" "Window" "Status" "Prompt"
+        echo "----|-----------------|-------------------------|----------|--------"
+        for ((i=0; i<total; i++)); do
+            local dp="${win_prompts[$i]:-<interactive>}"
+            [[ ${#dp} -gt 25 ]] && dp="${dp:0:22}..."
+            printf "%-3s | %-15s | %-23s | %-8s | %s\n" "$((i+1))" "${win_sessions[$i]}" "${win_names[$i]}" "${win_statuses[$i]}" "$dp"
+        done
+        return 0
+    fi
+
+    ! command -v tmux &>/dev/null && { echo "error: tmux not installed"; return 1; }
+
+    local happy_base_cmd="happy --yolo"
+    local happy_continue_cmd="happy --resume --yolo"
+    ! command -v happy &>/dev/null && { [[ -n "$prompt" ]] && { echo "error: happy not found"; return 1; }; happy_base_cmd="bash"; happy_continue_cmd="bash"; }
+
+    local session_name
+    session_name="$(echo "$dir_name" | tr ' .:-' '____')"
+
+    # Outside tmux
+    if [[ -z "$TMUX" ]]; then
+        if [[ "$create_new" == true ]]; then
+            local new_window="code-${dir_name}-$(date +%H%M%S)"
+            if tmux has-session -t "$session_name" 2>/dev/null; then
+                [[ -n "$prompt" ]] && tmux new-window -d -t "$session_name:" -n "$new_window" -c "$current_dir" "$happy_base_cmd '$prompt'" \
+                                   || tmux new-window -d -t "$session_name:" -n "$new_window" -c "$current_dir" "$happy_base_cmd"
+                echo "${session_name}|${new_window}|${current_dir}|${prompt}" >>"$CODE_HISTORY_FILE"
+                tmux attach-session -t "$session_name" \; select-window -t "$new_window"
+            else
+                [[ -n "$prompt" ]] && tmux new-session -s "$session_name" -n "$new_window" -c "$current_dir" "$happy_base_cmd '$prompt'" \
+                                   || tmux new-session -s "$session_name" -n "$new_window" -c "$current_dir" "$happy_base_cmd"
+                echo "${session_name}|${new_window}|${current_dir}|${prompt}" >>"$CODE_HISTORY_FILE"
+            fi
+            return 0
+        fi
+
+        if tmux has-session -t "$session_name" 2>/dev/null; then
+            local existing=()
+            while IFS= read -r window; do
+                local wp wc
+                wp=$(tmux display-message -p -t "$session_name:$window" "#{pane_current_path}" 2>/dev/null)
+                wc=$(tmux display-message -p -t "$session_name:$window" "#{pane_current_command}" 2>/dev/null)
+                [[ "$wp" == "$current_dir" ]] && [[ "$wc" == *"happy"* ]] && existing+=("$window")
+            done < <(tmux list-windows -t "$session_name" -F '#W' 2>/dev/null | grep '^code')
+
+            if [[ ${#existing[@]} -gt 0 ]]; then
+                tmux attach-session -t "$session_name:${existing[-1]}"
+                echo "${session_name}|${existing[-1]}|${current_dir}|${prompt}" >>"$CODE_HISTORY_FILE"
+            else
+                local wn="code-${dir_name}"
+                [[ -n "$prompt" ]] && tmux new-window -d -t "$session_name:" -n "$wn" -c "$current_dir" "happy --resume '$prompt'" \
+                                   || tmux new-window -d -t "$session_name:" -n "$wn" -c "$current_dir" "$happy_continue_cmd"
+                echo "${session_name}|${wn}|${current_dir}|${prompt}" >>"$CODE_HISTORY_FILE"
+                tmux attach-session -t "$session_name" \; select-window -t "$wn"
+            fi
+        else
+            local wn="code-${dir_name}"
+            [[ -n "$prompt" ]] && tmux new-session -s "$session_name" -n "$wn" -c "$current_dir" "$happy_base_cmd '$prompt'" \
+                               || tmux new-session -s "$session_name" -n "$wn" -c "$current_dir" "$happy_base_cmd"
+            echo "${session_name}|${wn}|${current_dir}|${prompt}" >>"$CODE_HISTORY_FILE"
+        fi
+        return 0
+    fi
+
+    # Inside tmux
+    local current_session
+    current_session=$(tmux display-message -p '#S')
+
+    if [[ "$create_new" == true ]]; then
+        window_name="code-${dir_name}-$(date +%H%M%S)"
+        tmux list-windows -F '#W' | grep -q "^${window_name}$" && window_name="${window_name}-$(date +%N | cut -c1-3)"
+        [[ -n "$prompt" ]] && tmux new-window -n "$window_name" -c "$current_dir" "$happy_base_cmd '$prompt'" \
+                           || tmux new-window -n "$window_name" -c "$current_dir" "$happy_base_cmd"
+        echo "${current_session}|${window_name}|${current_dir}|${prompt}" >>"$CODE_HISTORY_FILE"
+    else
+        local existing=()
+        while IFS= read -r window; do
+            local wp wc
+            wp=$(tmux display-message -p -t "$window" "#{pane_current_path}" 2>/dev/null)
+            wc=$(tmux display-message -p -t "$window" "#{pane_current_command}" 2>/dev/null)
+            [[ "$wp" == "$current_dir" ]] && [[ "$wc" == *"happy"* ]] && existing+=("$window")
+        done < <(tmux list-windows -F '#W' 2>/dev/null | grep '^code')
+
+        if [[ ${#existing[@]} -gt 0 ]]; then
+            tmux select-window -t "${existing[-1]}"
+            echo "${current_session}|${existing[-1]}|${current_dir}|${prompt}" >>"$CODE_HISTORY_FILE"
+        else
+            window_name="code-${dir_name}"
+            [[ -n "$prompt" ]] && tmux new-window -n "$window_name" -c "$current_dir" "happy --resume '$prompt'" \
+                               || tmux new-window -n "$window_name" -c "$current_dir" "$happy_continue_cmd"
+            echo "${current_session}|${window_name}|${current_dir}|${prompt}" >>"$CODE_HISTORY_FILE"
+        fi
+    fi
+}
+
+code_list() {
+    if ! tmux ls &>/dev/null; then
+        echo "no tmux sessions"
+        return 1
+    fi
+    if [[ -z "$TMUX" ]]; then
+        echo "code windows (all sessions):"
+        for session in $(tmux ls -F '#S' 2>/dev/null); do
+            local windows
+            windows=$(tmux list-windows -t "$session" -F '#W' 2>/dev/null | grep '^code')
+            [[ -n "$windows" ]] && { echo "  $session:"; echo "$windows" | sed 's/^/    /'; }
+        done
+    else
+        echo "code windows ($(tmux display-message -p '#S')):"
+        tmux list-windows -F '#W' | grep '^code' | sed 's/^/  /'
+    fi
+}
+
+code_clean() {
+    if ! tmux ls &>/dev/null; then
+        echo "no tmux sessions"
+        return 1
+    fi
+    local count=0
+    if [[ -z "$TMUX" ]]; then
+        for session in $(tmux ls -F '#S' 2>/dev/null); do
+            for window in $(tmux list-windows -t "$session" -F '#W' 2>/dev/null | grep '^code-'); do
+                tmux kill-window -t "$session:$window" 2>/dev/null && ((count++))
+            done
+        done
+    else
+        for window in $(tmux list-windows -F '#W' | grep '^code-'); do
+            tmux kill-window -t "$window" 2>/dev/null && ((count++))
+        done
+    fi
+    echo "closed $count windows"
+}
+
+code_history() {
+    [[ ! -f "$CODE_HISTORY_FILE" ]] && { echo "no history"; return 1; }
+    echo "recent (newest first):"
+    tail -20 "$CODE_HISTORY_FILE" | tac | while IFS='|' read -r session window dir lprompt; do
+        local dp="${lprompt:-<interactive>}"
+        [[ ${#dp} -gt 20 ]] && dp="${dp:0:17}..."
+        printf "%-12s | %-20s | %-12s | %s\n" "$session" "$window" "$(basename "$dir")" "$dp"
+    done | head -10
+}
+
+# Code aliases
+alias c='code'
+alias cn='code -n'
+alias cl='code_list'
+alias ch='code_history'
+alias ccc='code_clean'
+alias chc='rm -f "$CODE_HISTORY_FILE" && echo "history cleared"'
