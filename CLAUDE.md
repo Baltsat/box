@@ -37,6 +37,33 @@ This file provides guidance to Claude Code when working in this repository.
 
 7. **PLATFORM AWARENESS** - Code should work on both macOS (nix-darwin) and Linux (home-manager). Use conditionals where needed.
 
+8. **NEVER OVERWRITE CREDENTIALS** - setup.sh must NEVER overwrite existing SSH keys, OAuth tokens, or auth files. Only create if missing/invalid.
+
+## Testing Protocol
+
+**ALWAYS run `./setup.sh` after making changes.**
+
+**CRITICAL: `./setup.sh` MUST be called as a SEPARATE, SINGLE tool call.**
+- NEVER batch setup.sh with other parallel tool calls
+- Workflow: make changes → run other tools → THEN separately call setup.sh
+- Reason: setup.sh depends on git-tracked files. If batched with parallel Edit/Write calls that haven't completed yet, you'll rebuild old config state instead of new changes.
+
+**Linux VM testing via orb cli:**
+```bash
+orb run -m nix
+# orb automatically mounts cwd and cd's into ~/box inside vm
+# vm already has nix installed
+```
+
+## Code Principles
+
+Write maximally GENERIC code that is platform, user, hostname agnostic:
+
+- Use `$HOME` instead of hardcoded paths like `/Users/username`
+- Use platform detection (`uname`, `pkgs.stdenv.isDarwin`) instead of assuming OS
+- Configuration should work identically on macOS and Linux wherever possible
+- NEVER hardcode usernames or machine-specific paths
+
 ## File Structure
 
 ```
@@ -171,3 +198,16 @@ nix profile remove <package>
 3. For major changes, test in Codespace
 4. Commit with clear message
 5. Push only after explicit approval
+
+## Cloudflared Certs
+
+cloudflared stores auth certs at `~/.cloudflared/cert.pem`. Only one cert can be active at a time (overwrites on login).
+
+Saved certs for account switching:
+- `~/.cloudflared/cert-yaitso.pem` (yaitso.com account)
+- `~/.cloudflared/cert-other.pem` (other account)
+
+To use specific account:
+```bash
+TUNNEL_ORIGIN_CERT=~/.cloudflared/cert-yaitso.pem cloudflared tunnel list
+```
