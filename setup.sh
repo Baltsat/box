@@ -381,44 +381,58 @@ apply_tool_configs() {
         log "applied gemini settings (with token substitution)"
     fi
 
-    # Gemini OAuth creds (restore from base64)
-    if [[ -n "${GEMINI_OAUTH_CREDS:-}" ]]; then
+    # === Auth/Credentials restoration ===
+    # PRINCIPLE: NEVER overwrite existing credentials - they may be server/account-specific!
+    # Only restore if file doesn't exist.
+
+    # Gemini OAuth creds
+    if [[ -n "${GEMINI_OAUTH_CREDS:-}" ]] && [[ ! -f "$HOME/.gemini/oauth_creds.json" ]]; then
         mkdir -p "$HOME/.gemini"
         echo "$GEMINI_OAUTH_CREDS" | base64 -d >"$HOME/.gemini/oauth_creds.json"
         chmod 600 "$HOME/.gemini/oauth_creds.json"
         log "restored gemini oauth credentials"
+    elif [[ -f "$HOME/.gemini/oauth_creds.json" ]]; then
+        log "gemini oauth exists, skipping"
     fi
 
-    # Qwen OAuth creds (restore from base64)
-    if [[ -n "${QWEN_OAUTH_CREDS:-}" ]]; then
+    # Qwen OAuth creds
+    if [[ -n "${QWEN_OAUTH_CREDS:-}" ]] && [[ ! -f "$HOME/.qwen/oauth_creds.json" ]]; then
         mkdir -p "$HOME/.qwen"
         echo "$QWEN_OAUTH_CREDS" | base64 -d >"$HOME/.qwen/oauth_creds.json"
         chmod 600 "$HOME/.qwen/oauth_creds.json"
         log "restored qwen oauth credentials"
+    elif [[ -f "$HOME/.qwen/oauth_creds.json" ]]; then
+        log "qwen oauth exists, skipping"
     fi
 
-    # Codex/OpenAI auth (restore from base64)
-    if [[ -n "${CODEX_AUTH:-}" ]]; then
+    # Codex/OpenAI auth
+    if [[ -n "${CODEX_AUTH:-}" ]] && [[ ! -f "$HOME/.codex/auth.json" ]]; then
         mkdir -p "$HOME/.codex"
         echo "$CODEX_AUTH" | base64 -d >"$HOME/.codex/auth.json"
         chmod 600 "$HOME/.codex/auth.json"
         log "restored codex/openai credentials"
+    elif [[ -f "$HOME/.codex/auth.json" ]]; then
+        log "codex auth exists, skipping"
     fi
 
-    # Happy Coder auth (restore from base64)
-    if [[ -n "${HAPPY_AUTH:-}" ]]; then
+    # Happy Coder auth
+    if [[ -n "${HAPPY_AUTH:-}" ]] && [[ ! -f "$HOME/.happy/access.key" ]]; then
         mkdir -p "$HOME/.happy"
         echo "$HAPPY_AUTH" | base64 -d >"$HOME/.happy/access.key"
         chmod 600 "$HOME/.happy/access.key"
         log "restored happy-coder credentials"
+    elif [[ -f "$HOME/.happy/access.key" ]]; then
+        log "happy auth exists, skipping"
     fi
 
-    # Claude Code auth (restore from base64)
-    if [[ -n "${CLAUDE_AUTH:-}" ]]; then
+    # Claude Code auth
+    if [[ -n "${CLAUDE_AUTH:-}" ]] && [[ ! -f "$HOME/.claude/.claude.json" ]]; then
         mkdir -p "$HOME/.claude"
         echo "$CLAUDE_AUTH" | base64 -d >"$HOME/.claude/.claude.json"
         chmod 600 "$HOME/.claude/.claude.json"
         log "restored claude-code credentials"
+    elif [[ -f "$HOME/.claude/.claude.json" ]]; then
+        log "claude auth exists, skipping"
     fi
 
     # GitHub CLI auth (using token)
@@ -434,7 +448,7 @@ apply_tool_configs() {
         gh auth setup-git 2>/dev/null || true
     fi
 
-    # Coder config
+    # Coder config (NEVER overwrite on coder workspaces - managed by coder itself)
     if [[ -n "${CODER_URL:-}" ]] && [[ -n "${CODER_SESSION:-}" ]]; then
         local coder_dir
         if [[ "$(uname -s)" == "Darwin" ]]; then
@@ -442,11 +456,16 @@ apply_tool_configs() {
         else
             coder_dir="$HOME/.config/coderv2"
         fi
-        mkdir -p "$coder_dir"
-        echo "$CODER_URL" >"$coder_dir/url"
-        echo "$CODER_SESSION" >"$coder_dir/session"
-        chmod 600 "$coder_dir/session"
-        log "restored coder credentials"
+        # Only restore if session file doesn't exist
+        if [[ ! -f "$coder_dir/session" ]]; then
+            mkdir -p "$coder_dir"
+            echo "$CODER_URL" >"$coder_dir/url"
+            echo "$CODER_SESSION" >"$coder_dir/session"
+            chmod 600 "$coder_dir/session"
+            log "restored coder credentials"
+        else
+            log "coder session exists, skipping"
+        fi
     fi
 
     # Tmux config (always overwrite with latest from box)

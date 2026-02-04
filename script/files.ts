@@ -14,6 +14,9 @@ const root = dirname(dirname(Bun.main));
 const is_macos = process.platform === 'darwin';
 
 // [source in box/tools, destination in $HOME]
+// IMPORTANT: Don't symlink sensitive/platform-specific configs here!
+// - SSH config: macOS-specific (UseKeychain, paths), setup.sh handles it safely
+// - tmux.conf: setup.sh writes it directly (no symlink needed)
 const links: [string, string][] = [
   // Shell & prompt
   ['tools/starship.toml', '.config/starship.toml'],
@@ -21,10 +24,6 @@ const links: [string, string][] = [
   ['tools/aliases.sh', '.config/box/aliases.sh'],
   // Bashrc (Linux only, but harmless on mac)
   ['tools/bashrc.sh', '.config/box/bashrc.sh'],
-  // Tmux
-  ['tools/tmux.conf', '.tmux.conf'],
-  // SSH
-  ['tools/ssh/config', '.ssh/config'],
   // GitHub CLI
   ['tools/gh/config.yml', '.config/gh/config.yml'],
   // Claude global instructions
@@ -38,6 +37,10 @@ const links: [string, string][] = [
 ];
 
 const macos_links: [string, string][] = [
+  // SSH config (macOS-only - uses UseKeychain, macOS paths)
+  ['tools/ssh/config', '.ssh/config'],
+  // Tmux (macOS - on Linux, setup.sh writes it directly to avoid conflicts)
+  ['tools/tmux.conf', '.tmux.conf'],
   // Karabiner
   ['tools/karabiner.json', '.config/karabiner/karabiner.json'],
   // Cursor
