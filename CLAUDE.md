@@ -199,15 +199,17 @@ nix profile remove <package>
 4. Commit with clear message
 5. Push only after explicit approval
 
-## Cloudflared Certs
+## Cloudflared (optional)
 
-cloudflared stores auth certs at `~/.cloudflared/cert.pem`. Only one cert can be active at a time (overwrites on login).
+cloudflared = Cloudflare Tunnel. Allows exposing local services without opening ports.
 
-Saved certs for account switching:
-- `~/.cloudflared/cert-yaitso.pem` (yaitso.com account)
-- `~/.cloudflared/cert-other.pem` (other account)
-
-To use specific account:
 ```bash
-TUNNEL_ORIGIN_CERT=~/.cloudflared/cert-yaitso.pem cloudflared tunnel list
+# quick expose localhost:3000
+cloudflared tunnel --url http://localhost:3000
+
+# install (if needed)
+brew install cloudflared  # macOS
+# or via nix in shared.nix
 ```
+
+Auth certs stored at `~/.cloudflared/cert.pem`. Can save multiple certs for different accounts.
