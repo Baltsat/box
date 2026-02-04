@@ -365,6 +365,18 @@ _box_auto_update() {
         npm update -g @google/gemini-cli >>"$log_file" 2>&1 || true
     fi
 
+    # Qwen Code
+    if command -v qwen &>/dev/null && command -v npm &>/dev/null; then
+        echo "[box] checking qwen-code..." >>"$log_file"
+        npm update -g @qwen-code/qwen-code@latest >>"$log_file" 2>&1 || true
+    fi
+
+    # Repomix
+    if command -v repomix &>/dev/null && command -v npm &>/dev/null; then
+        echo "[box] checking repomix..." >>"$log_file"
+        npm update -g repomix >>"$log_file" 2>&1 || true
+    fi
+
     # Homebrew (macOS)
     if [[ "$(uname)" == "Darwin" ]] && command -v brew &>/dev/null; then
         echo "[box] updating homebrew..." >>"$log_file"
