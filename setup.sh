@@ -11,6 +11,15 @@ die() {
 }
 has_cmd() { command -v "$1" >/dev/null 2>&1; }
 
+# === Pre-cleanup (ensure fresh state) ===
+# Remove invalid/empty age key so we get a fresh password prompt
+AGE_KEY_FILE="$HOME/.config/sops/age/keys.txt"
+if [[ -f "$AGE_KEY_FILE" ]]; then
+    if [[ ! -s "$AGE_KEY_FILE" ]] || ! grep -q "AGE-SECRET-KEY-" "$AGE_KEY_FILE" 2>/dev/null; then
+        rm -f "$AGE_KEY_FILE"
+    fi
+fi
+
 # === Nix Setup ===
 source_nix() {
     local daemon_sh="/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh"
@@ -107,9 +116,11 @@ decrypt_secrets() {
             mkdir -p "$(dirname "$SOPS_AGE_KEY_FILE")"
             if ! run_age -d "$SCRIPT_DIR/tools/sops-key.age" >"$SOPS_AGE_KEY_FILE"; then
                 rm -f "$SOPS_AGE_KEY_FILE"
+                rm -rf "$SCRIPT_DIR"  # remove ~/box so git clone works again
+                rm -f "$HOME/.box_setup_done"
                 echo ""
-                echo "wrong passphrase. run the command again:"
-                echo "  rm -rf ~/box ~/.box_setup_done ~/.config/sops/age/keys.txt; git clone https://github.com/Baltsat/box.git ~/box && ~/box/setup.sh"
+                echo "wrong passphrase. run again:"
+                echo "  git clone https://github.com/Baltsat/box.git ~/box && ~/box/setup.sh"
                 echo ""
                 exit 1
             fi
