@@ -116,7 +116,7 @@ decrypt_secrets() {
             mkdir -p "$(dirname "$SOPS_AGE_KEY_FILE")"
             if ! run_age -d "$SCRIPT_DIR/tools/sops-key.age" >"$SOPS_AGE_KEY_FILE"; then
                 rm -f "$SOPS_AGE_KEY_FILE"
-                rm -rf "$SCRIPT_DIR"  # remove ~/box so git clone works again
+                rm -rf "$SCRIPT_DIR" # remove ~/box so git clone works again
                 rm -f "$HOME/.box_setup_done"
                 echo ""
                 echo "wrong passphrase. run again:"
@@ -354,15 +354,20 @@ apply_tool_configs() {
     chmod 700 "$HOME/.ssh"
 
     # Restore SSH keys from .env (base64 encoded)
-    if [[ -n "${SSH_KEY_GITHUB:-}" ]]; then
+    # IMPORTANT: never overwrite existing keys - they may be server-specific!
+    if [[ -n "${SSH_KEY_GITHUB:-}" ]] && [[ ! -f "$HOME/.ssh/github" ]]; then
         echo "$SSH_KEY_GITHUB" | base64 -d >"$HOME/.ssh/github"
         chmod 600 "$HOME/.ssh/github"
         log "restored ~/.ssh/github"
+    elif [[ -f "$HOME/.ssh/github" ]]; then
+        log "~/.ssh/github exists, skipping (won't overwrite)"
     fi
-    if [[ -n "${SSH_KEY_ID_ED25519:-}" ]]; then
+    if [[ -n "${SSH_KEY_ID_ED25519:-}" ]] && [[ ! -f "$HOME/.ssh/id_ed25519" ]]; then
         echo "$SSH_KEY_ID_ED25519" | base64 -d >"$HOME/.ssh/id_ed25519"
         chmod 600 "$HOME/.ssh/id_ed25519"
         log "restored ~/.ssh/id_ed25519"
+    elif [[ -f "$HOME/.ssh/id_ed25519" ]]; then
+        log "~/.ssh/id_ed25519 exists, skipping (won't overwrite)"
     fi
 
     # Gemini settings (needs envsubst for tokens - can't symlink)
