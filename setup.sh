@@ -428,6 +428,92 @@ apply_tool_configs() {
         chmod 600 "$coder_dir/session"
         log "restored coder credentials"
     fi
+
+    # Tmux config (always overwrite with latest from box)
+    if has_cmd tmux; then
+        # Install TPM if missing
+        if [[ ! -d "$HOME/.tmux/plugins/tpm" ]]; then
+            log "installing tmux plugin manager (tpm)"
+            git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm 2>/dev/null || true
+        fi
+
+        # Write tmux.conf
+        log "writing tmux.conf"
+        cat >"$HOME/.tmux.conf" <<'TMUX_CONF'
+# Box tmux configuration
+
+# === Core Settings ===
+set -g mouse on
+set -g base-index 1
+setw -g pane-base-index 1
+set -g renumber-windows on
+set -g history-limit 50000
+set -sg escape-time 0
+set -g focus-events on
+
+# Terminal & colors
+set -g default-terminal "tmux-256color"
+set -ag terminal-overrides ",xterm-256color:RGB"
+
+# === Status Bar ===
+set -g status-style 'bg=#1a1a2e fg=#eaeaea'
+set -g status-left-length 40
+set -g status-right-length 60
+set -g status-left '#[fg=#00d9ff,bold][#S] '
+set -g status-right '#[fg=#888888]#{?client_prefix,#[fg=#ff6b6b]⌨ ,}%H:%M'
+setw -g window-status-current-style 'fg=#00d9ff bold'
+setw -g window-status-style 'fg=#666666'
+setw -g window-status-format ' #I:#W '
+setw -g window-status-current-format ' #I:#W '
+
+# === Key Bindings ===
+# Splits (| and -)
+bind | split-window -h -c "#{pane_current_path}"
+bind - split-window -v -c "#{pane_current_path}"
+
+# Vim-style pane navigation
+bind h select-pane -L
+bind j select-pane -D
+bind k select-pane -U
+bind l select-pane -R
+
+# Resize panes with vim keys
+bind -r H resize-pane -L 5
+bind -r J resize-pane -D 5
+bind -r K resize-pane -U 5
+bind -r L resize-pane -R 5
+
+# Quick window switching
+bind -r n next-window
+bind -r p previous-window
+
+# Reload config
+bind r source-file ~/.tmux.conf \; display "Config reloaded!"
+
+# === Copy Mode (vim-style) ===
+setw -g mode-keys vi
+bind Enter copy-mode
+bind -T copy-mode-vi v send-keys -X begin-selection
+bind -T copy-mode-vi y send-keys -X copy-selection-and-cancel
+bind -T copy-mode-vi C-v send-keys -X rectangle-toggle
+bind -T copy-mode-vi Escape send-keys -X cancel
+
+# === Plugins ===
+set -g @plugin 'tmux-plugins/tpm'
+set -g @plugin 'tmux-plugins/tmux-sensible'
+set -g @plugin 'tmux-plugins/tmux-yank'
+set -g @plugin 'tmux-plugins/tmux-resurrect'
+set -g @plugin 'tmux-plugins/tmux-continuum'
+
+# Plugin settings
+set -g @resurrect-capture-pane-contents 'on'
+set -g @continuum-restore 'on'
+set -g @continuum-save-interval '5'
+set -g @yank_selection_mouse 'clipboard'
+
+run '~/.tmux/plugins/tpm/tpm'
+TMUX_CONF
+    fi
 }
 
 # === Symlink Config Files ===

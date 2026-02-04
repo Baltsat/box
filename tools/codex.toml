@@ -1,7 +1,7 @@
 model = "gpt-5.2"
 model_reasoning_effort = "medium"
-model_personality = "pragmatic"
 web_search = "live"
+personality = "pragmatic"
 
 [projects."~/box"]
 trust_level = "trusted"

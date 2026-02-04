@@ -89,9 +89,9 @@ _box_first_time_setup() {
         git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm 2>/dev/null && echo "[box] tpm installed"
     fi
 
-    # Create ~/.tmux.conf if missing
-    if command -v tmux &>/dev/null && [[ ! -f "$HOME/.tmux.conf" ]]; then
-        echo "[box] creating tmux.conf..."
+    # Create/update ~/.tmux.conf (always overwrite with latest)
+    if command -v tmux &>/dev/null; then
+        echo "[box] writing tmux.conf..."
         cat >"$HOME/.tmux.conf" <<'TMUX_CONF'
 # Box tmux configuration
 
