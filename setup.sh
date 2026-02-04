@@ -354,20 +354,30 @@ apply_tool_configs() {
     chmod 700 "$HOME/.ssh"
 
     # Restore SSH keys from .env (base64 encoded)
-    # IMPORTANT: never overwrite existing keys - they may be server-specific!
-    if [[ -n "${SSH_KEY_GITHUB:-}" ]] && [[ ! -f "$HOME/.ssh/github" ]]; then
-        echo "$SSH_KEY_GITHUB" | base64 -d >"$HOME/.ssh/github"
-        chmod 600 "$HOME/.ssh/github"
-        log "restored ~/.ssh/github"
-    elif [[ -f "$HOME/.ssh/github" ]]; then
-        log "~/.ssh/github exists, skipping (won't overwrite)"
+    # IMPORTANT: never overwrite existing VALID keys - they may be server-specific!
+    # Helper: check if SSH key is valid (exists, non-empty, contains PRIVATE KEY marker)
+    ssh_key_valid() {
+        local file="$1"
+        [[ -f "$file" ]] && [[ -s "$file" ]] && grep -q "PRIVATE KEY" "$file" 2>/dev/null
+    }
+
+    if [[ -n "${SSH_KEY_GITHUB:-}" ]]; then
+        if ssh_key_valid "$HOME/.ssh/github"; then
+            log "~/.ssh/github valid, skipping"
+        else
+            echo "$SSH_KEY_GITHUB" | base64 -d >"$HOME/.ssh/github"
+            chmod 600 "$HOME/.ssh/github"
+            log "restored ~/.ssh/github"
+        fi
     fi
-    if [[ -n "${SSH_KEY_ID_ED25519:-}" ]] && [[ ! -f "$HOME/.ssh/id_ed25519" ]]; then
-        echo "$SSH_KEY_ID_ED25519" | base64 -d >"$HOME/.ssh/id_ed25519"
-        chmod 600 "$HOME/.ssh/id_ed25519"
-        log "restored ~/.ssh/id_ed25519"
-    elif [[ -f "$HOME/.ssh/id_ed25519" ]]; then
-        log "~/.ssh/id_ed25519 exists, skipping (won't overwrite)"
+    if [[ -n "${SSH_KEY_ID_ED25519:-}" ]]; then
+        if ssh_key_valid "$HOME/.ssh/id_ed25519"; then
+            log "~/.ssh/id_ed25519 valid, skipping"
+        else
+            echo "$SSH_KEY_ID_ED25519" | base64 -d >"$HOME/.ssh/id_ed25519"
+            chmod 600 "$HOME/.ssh/id_ed25519"
+            log "restored ~/.ssh/id_ed25519"
+        fi
     fi
 
     # Gemini settings (needs envsubst for tokens - can't symlink)
@@ -382,57 +392,83 @@ apply_tool_configs() {
     fi
 
     # === Auth/Credentials restoration ===
-    # PRINCIPLE: NEVER overwrite existing credentials - they may be server/account-specific!
-    # Only restore if file doesn't exist.
+    # PRINCIPLE: NEVER overwrite existing VALID credentials!
+    # Only restore if file doesn't exist OR is empty/invalid.
 
-    # Gemini OAuth creds
-    if [[ -n "${GEMINI_OAUTH_CREDS:-}" ]] && [[ ! -f "$HOME/.gemini/oauth_creds.json" ]]; then
-        mkdir -p "$HOME/.gemini"
-        echo "$GEMINI_OAUTH_CREDS" | base64 -d >"$HOME/.gemini/oauth_creds.json"
-        chmod 600 "$HOME/.gemini/oauth_creds.json"
-        log "restored gemini oauth credentials"
-    elif [[ -f "$HOME/.gemini/oauth_creds.json" ]]; then
-        log "gemini oauth exists, skipping"
+    # Helper: check if credential file is valid (exists, non-empty, has expected content)
+    # Usage: cred_valid <file> [required_string]
+    cred_valid() {
+        local file="$1"
+        local required="${2:-}"
+        # File must exist
+        [[ ! -f "$file" ]] && return 1
+        # File must be non-empty
+        [[ ! -s "$file" ]] && return 1
+        # If required string specified, file must contain it
+        if [[ -n "$required" ]]; then
+            grep -q "$required" "$file" 2>/dev/null || return 1
+        fi
+        return 0
+    }
+
+    # Gemini OAuth creds (valid if contains "refresh_token" or "access_token")
+    if [[ -n "${GEMINI_OAUTH_CREDS:-}" ]]; then
+        if cred_valid "$HOME/.gemini/oauth_creds.json" "token"; then
+            log "gemini oauth valid, skipping"
+        else
+            mkdir -p "$HOME/.gemini"
+            echo "$GEMINI_OAUTH_CREDS" | base64 -d >"$HOME/.gemini/oauth_creds.json"
+            chmod 600 "$HOME/.gemini/oauth_creds.json"
+            log "restored gemini oauth credentials"
+        fi
     fi
 
     # Qwen OAuth creds
-    if [[ -n "${QWEN_OAUTH_CREDS:-}" ]] && [[ ! -f "$HOME/.qwen/oauth_creds.json" ]]; then
-        mkdir -p "$HOME/.qwen"
-        echo "$QWEN_OAUTH_CREDS" | base64 -d >"$HOME/.qwen/oauth_creds.json"
-        chmod 600 "$HOME/.qwen/oauth_creds.json"
-        log "restored qwen oauth credentials"
-    elif [[ -f "$HOME/.qwen/oauth_creds.json" ]]; then
-        log "qwen oauth exists, skipping"
+    if [[ -n "${QWEN_OAUTH_CREDS:-}" ]]; then
+        if cred_valid "$HOME/.qwen/oauth_creds.json" "token"; then
+            log "qwen oauth valid, skipping"
+        else
+            mkdir -p "$HOME/.qwen"
+            echo "$QWEN_OAUTH_CREDS" | base64 -d >"$HOME/.qwen/oauth_creds.json"
+            chmod 600 "$HOME/.qwen/oauth_creds.json"
+            log "restored qwen oauth credentials"
+        fi
     fi
 
     # Codex/OpenAI auth
-    if [[ -n "${CODEX_AUTH:-}" ]] && [[ ! -f "$HOME/.codex/auth.json" ]]; then
-        mkdir -p "$HOME/.codex"
-        echo "$CODEX_AUTH" | base64 -d >"$HOME/.codex/auth.json"
-        chmod 600 "$HOME/.codex/auth.json"
-        log "restored codex/openai credentials"
-    elif [[ -f "$HOME/.codex/auth.json" ]]; then
-        log "codex auth exists, skipping"
+    if [[ -n "${CODEX_AUTH:-}" ]]; then
+        if cred_valid "$HOME/.codex/auth.json" "token"; then
+            log "codex auth valid, skipping"
+        else
+            mkdir -p "$HOME/.codex"
+            echo "$CODEX_AUTH" | base64 -d >"$HOME/.codex/auth.json"
+            chmod 600 "$HOME/.codex/auth.json"
+            log "restored codex/openai credentials"
+        fi
     fi
 
-    # Happy Coder auth
-    if [[ -n "${HAPPY_AUTH:-}" ]] && [[ ! -f "$HOME/.happy/access.key" ]]; then
-        mkdir -p "$HOME/.happy"
-        echo "$HAPPY_AUTH" | base64 -d >"$HOME/.happy/access.key"
-        chmod 600 "$HOME/.happy/access.key"
-        log "restored happy-coder credentials"
-    elif [[ -f "$HOME/.happy/access.key" ]]; then
-        log "happy auth exists, skipping"
+    # Happy Coder auth (access.key should be non-empty)
+    if [[ -n "${HAPPY_AUTH:-}" ]]; then
+        if cred_valid "$HOME/.happy/access.key"; then
+            log "happy auth valid, skipping"
+        else
+            mkdir -p "$HOME/.happy"
+            echo "$HAPPY_AUTH" | base64 -d >"$HOME/.happy/access.key"
+            chmod 600 "$HOME/.happy/access.key"
+            log "restored happy-coder credentials"
+        fi
     fi
 
-    # Claude Code auth
-    if [[ -n "${CLAUDE_AUTH:-}" ]] && [[ ! -f "$HOME/.claude/.claude.json" ]]; then
-        mkdir -p "$HOME/.claude"
-        echo "$CLAUDE_AUTH" | base64 -d >"$HOME/.claude/.claude.json"
-        chmod 600 "$HOME/.claude/.claude.json"
-        log "restored claude-code credentials"
-    elif [[ -f "$HOME/.claude/.claude.json" ]]; then
-        log "claude auth exists, skipping"
+    # Claude Code auth (should contain "oauthAccount" or session info)
+    if [[ -n "${CLAUDE_AUTH:-}" ]]; then
+        if cred_valid "$HOME/.claude/.claude.json" "oauth"; then
+            log "claude auth valid, skipping"
+        else
+            mkdir -p "$HOME/.claude"
+            echo "$CLAUDE_AUTH" | base64 -d >"$HOME/.claude/.claude.json"
+            chmod 600 "$HOME/.claude/.claude.json"
+            log "restored claude-code credentials"
+        fi
     fi
 
     # GitHub CLI auth (using token)
@@ -456,15 +492,15 @@ apply_tool_configs() {
         else
             coder_dir="$HOME/.config/coderv2"
         fi
-        # Only restore if session file doesn't exist
-        if [[ ! -f "$coder_dir/session" ]]; then
+        # Only restore if session file doesn't exist OR is empty
+        if [[ -f "$coder_dir/session" ]] && [[ -s "$coder_dir/session" ]]; then
+            log "coder session valid, skipping"
+        else
             mkdir -p "$coder_dir"
             echo "$CODER_URL" >"$coder_dir/url"
             echo "$CODER_SESSION" >"$coder_dir/session"
             chmod 600 "$coder_dir/session"
             log "restored coder credentials"
-        else
-            log "coder session exists, skipping"
         fi
     fi
 
