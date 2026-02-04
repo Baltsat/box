@@ -264,11 +264,20 @@ fi
 # ENVIRONMENT
 # =============================================================================
 # Load .env if exists (from box)
+# IMPORTANT: only set variables that are NOT already set (preserve existing credentials)
 if [[ -f "$BOX_DIR/.env" ]]; then
-    set -a
-    # shellcheck source=/dev/null
-    . "$BOX_DIR/.env"
-    set +a
+    while IFS='=' read -r key value || [[ -n "$key" ]]; do
+        # Skip comments and empty lines
+        [[ "$key" =~ ^[[:space:]]*# ]] && continue
+        [[ -z "$key" ]] && continue
+        # Remove leading/trailing whitespace from key
+        key="${key#"${key%%[![:space:]]*}"}"
+        key="${key%"${key##*[![:space:]]}"}"
+        # Only export if not already set
+        if [[ -z "${!key:-}" ]]; then
+            export "$key=$value"
+        fi
+    done <"$BOX_DIR/.env"
 fi
 
 # UV index for preference-model packages (hawaii cli, etc.)
