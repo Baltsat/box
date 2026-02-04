@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+ORIG_DIR="$(pwd)"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
@@ -646,4 +647,5 @@ log ""
 
 # Reload shell with new config (replaces current process)
 log "reloading shell..."
+cd "$ORIG_DIR"
 exec "$SHELL" -l
