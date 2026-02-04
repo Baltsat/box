@@ -196,6 +196,11 @@ TMUX_CONF
             echo "[box] installing hawaii cli..."
             UV_INDEX="https://api.pyx.dev/simple/preference-model/main" uv tool install pm-hawaii-cli 2>/dev/null && echo "[box] hawaii installed"
         fi
+        # Auto-login hawaii (headless, uses PYX_API_KEY)
+        if command -v hawaii &>/dev/null && ! hawaii auth status &>/dev/null 2>&1; then
+            echo "[box] authenticating hawaii cli..."
+            hawaii auth login --no-browser 2>/dev/null && echo "[box] hawaii authenticated!" || true
+        fi
     fi
 
     # Auto-auth GitHub if GH_TOKEN available

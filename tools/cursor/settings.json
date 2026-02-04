@@ -168,5 +168,8 @@
   "json.schemaDownload.enable": true,
   "crashReporting.enabled": "off",
   "update.mode": "silentlyApplyOnQuit",
-  "update.releaseTrack": "prerelease"
+  "update.releaseTrack": "prerelease","remote.SSH.remotePlatform": {
+    "coder-vscode.coder.tail645fbe.ts.net--Baltsat--pyspark.main": "linux",
+    "coder-vscode.coder.tail645fbe.ts.net--Baltsat--tpu1.main": "linux"
+  }
 }

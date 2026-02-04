@@ -335,6 +335,13 @@ install_cli_tools() {
             log "installing hawaii cli"
             UV_INDEX="https://api.pyx.dev/simple/preference-model/main" uv tool install pm-hawaii-cli || true
         fi
+        # Auto-login hawaii (headless, uses PYX_API_KEY)
+        if has_cmd hawaii; then
+            if ! hawaii auth status &>/dev/null 2>&1; then
+                log "authenticating hawaii cli"
+                hawaii auth login --no-browser || true
+            fi
+        fi
     fi
 }
 
