@@ -313,6 +313,14 @@ install_cli_tools() {
         log "installing omnara"
         curl -fsSL https://omnara.com/install/install.sh 2>/dev/null | bash || true
     fi
+
+    # Hawaii CLI (preference-model internal tool)
+    if has_cmd uv && [[ -n "${PYX_API_KEY:-}" ]]; then
+        if ! has_cmd hawaii; then
+            log "installing hawaii cli"
+            UV_INDEX="https://api.pyx.dev/simple/preference-model/main" uv tool install pm-hawaii-cli || true
+        fi
+    fi
 }
 
 # === Apply Tool Configs ===

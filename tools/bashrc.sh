@@ -156,6 +156,14 @@ TMUX_CONF
         command -v omnara &>/dev/null && echo "[box] omnara installed"
     fi
 
+    # Hawaii CLI (preference-model internal tool)
+    if command -v uv &>/dev/null && [[ -n "${PYX_API_KEY:-}" ]]; then
+        if ! command -v hawaii &>/dev/null; then
+            echo "[box] installing hawaii cli..."
+            UV_INDEX="https://api.pyx.dev/simple/preference-model/main" uv tool install pm-hawaii-cli 2>/dev/null && echo "[box] hawaii installed"
+        fi
+    fi
+
     # Auto-auth GitHub if GH_TOKEN available
     if command -v gh &>/dev/null && ! gh auth status &>/dev/null 2>&1; then
         if [[ -n "${GH_TOKEN:-}" ]]; then
@@ -228,6 +236,9 @@ if [[ -f "$BOX_DIR/.env" ]]; then
     . "$BOX_DIR/.env"
     set +a
 fi
+
+# UV index for preference-model packages (hawaii cli, etc.)
+export UV_INDEX="https://api.pyx.dev/simple/preference-model/main"
 
 # =============================================================================
 # AUTO-UPDATE (once per day, background, non-blocking)
