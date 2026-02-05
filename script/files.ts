@@ -34,6 +34,20 @@ const links: [string, string][] = [
   ['tools/zellij.kdl', '.config/zellij/config.kdl'],
   // Codex
   ['tools/codex.toml', '.codex/config.toml'],
+  // Claude Code statusline
+  ['tools/claude/statusline.sh', '.claude/statusline.sh'],
+  // Claude Code skills
+  ['tools/claude/skills/deslop', '.claude/skills/deslop'],
+  ['tools/claude/skills/simplify', '.claude/skills/simplify'],
+  ['tools/claude/skills/rams', '.claude/skills/rams'],
+  ['tools/claude/skills/knip', '.claude/skills/knip'],
+  ['tools/claude/skills/agent-browser', '.claude/skills/agent-browser'],
+  ['tools/claude/skills/favicon', '.claude/skills/favicon'],
+  ['tools/claude/skills/find-skills', '.claude/skills/find-skills'],
+  ['tools/claude/skills/skill-creator', '.claude/skills/skill-creator'],
+  ['tools/claude/skills/reclaude', '.claude/skills/reclaude'],
+  // Claude Code agents
+  ['tools/claude/agents/security-reviewer.md', '.claude/agents/security-reviewer.md'],
 ];
 
 const macos_links: [string, string][] = [
