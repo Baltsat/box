@@ -83,13 +83,19 @@ alias claude='claude --dangerously-skip-permissions'
 # Usage: mem-push <server> or mem-pull <server>
 mem-push() {
     local server="${1:-}"
-    [[ -z "$server" ]] && { echo "usage: mem-push <server>"; return 1; }
+    [[ -z "$server" ]] && {
+        echo "usage: mem-push <server>"
+        return 1
+    }
     echo "[claude-mem] pushing to $server..."
     rsync -avz --progress ~/.claude-mem/ "$server":~/.claude-mem/
 }
 mem-pull() {
     local server="${1:-}"
-    [[ -z "$server" ]] && { echo "usage: mem-pull <server>"; return 1; }
+    [[ -z "$server" ]] && {
+        echo "usage: mem-pull <server>"
+        return 1
+    }
     echo "[claude-mem] pulling from $server..."
     rsync -avz --progress "$server":~/.claude-mem/ ~/.claude-mem/
 }

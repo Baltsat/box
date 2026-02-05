@@ -38,6 +38,7 @@
     neovim
     tmux
     zellij
+    blesh  # bash line editor with autocomplete
     bat
     htop
     watch

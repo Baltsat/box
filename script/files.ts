@@ -27,7 +27,7 @@ const links: [string, string][] = [
   // GitHub CLI
   ['tools/gh/config.yml', '.config/gh/config.yml'],
   // Claude global instructions
-  ['tools/CLAUDE.md', '.claude/CLAUDE.md'],
+  ['GLOBAL.md', '.claude/CLAUDE.md'],
   // Zed
   ['tools/zed/settings.json', '.config/zed/settings.json'],
   // Zellij
@@ -46,6 +46,8 @@ const links: [string, string][] = [
   ['tools/claude/skills/find-skills', '.claude/skills/find-skills'],
   ['tools/claude/skills/skill-creator', '.claude/skills/skill-creator'],
   ['tools/claude/skills/reclaude', '.claude/skills/reclaude'],
+  ['tools/claude/skills/bun', '.claude/skills/bun'],
+  ['tools/claude/skills/frontend', '.claude/skills/frontend'],
   // Claude Code agents
   ['tools/claude/agents/security-reviewer.md', '.claude/agents/security-reviewer.md'],
 ];

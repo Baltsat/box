@@ -9,6 +9,32 @@ case $- in
 esac
 
 # =============================================================================
+# BLESH (Bash Line Editor) - load early with deferred attach
+# =============================================================================
+_find_blesh() {
+    # Check nix paths
+    [[ -f "/etc/profiles/per-user/$USER/share/blesh/ble.sh" ]] && {
+        echo "/etc/profiles/per-user/$USER/share/blesh/ble.sh"
+        return
+    }
+    [[ -f "$HOME/.nix-profile/share/blesh/ble.sh" ]] && {
+        echo "$HOME/.nix-profile/share/blesh/ble.sh"
+        return
+    }
+    # Check homebrew (macOS)
+    [[ -f "/opt/homebrew/share/blesh/ble.sh" ]] && {
+        echo "/opt/homebrew/share/blesh/ble.sh"
+        return
+    }
+}
+
+_BLESH_PATH="$(_find_blesh)"
+if [[ -n "$_BLESH_PATH" ]]; then
+    # Load blesh with deferred attachment (attach at end of bashrc)
+    source "$_BLESH_PATH" --attach=none
+fi
+
+# =============================================================================
 # SHELL OPTIONS
 # =============================================================================
 HISTCONTROL=ignoreboth
@@ -809,3 +835,22 @@ alias cl='code_list'
 alias ch='code_history'
 alias ccc='code_clean'
 alias chc='rm -f "$CODE_HISTORY_FILE" && echo "history cleared"'
+
+# =============================================================================
+# BLESH - Final configuration and attach
+# =============================================================================
+if [[ ${BLE_VERSION-} ]]; then
+    # Configure blesh options
+    bleopt editor="${EDITOR:-vim}"
+    bleopt complete_auto_delay=100
+    bleopt history_share=1
+
+    # fzf integration (if fzf available)
+    if command -v fzf &>/dev/null; then
+        ble-import -d integration/fzf-completion 2>/dev/null
+        ble-import -d integration/fzf-key-bindings 2>/dev/null
+    fi
+
+    # Attach blesh (must be at end of bashrc)
+    ble-attach
+fi

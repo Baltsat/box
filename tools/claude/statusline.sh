@@ -24,8 +24,8 @@ bar_width=15
 filled=$((context_percent * bar_width / 100))
 empty=$((bar_width - filled))
 bar=""
-for ((i=0; i<filled; i++)); do bar+="█"; done
-for ((i=0; i<empty; i++)); do bar+="░"; done
+for ((i = 0; i < filled; i++)); do bar+="█"; done
+for ((i = 0; i < empty; i++)); do bar+="░"; done
 
 # Directory name
 dir_name=$(basename "$current_dir")
