@@ -344,6 +344,12 @@ install_cli_tools() {
             fi
         fi
     fi
+
+    # ccusage (Claude Code usage tracker)
+    if has_cmd bun && ! has_cmd ccusage; then
+        log "installing ccusage"
+        bun install -g ccusage || true
+    fi
 }
 
 # === Apply Tool Configs ===
@@ -640,7 +646,7 @@ log ""
 log "installed:"
 log "  - nix + home-manager/nix-darwin"
 log "  - homebrew packages (macOS)"
-log "  - cli tools (claude, codex, gemini, qwen, happy, repomix, omnara)"
+log "  - cli tools (claude, codex, gemini, qwen, happy, repomix, omnara, ccusage)"
 log "  - ssh keys restored"
 log "  - all tool configs applied"
 log ""
