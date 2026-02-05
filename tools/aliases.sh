@@ -79,6 +79,22 @@ alias preview='open -a "Preview"'
 # === Claude ===
 alias claude='claude --dangerously-skip-permissions'
 
+# Claude-mem memory sync (between machines)
+# Usage: mem-push <server> or mem-pull <server>
+mem-push() {
+    local server="${1:-}"
+    [[ -z "$server" ]] && { echo "usage: mem-push <server>"; return 1; }
+    echo "[claude-mem] pushing to $server..."
+    rsync -avz --progress ~/.claude-mem/ "$server":~/.claude-mem/
+}
+mem-pull() {
+    local server="${1:-}"
+    [[ -z "$server" ]] && { echo "usage: mem-pull <server>"; return 1; }
+    echo "[claude-mem] pulling from $server..."
+    rsync -avz --progress "$server":~/.claude-mem/ ~/.claude-mem/
+}
+alias mem-status='du -sh ~/.claude-mem/ && ls -lah ~/.claude-mem/*.db'
+
 # === Happy Coder (mobile/web access) ===
 alias h='happy'
 alias hs='happy status'
@@ -341,6 +357,12 @@ _box_auto_update() {
         npm update -g @anthropic-ai/claude-code >>"$log_file" 2>&1 || true
     fi
 
+    # Claude Code Plugins (update all installed plugins)
+    if command -v claude &>/dev/null; then
+        echo "[box] checking claude plugins..." >>"$log_file"
+        claude plugin update --all >>"$log_file" 2>&1 || true
+    fi
+
     # Codex (OpenAI)
     if command -v codex &>/dev/null && command -v npm &>/dev/null; then
         echo "[box] checking codex..." >>"$log_file"
@@ -375,6 +397,12 @@ _box_auto_update() {
     if command -v repomix &>/dev/null && command -v npm &>/dev/null; then
         echo "[box] checking repomix..." >>"$log_file"
         npm update -g repomix >>"$log_file" 2>&1 || true
+    fi
+
+    # ccusage (Claude Code usage tracker)
+    if command -v ccusage &>/dev/null && command -v bun &>/dev/null; then
+        echo "[box] checking ccusage..." >>"$log_file"
+        bun update -g ccusage >>"$log_file" 2>&1 || true
     fi
 
     # Homebrew (macOS)
