@@ -7,13 +7,7 @@
     "CLAUDE_CODE_MAX_THINKING_TOKENS": "32000"
   },
   "permissions": {
-    "allow": [
-      "WebSearch",
-      "Bash(gh:*)",
-      "Bash(git:*)",
-      "Bash(tree:*)",
-      "Bash(npm run build:*)"
-    ],
+    "allow": ["WebSearch", "Bash(gh:*)", "Bash(git:*)", "Bash(tree:*)", "Bash(npm run build:*)"],
     "deny": [],
     "defaultMode": "default"
   },
