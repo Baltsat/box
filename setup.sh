@@ -350,6 +350,12 @@ install_cli_tools() {
         log "installing ccusage"
         bun install -g ccusage || true
     fi
+
+    # organize (file automation)
+    if has_cmd uv && ! has_cmd organize; then
+        log "installing organize-tool"
+        uv tool install organize-tool || true
+    fi
 }
 
 # === Apply Tool Configs ===

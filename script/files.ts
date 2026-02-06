@@ -26,14 +26,19 @@ const links: [string, string][] = [
   ['tools/bashrc.sh', '.config/box/bashrc.sh'],
   // GitHub CLI
   ['tools/gh/config.yml', '.config/gh/config.yml'],
-  // Claude global instructions
+  // Global instructions (shared across all AI coding tools)
   ['GLOBAL.md', '.claude/CLAUDE.md'],
+  ['GLOBAL.md', '.gemini/GEMINI.md'],
+  ['GLOBAL.md', '.qwen/QWEN.md'],
+  ['GLOBAL.md', '.copilot/copilot-instructions.md'],
   // Zed
   ['tools/zed/settings.json', '.config/zed/settings.json'],
   // Zellij
   ['tools/zellij.kdl', '.config/zellij/config.kdl'],
   // Codex
   ['tools/codex.toml', '.codex/config.toml'],
+  // Organize (file automation)
+  ['tools/organize/config.yaml', '.config/organize/config.yaml'],
   // Claude Code statusline
   ['tools/claude/statusline.sh', '.claude/statusline.sh'],
   // Claude Code skills
@@ -68,6 +73,8 @@ const macos_links: [string, string][] = [
   ['tools/vscode/settings.json', 'Library/Application Support/Code/User/settings.json'],
   // Warp
   ['tools/warp/keybindings.yaml', '.warp/keybindings.yaml'],
+  // Organize drain (launchd)
+  ['tools/organize/com.organize.drain.plist', 'Library/LaunchAgents/com.organize.drain.plist'],
   // Claude Code
   ['tools/claude.json', '.claude/settings.json'],
 ];

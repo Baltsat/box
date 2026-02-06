@@ -173,6 +173,7 @@
     "coder-vscode.coder.tail645fbe.ts.net--Baltsat--pyspark.main": "linux",
     "coder-vscode.coder.tail645fbe.ts.net--Baltsat--tpu1.main": "linux",
     "coder-vscode.coder.tail645fbe.ts.net--baltsat--pyspark.main": "linux",
-    "coder-vscode.coder.tail645fbe.ts.net--Baltsat--rag.main": "linux"
+    "coder-vscode.coder.tail645fbe.ts.net--Baltsat--rag.main": "linux",
+    "coder-vscode.coder.tail645fbe.ts.net--baltsat--rag.main": "linux"
   }
 }

@@ -1,0 +1,64 @@
+# organize config — file automation rules
+# docs: https://organize.readthedocs.io
+# test: organize sim
+# run:  organize run
+
+rules:
+  # --- downloads drain ---
+  # files older than 7 days → inbox
+  - name: "drain old downloads"
+    locations:
+      - ~/Downloads/
+    filters:
+      - lastmodified:
+          days: 7
+          mode: older
+    actions:
+      - move:
+          dest: ~/00-inbox/downloads/
+          on_conflict: rename_new
+
+  # installers older than 30 days → trash
+  - name: "trash old installers"
+    locations:
+      - ~/Downloads/
+    filters:
+      - extension:
+          - dmg
+          - pkg
+      - lastmodified:
+          days: 30
+          mode: older
+    actions:
+      - trash
+
+  # --- desktop drain ---
+  # files (not folders) older than 14 days → inbox
+  - name: "drain old desktop files"
+    locations:
+      - ~/Desktop/
+    subfolders: false
+    filters:
+      - lastmodified:
+          days: 14
+          mode: older
+    actions:
+      - move:
+          dest: ~/00-inbox/desktop/
+          on_conflict: rename_new
+
+  # screenshots older than 7 days → Pictures
+  - name: "move old screenshots"
+    locations:
+      - ~/Desktop/
+    subfolders: false
+    filters:
+      - name:
+          contains: "Screenshot"
+      - lastmodified:
+          days: 7
+          mode: older
+    actions:
+      - move:
+          dest: ~/Pictures/screenshots/
+          on_conflict: rename_new
