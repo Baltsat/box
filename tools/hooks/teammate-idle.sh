@@ -10,7 +10,7 @@ COUNT=0
 [[ -f "$COUNTER_FILE" ]] && COUNT=$(cat "$COUNTER_FILE")
 
 if [[ $COUNT -lt 1 ]]; then
-    echo $((COUNT + 1)) > "$COUNTER_FILE"
+    echo $((COUNT + 1)) >"$COUNTER_FILE"
     cat >&2 <<'MSG'
 before going idle:
 1. run TaskList to check for remaining pending/unblocked tasks

@@ -9,8 +9,28 @@
   },
   "teammateMode": "tmux",
   "permissions": {
-    "allow": ["WebSearch", "Bash(git *)", "Bash(gh *)", "Bash(tree *)", "Bash(eza *)", "Bash(bun *)", "Bash(uv *)", "Bash(fd *)", "Bash(rg *)", "Bash(tmux *)", "Bash(npm run *)", "Bash(which *)", "Bash(* --version)", "Bash(* --help)"],
-    "deny": ["Bash(git push --force *)", "Bash(git reset --hard *)", "Bash(git filter-repo *)", "Bash(rm -rf ~/box*)"],
+    "allow": [
+      "WebSearch",
+      "Bash(git *)",
+      "Bash(gh *)",
+      "Bash(tree *)",
+      "Bash(eza *)",
+      "Bash(bun *)",
+      "Bash(uv *)",
+      "Bash(fd *)",
+      "Bash(rg *)",
+      "Bash(tmux *)",
+      "Bash(npm run *)",
+      "Bash(which *)",
+      "Bash(* --version)",
+      "Bash(* --help)"
+    ],
+    "deny": [
+      "Bash(git push --force *)",
+      "Bash(git reset --hard *)",
+      "Bash(git filter-repo *)",
+      "Bash(rm -rf ~/box*)"
+    ],
     "defaultMode": "acceptEdits"
   },
   "model": "opus",
