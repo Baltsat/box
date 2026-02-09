@@ -4,15 +4,41 @@
     "CLAUDE_BASH_TIMEOUT_MS": "600000",
     "CLAUDE_MAX_BASH_TIMEOUT_MS": "86400000",
     "CLAUDE_MAX_OUTPUT_TOKENS": "42069",
-    "CLAUDE_CODE_MAX_THINKING_TOKENS": "32000"
+    "CLAUDE_CODE_MAX_THINKING_TOKENS": "32000",
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
   },
+  "teammateMode": "tmux",
   "permissions": {
-    "allow": ["WebSearch", "Bash(gh:*)", "Bash(git:*)", "Bash(tree:*)", "Bash(npm run build:*)"],
-    "deny": [],
-    "defaultMode": "default"
+    "allow": ["WebSearch", "Bash(git *)", "Bash(gh *)", "Bash(tree *)", "Bash(eza *)", "Bash(bun *)", "Bash(uv *)", "Bash(fd *)", "Bash(rg *)", "Bash(tmux *)", "Bash(npm run *)", "Bash(which *)", "Bash(* --version)", "Bash(* --help)"],
+    "deny": ["Bash(git push --force *)", "Bash(git reset --hard *)", "Bash(git filter-repo *)", "Bash(rm -rf ~/box*)"],
+    "defaultMode": "acceptEdits"
   },
   "model": "opus",
-  "hooks": {},
+  "hooks": {
+    "TeammateIdle": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/box/tools/hooks/teammate-idle.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "TaskCompleted": [
+      {
+        "hooks": [
+          {
+            "type": "agent",
+            "prompt": "A task is being marked complete. Context: $ARGUMENTS\n\nYou MUST verify the task is genuinely done:\n1. Read any files mentioned in the task description to confirm changes exist\n2. Check for leftover TODOs, incomplete implementations, or placeholder code\n3. If the task involved code changes, grep for obvious issues (syntax errors, missing imports)\n4. Compare task subject/description against what was actually accomplished\n\nRespond {\"ok\": true} if genuinely complete, or {\"ok\": false, \"reason\": \"specific issue found\"} if not.",
+            "model": "haiku",
+            "timeout": 60
+          }
+        ]
+      }
+    ]
+  },
   "statusLine": {
     "type": "command",
     "command": "~/.claude/statusline.sh"
