@@ -41,6 +41,8 @@ const links: [string, string][] = [
   ['tools/organize/config.yaml', '.config/organize/config.yaml'],
   // Claude Code statusline
   ['tools/claude/statusline.sh', '.claude/statusline.sh'],
+  // Claude Code settings
+  ['tools/claude.json', '.claude/settings.json'],
   // Claude Code skills
   ['tools/claude/skills/deslop', '.claude/skills/deslop'],
   ['tools/claude/skills/simplify', '.claude/skills/simplify'],
@@ -75,11 +77,19 @@ const macos_links: [string, string][] = [
   ['tools/warp/keybindings.yaml', '.warp/keybindings.yaml'],
   // Organize drain (launchd)
   ['tools/organize/com.organize.drain.plist', 'Library/LaunchAgents/com.organize.drain.plist'],
-  // Claude Code
-  ['tools/claude.json', '.claude/settings.json'],
 ];
 
-const all_links = is_macos ? [...links, ...macos_links] : links;
+const linux_links: [string, string][] = [
+  // Cursor (Linux paths)
+  ['tools/cursor/settings.json', '.config/Cursor/User/settings.json'],
+  ['tools/cursor/keybindings.json', '.config/Cursor/User/keybindings.json'],
+  // Windsurf (Linux paths)
+  ['tools/windsurf/settings.json', '.config/Windsurf/User/settings.json'],
+  // VSCode (Linux paths)
+  ['tools/vscode/settings.json', '.config/Code/User/settings.json'],
+];
+
+const all_links = is_macos ? [...links, ...macos_links] : [...links, ...linux_links];
 
 for (const [src, dst] of all_links) {
   const src_path = join(root, src);
