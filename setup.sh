@@ -12,6 +12,25 @@ die() {
 }
 has_cmd() { command -v "$1" >/dev/null 2>&1; }
 
+# === Upfront Input Collection ===
+BOX_PASSPHRASE=""
+
+collect_passphrase() {
+    [[ -f "$SCRIPT_DIR/.env" ]] && return 0
+    [[ ! -f "$SCRIPT_DIR/.env.sops" ]] && return 0
+    local age_key="$HOME/.config/sops/age/keys.txt"
+    [[ -f "$age_key" ]] && [[ -s "$age_key" ]] && grep -q "AGE-SECRET-KEY-" "$age_key" 2>/dev/null && return 0
+    [[ ! -f "$SCRIPT_DIR/tools/sops-key.enc" ]] && return 0
+    read -rsp "[setup] enter your passphrase: " BOX_PASSPHRASE
+    echo
+}
+
+cache_sudo() {
+    has_cmd sudo || return 0
+    sudo -n true 2>/dev/null || sudo -v
+    (while kill -0 $$ 2>/dev/null; do sudo -n true; sleep 50; done) &
+}
+
 # === Pre-cleanup (ensure fresh state) ===
 # Remove invalid/empty age key so we get a fresh password prompt
 AGE_KEY_FILE="$HOME/.config/sops/age/keys.txt"
@@ -59,19 +78,6 @@ install_homebrew() {
 # === SOPS + AGE Commands ===
 # Use nix run for one-time execution to avoid conflicts with home-manager
 # After home-manager runs, age/sops will be in PATH from shared.nix
-run_age() {
-    if has_cmd age; then
-        age "$@"
-    elif has_cmd nix; then
-        nix --extra-experimental-features 'nix-command flakes' run nixpkgs#age -- "$@"
-    elif has_cmd brew; then
-        brew install age >/dev/null 2>&1
-        age "$@"
-    else
-        die "cannot run age: no package manager available"
-    fi
-}
-
 run_sops() {
     if has_cmd sops; then
         sops "$@"
@@ -111,11 +117,12 @@ decrypt_secrets() {
 
     if [[ "$need_key" == "true" ]]; then
         # Try to decrypt age key from passphrase-protected file
-        if [[ -f "$SCRIPT_DIR/tools/sops-key.age" ]]; then
-            log "decrypting age key from sops-key.age..."
-            log "enter your passphrase:"
+        if [[ -f "$SCRIPT_DIR/tools/sops-key.enc" ]]; then
+            log "decrypting age key..."
             mkdir -p "$(dirname "$SOPS_AGE_KEY_FILE")"
-            if ! run_age -d "$SCRIPT_DIR/tools/sops-key.age" >"$SOPS_AGE_KEY_FILE"; then
+            if ! BOX_PASSPHRASE="$BOX_PASSPHRASE" openssl enc -aes-256-cbc -pbkdf2 -d \
+                -in "$SCRIPT_DIR/tools/sops-key.enc" \
+                -pass env:BOX_PASSPHRASE >"$SOPS_AGE_KEY_FILE" 2>/dev/null; then
                 rm -f "$SOPS_AGE_KEY_FILE"
                 rm -rf "$SCRIPT_DIR" # remove ~/box so git clone works again
                 rm -f "$HOME/.box_setup_done"
@@ -288,43 +295,16 @@ install_cli_tools() {
         return 0
     fi
 
-    # Claude Code (always update to latest — config requires recent features)
-    if has_cmd claude; then
-        log "updating claude-code"
-        npm update -g @anthropic-ai/claude-code || true
-    else
-        log "installing claude-code"
-        npm install -g @anthropic-ai/claude-code || true
-    fi
+    local npm_pkgs=("@anthropic-ai/claude-code")
+    has_cmd codex || npm_pkgs+=("@openai/codex")
+    has_cmd gemini || npm_pkgs+=("@google/gemini-cli")
+    has_cmd qwen || npm_pkgs+=("@qwen-code/qwen-code@latest")
+    has_cmd happy || npm_pkgs+=("happy-coder")
+    has_cmd repomix || npm_pkgs+=("repomix")
 
-    # Codex (OpenAI)
-    if ! has_cmd codex; then
-        log "installing codex"
-        npm install -g @openai/codex || true
-    fi
-
-    # Gemini CLI
-    if ! has_cmd gemini; then
-        log "installing gemini-cli"
-        npm install -g @google/gemini-cli || true
-    fi
-
-    # Qwen Code
-    if ! has_cmd qwen; then
-        log "installing qwen-code"
-        npm install -g @qwen-code/qwen-code@latest || true
-    fi
-
-    # Happy Coder (mobile/web access to Claude Code)
-    if ! has_cmd happy; then
-        log "installing happy-coder"
-        npm install -g happy-coder || true
-    fi
-
-    # Repomix
-    if ! has_cmd repomix; then
-        log "installing repomix"
-        npm install -g repomix || true
+    if [[ ${#npm_pkgs[@]} -gt 0 ]]; then
+        log "installing/updating: ${npm_pkgs[*]}"
+        npm install -g "${npm_pkgs[@]}" || true
     fi
 
     # Omnara (AI agent control platform)
@@ -635,6 +615,8 @@ log "============================================"
 log "       box setup - full system config      "
 log "============================================"
 
+collect_passphrase
+cache_sudo
 source_nix
 install_homebrew
 install_nix
