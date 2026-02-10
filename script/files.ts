@@ -134,9 +134,7 @@ console.log(`[files] linked ${all_links.length} configs`);
 
 // Files that should be COPIED (not symlinked) because the target app rewrites them.
 // Symlinks would cause the app to overwrite the source file in git.
-const copies: [string, string][] = [
-  ['tools/claude.json', '.claude/settings.json'],
-];
+const copies: [string, string][] = [['tools/claude.json', '.claude/settings.json']];
 
 for (const [src, dst] of copies) {
   const src_path = join(root, src);

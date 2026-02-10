@@ -288,8 +288,11 @@ install_cli_tools() {
         return 0
     fi
 
-    # Claude Code
-    if ! has_cmd claude; then
+    # Claude Code (always update to latest — config requires recent features)
+    if has_cmd claude; then
+        log "updating claude-code"
+        npm update -g @anthropic-ai/claude-code || true
+    else
         log "installing claude-code"
         npm install -g @anthropic-ai/claude-code || true
     fi
