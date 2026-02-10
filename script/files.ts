@@ -41,8 +41,6 @@ const links: [string, string][] = [
   ['tools/organize/config.yaml', '.config/organize/config.yaml'],
   // Claude Code statusline
   ['tools/claude/statusline.sh', '.claude/statusline.sh'],
-  // Claude Code settings
-  ['tools/claude.json', '.claude/settings.json'],
   // Claude Code skills
   ['tools/claude/skills/deslop', '.claude/skills/deslop'],
   ['tools/claude/skills/simplify', '.claude/skills/simplify'],
@@ -133,3 +131,32 @@ for (const [src, dst] of all_links) {
 }
 
 console.log(`[files] linked ${all_links.length} configs`);
+
+// Files that should be COPIED (not symlinked) because the target app rewrites them.
+// Symlinks would cause the app to overwrite the source file in git.
+const copies: [string, string][] = [
+  ['tools/claude.json', '.claude/settings.json'],
+];
+
+for (const [src, dst] of copies) {
+  const src_path = join(root, src);
+  const dst_path = join(home, dst);
+  const dst_dir = dirname(dst_path);
+
+  await $`mkdir -p ${dst_dir}`.quiet();
+
+  const src_exists = await $`test -e ${src_path}`.quiet().nothrow();
+  if (src_exists.exitCode !== 0) {
+    console.log(`[files] ⚠️  skipped (source missing): ${src}`);
+    continue;
+  }
+
+  // Remove existing symlink if present (migration from old symlink approach)
+  const is_symlink = await $`test -L ${dst_path}`.quiet().nothrow();
+  if (is_symlink.exitCode === 0) {
+    await $`rm -f ${dst_path}`.quiet();
+  }
+
+  await $`cp ${src_path} ${dst_path}`;
+  console.log(`[files] ${src} -> ${dst} (copied)`);
+}
