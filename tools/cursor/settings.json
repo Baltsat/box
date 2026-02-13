@@ -178,6 +178,10 @@
     "coder-vscode.coder.tail645fbe.ts.net--Baltsat--steinmetz.main": "linux",
     "coder-vscode.coder.tail645fbe.ts.net--Baltsat--comp-neuro.main": "linux",
     "coder-vscode.coder.tail645fbe.ts.net--baltsat--steinmetz.main": "linux",
-    "coder-vscode.coder.tail645fbe.ts.net--baltsat--comp-neuro.main": "linux"
-  }
+    "coder-vscode.coder.tail645fbe.ts.net--baltsat--comp-neuro.main": "linux",
+    "coder-vscode.coder.tail645fbe.ts.net--Baltsat--metadata-messengers.main": "linux"
+  },
+  "workbench.preferredLightColorTheme": "Cursor Dark",
+
+  "claudeCode.useTerminal": true
 }

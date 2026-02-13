@@ -28,7 +28,10 @@ collect_passphrase() {
 cache_sudo() {
     has_cmd sudo || return 0
     sudo -n true 2>/dev/null || sudo -v
-    (while kill -0 $$ 2>/dev/null; do sudo -n true; sleep 50; done) &
+    (while kill -0 $$ 2>/dev/null; do
+        sudo -n true
+        sleep 50
+    done) &
 }
 
 # === Pre-cleanup (ensure fresh state) ===
