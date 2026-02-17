@@ -610,6 +610,10 @@ link_configs() {
     if has_cmd bun && [[ -f "$SCRIPT_DIR/script/files.ts" ]]; then
         log "symlinking config files"
         bun "$SCRIPT_DIR/script/files.ts" || true
+    else
+        log "bun not available, copying critical configs manually"
+        mkdir -p "$HOME/.claude"
+        [[ -f "$SCRIPT_DIR/tools/claude.json" ]] && cp "$SCRIPT_DIR/tools/claude.json" "$HOME/.claude/settings.json"
     fi
 }
 
