@@ -50,7 +50,7 @@
       {
         "hooks": [
           {
-            "type": "prompt",
+            "type": "agent",
             "prompt": "A task is being marked complete. Context: $ARGUMENTS\n\nYou MUST verify the task is genuinely done:\n1. Read any files mentioned in the task description to confirm changes exist\n2. Check for leftover TODOs, incomplete implementations, or placeholder code\n3. If the task involved code changes, grep for obvious issues (syntax errors, missing imports)\n4. Compare task subject/description against what was actually accomplished\n\nRespond {\"ok\": true} if genuinely complete, or {\"ok\": false, \"reason\": \"specific issue found\"} if not.",
             "model": "haiku",
             "timeout": 60
@@ -69,5 +69,6 @@
   "spinnerTipsEnabled": false,
   "alwaysThinkingEnabled": true,
   "autoUpdatesChannel": "latest",
-  "promptCaching": true
+  "promptCaching": true,
+  "skipDangerousModePermissionPrompt": true
 }
