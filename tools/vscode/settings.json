@@ -130,6 +130,7 @@
   "github.copilot.nextEditSuggestions.enabled": true,
   "chat.instructionsFilesLocations": {
     ".github/instructions": true,
+    ".claude/rules": true,
     "/var/folders/21/y86c10js68qf99_cy3_2n_gm0000gn/T/postman-collections-post-response.instructions.md": true,
     "/var/folders/21/y86c10js68qf99_cy3_2n_gm0000gn/T/postman-collections-pre-request.instructions.md": true,
     "/var/folders/21/y86c10js68qf99_cy3_2n_gm0000gn/T/postman-folder-post-response.instructions.md": true,
@@ -197,7 +198,8 @@
     "coder-vscode.coder.tail645fbe.ts.net--Baltsat--baltsat-test.main": "linux",
     "coder-vscode.coder.tail645fbe.ts.net--Baltsat--main.main": "linux",
     "coder-vscode.coder.tail645fbe.ts.net--baltsat--main.main": "linux",
-    "coder-vscode.coder.tail645fbe.ts.net--Baltsat--tpu.main": "linux"
+    "coder-vscode.coder.tail645fbe.ts.net--Baltsat--tpu.main": "linux",
+    "coder-vscode.coder.tail645fbe.ts.net--Baltsat--rag.main": "linux"
   },
   "remote.SSH.connectTimeout": 1800,
   "claudeCode.preferredLocation": "panel"
