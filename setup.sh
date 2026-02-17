@@ -331,6 +331,12 @@ install_cli_tools() {
         fi
     fi
 
+    # Claude Code native installer (auto-updates, ~/.local/bin/claude)
+    if has_cmd claude; then
+        log "setting up claude native installer"
+        claude install || true
+    fi
+
     # ccusage (Claude Code usage tracker)
     if has_cmd bun && ! has_cmd ccusage; then
         log "installing ccusage"
