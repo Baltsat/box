@@ -62,8 +62,11 @@ install_nix() {
     if [[ -f /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh ]]; then
         if ! pgrep -x nix-daemon >/dev/null 2>&1; then
             log "starting nix daemon"
-            sudo nix-daemon &
-            sleep 2
+            sudo /nix/var/nix/profiles/default/bin/nix-daemon &
+            for i in $(seq 1 15); do
+                [[ -S /nix/var/nix/daemon-socket/socket ]] && break
+                sleep 1
+            done
         fi
     fi
     has_cmd nix || die "nix installation failed"
