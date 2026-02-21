@@ -132,11 +132,12 @@ for (const [src, dst] of all_links) {
 
 console.log(`[files] linked ${all_links.length} configs`);
 
-// Files that should be COPIED (not symlinked) because the target app rewrites them.
+// Files that should be MERGED (not symlinked) because the target app rewrites them.
 // Symlinks would cause the app to overwrite the source file in git.
-const copies: [string, string][] = [['tools/claude.json', '.claude/settings.json']];
+// Deep merge ensures our config (hooks, env, etc.) survives app rewrites.
+const merges: [string, string][] = [['tools/claude.json', '.claude/settings.json']];
 
-for (const [src, dst] of copies) {
+for (const [src, dst] of merges) {
   const src_path = join(root, src);
   const dst_path = join(home, dst);
   const dst_dir = dirname(dst_path);
@@ -155,6 +156,20 @@ for (const [src, dst] of copies) {
     await $`rm -f ${dst_path}`.quiet();
   }
 
-  await $`cp ${src_path} ${dst_path}`;
-  console.log(`[files] ${src} -> ${dst} (copied)`);
+  const dst_exists = await $`test -f ${dst_path}`.quiet().nothrow();
+  if (dst_exists.exitCode === 0) {
+    try {
+      const existing = await Bun.file(dst_path).json();
+      const source = await Bun.file(src_path).json();
+      const merged = { ...existing, ...source, hooks: { ...existing.hooks, ...source.hooks } };
+      await Bun.write(dst_path, JSON.stringify(merged, null, 2) + '\n');
+      console.log(`[files] ${src} -> ${dst} (merged)`);
+    } catch {
+      await $`cp ${src_path} ${dst_path}`;
+      console.log(`[files] ${src} -> ${dst} (merge failed, copied)`);
+    }
+  } else {
+    await $`cp ${src_path} ${dst_path}`;
+    console.log(`[files] ${src} -> ${dst} (copied)`);
+  }
 }

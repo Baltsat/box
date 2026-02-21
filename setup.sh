@@ -622,7 +622,20 @@ link_configs() {
     else
         log "bun not available, copying critical configs manually"
         mkdir -p "$HOME/.claude"
-        [[ -f "$SCRIPT_DIR/tools/claude.json" ]] && cp "$SCRIPT_DIR/tools/claude.json" "$HOME/.claude/settings.json"
+        if [[ -f "$SCRIPT_DIR/tools/claude.json" ]]; then
+            if [[ -f "$HOME/.claude/settings.json" ]] && has_cmd jq; then
+                if jq -s '.[0] * .[1]' "$HOME/.claude/settings.json" "$SCRIPT_DIR/tools/claude.json" > "$HOME/.claude/settings.json.tmp" 2>/dev/null \
+                    && mv "$HOME/.claude/settings.json.tmp" "$HOME/.claude/settings.json"; then
+                    log "merged claude settings"
+                else
+                    rm -f "$HOME/.claude/settings.json.tmp"
+                    cp "$SCRIPT_DIR/tools/claude.json" "$HOME/.claude/settings.json"
+                    log "merge failed, copied claude settings"
+                fi
+            else
+                cp "$SCRIPT_DIR/tools/claude.json" "$HOME/.claude/settings.json"
+            fi
+        fi
     fi
 }
 
