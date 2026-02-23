@@ -296,22 +296,40 @@ setup_shell_config() {
 
 # === Node.js CLI Tools ===
 install_cli_tools() {
-    if ! has_cmd node; then
-        log "node not found, will be installed by nix"
+    # Bun global binaries land in ~/.bun/bin.
+    [[ -d "$HOME/.bun/bin" ]] && export PATH="$HOME/.bun/bin:$PATH"
+
+    if ! has_cmd bun && ! has_cmd npm; then
+        log "bun/npm not found, skipping JS CLI tool installation"
         return 0
     fi
 
-    local npm_pkgs=("@anthropic-ai/claude-code")
-    has_cmd codex || npm_pkgs+=("@openai/codex")
-    has_cmd gemini || npm_pkgs+=("@google/gemini-cli")
-    has_cmd qwen || npm_pkgs+=("@qwen-code/qwen-code@latest")
-    has_cmd happy || npm_pkgs+=("happy-coder")
-    has_cmd repomix || npm_pkgs+=("repomix")
+    install_js_cli() {
+        local pkg="$1"
+        local cmd="$2"
+        local mode="${3:-missing}" # missing|always
 
-    if [[ ${#npm_pkgs[@]} -gt 0 ]]; then
-        log "installing/updating: ${npm_pkgs[*]}"
-        npm install -g "${npm_pkgs[@]}" || true
-    fi
+        if [[ "$mode" != "always" ]] && has_cmd "$cmd"; then
+            return 0
+        fi
+
+        if has_cmd bun; then
+            log "installing $pkg via bun"
+            bun install -g "$pkg" || true
+        elif has_cmd npm; then
+            log "bun not found, installing $pkg via npm"
+            npm install -g "$pkg" || true
+        else
+            log "bun/npm not found, skipping $pkg"
+        fi
+    }
+
+    install_js_cli "@anthropic-ai/claude-code" "claude" "always"
+    install_js_cli "@openai/codex" "codex"
+    install_js_cli "@google/gemini-cli" "gemini"
+    install_js_cli "@qwen-code/qwen-code@latest" "qwen"
+    install_js_cli "happy-coder" "happy"
+    install_js_cli "repomix" "repomix"
 
     # Omnara (AI agent control platform)
     if ! has_cmd omnara; then
@@ -624,8 +642,8 @@ link_configs() {
         mkdir -p "$HOME/.claude"
         if [[ -f "$SCRIPT_DIR/tools/claude.json" ]]; then
             if [[ -f "$HOME/.claude/settings.json" ]] && has_cmd jq; then
-                if jq -s '.[0] * .[1]' "$HOME/.claude/settings.json" "$SCRIPT_DIR/tools/claude.json" > "$HOME/.claude/settings.json.tmp" 2>/dev/null \
-                    && mv "$HOME/.claude/settings.json.tmp" "$HOME/.claude/settings.json"; then
+                if jq -s '.[0] * .[1]' "$HOME/.claude/settings.json" "$SCRIPT_DIR/tools/claude.json" >"$HOME/.claude/settings.json.tmp" 2>/dev/null &&
+                    mv "$HOME/.claude/settings.json.tmp" "$HOME/.claude/settings.json"; then
                     log "merged claude settings"
                 else
                     rm -f "$HOME/.claude/settings.json.tmp"

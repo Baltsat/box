@@ -49,7 +49,7 @@ export BASH_SILENCE_DEPRECATION_WARNING=1
 # =============================================================================
 # PATH
 # =============================================================================
-export PATH="$HOME/.local/bin:$HOME/.nix-profile/bin:/nix/var/nix/profiles/default/bin:$HOME/.omnara/bin:$PATH"
+export PATH="$HOME/.local/bin:$HOME/.bun/bin:$HOME/.nix-profile/bin:/nix/var/nix/profiles/default/bin:$HOME/.omnara/bin:$PATH"
 
 # =============================================================================
 # NIX
@@ -107,6 +107,14 @@ _box_first_time_setup() {
             echo "[box] installing node lts..."
             nvm install --lts >/dev/null 2>&1 && echo "[box] node installed"
         fi
+    fi
+
+    # Bun runtime (needed by box scripts and tooling)
+    if ! command -v bun &>/dev/null; then
+        echo "[box] installing bun..."
+        curl -fsSL https://bun.sh/install | bash >/dev/null 2>&1 || failed=1
+        [[ -d "$HOME/.bun/bin" ]] && export PATH="$HOME/.bun/bin:$PATH"
+        command -v bun &>/dev/null && echo "[box] bun installed"
     fi
 
     # TPM (Tmux Plugin Manager)
@@ -195,17 +203,31 @@ TMUX_CONF
         echo "[box] tmux.conf created! run: tmux, then prefix+I to install plugins"
     fi
 
-    # npm global packages
-    if command -v npm &>/dev/null; then
-        for pkg in "@anthropic-ai/claude-code:claude" "@openai/codex:codex" "repomix:repomix" "happy-coder:happy"; do
-            local name="${pkg%%:*}"
-            local cmd="${pkg##*:}"
-            if ! command -v "$cmd" &>/dev/null; then
-                echo "[box] installing $name..."
-                npm install -g "$name" 2>/dev/null && echo "[box] $name installed"
-            fi
-        done
-    fi
+    # JS CLI tools: prefer Bun global install, fallback to npm.
+    _install_js_cli() {
+        local pkg="$1"
+        local cmd="$2"
+        command -v "$cmd" &>/dev/null && return 0
+
+        if command -v bun &>/dev/null; then
+            echo "[box] installing $pkg via bun..."
+            bun install -g "$pkg" >/dev/null 2>&1 && echo "[box] $pkg installed" && return 0
+        fi
+
+        if command -v npm &>/dev/null; then
+            echo "[box] bun not found, installing $pkg via npm..."
+            npm install -g "$pkg" >/dev/null 2>&1 && echo "[box] $pkg installed" && return 0
+        fi
+
+        failed=1
+    }
+
+    _install_js_cli "@anthropic-ai/claude-code" "claude"
+    _install_js_cli "@openai/codex" "codex"
+    _install_js_cli "@google/gemini-cli" "gemini"
+    _install_js_cli "@qwen-code/qwen-code@latest" "qwen"
+    _install_js_cli "happy-coder" "happy"
+    _install_js_cli "repomix" "repomix"
 
     # Omnara (AI agent control platform)
     if ! command -v omnara &>/dev/null; then
@@ -248,6 +270,18 @@ TMUX_CONF
 
 _box_first_time_setup
 
+# Ensure Bun exists even if first-time setup already completed earlier.
+_box_ensure_bun() {
+    command -v bun &>/dev/null && return 0
+    command -v curl &>/dev/null || return 0
+    echo "[box] bun missing, installing..."
+    curl -fsSL https://bun.sh/install | bash >/dev/null 2>&1 || return 0
+    [[ -d "$HOME/.bun/bin" ]] && export PATH="$HOME/.bun/bin:$PATH"
+    command -v bun &>/dev/null && echo "[box] bun installed"
+}
+
+_box_ensure_bun
+
 # =============================================================================
 # NVM (load after setup)
 # =============================================================================
@@ -256,6 +290,32 @@ export NVM_DIR="$HOME/.nvm"
 [[ -s "$NVM_DIR/nvm.sh" ]] && . "$NVM_DIR/nvm.sh"
 # shellcheck source=/dev/null
 [[ -s "$NVM_DIR/bash_completion" ]] && . "$NVM_DIR/bash_completion"
+
+# Ensure key JS CLIs exist on server shells; prefer Bun, fallback to npm.
+_box_ensure_js_cli() {
+    local pkg="$1"
+    local cmd="$2"
+    command -v "$cmd" &>/dev/null && return 0
+
+    if command -v bun &>/dev/null; then
+        echo "[box] $cmd missing, installing via bun..."
+        bun install -g "$pkg" >/dev/null 2>&1 || return 0
+    elif command -v npm &>/dev/null; then
+        echo "[box] $cmd missing, installing via npm..."
+        npm install -g "$pkg" >/dev/null 2>&1 || return 0
+    else
+        return 0
+    fi
+
+    command -v "$cmd" &>/dev/null && echo "[box] $cmd installed"
+}
+
+_box_ensure_js_cli "@anthropic-ai/claude-code" "claude"
+_box_ensure_js_cli "@openai/codex" "codex"
+_box_ensure_js_cli "@google/gemini-cli" "gemini"
+_box_ensure_js_cli "@qwen-code/qwen-code@latest" "qwen"
+_box_ensure_js_cli "happy-coder" "happy"
+_box_ensure_js_cli "repomix" "repomix"
 
 # =============================================================================
 # PROMPT (fallback if starship not available)
