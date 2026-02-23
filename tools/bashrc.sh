@@ -68,6 +68,15 @@ _box_first_time_setup() {
     echo "[box] first-time setup detected..."
     local failed=0
 
+    # Load box env early so tokens like PYX_API_KEY/GH_TOKEN are available.
+    local box_env="${BOX_DIR:-$HOME/box}/.env"
+    if [[ -f "$box_env" ]]; then
+        set -a
+        # shellcheck source=/dev/null
+        source "$box_env"
+        set +a
+    fi
+
     # Helper
     _install_apt() {
         local pkg="$1"
@@ -373,6 +382,23 @@ fi
 
 # UV index for preference-model packages (hawaii cli, etc.)
 export UV_INDEX="https://api.pyx.dev/simple/preference-model/main"
+
+# Ensure Hawaii is available when uv + PYX_API_KEY are present.
+_box_ensure_hawaii() {
+    command -v hawaii &>/dev/null && return 0
+    command -v uv &>/dev/null || return 0
+    [[ -n "${PYX_API_KEY:-}" ]] || return 0
+
+    echo "[box] hawaii missing, installing..."
+    UV_INDEX="https://api.pyx.dev/simple/preference-model/main" uv tool install pm-hawaii-cli >/dev/null 2>&1 || return 0
+    command -v hawaii &>/dev/null && echo "[box] hawaii installed"
+
+    if command -v hawaii &>/dev/null && ! hawaii auth status &>/dev/null 2>&1; then
+        hawaii auth login --no-browser >/dev/null 2>&1 || true
+    fi
+}
+
+_box_ensure_hawaii
 
 # =============================================================================
 # AUTO-UPDATE (once per day, background, non-blocking)

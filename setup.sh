@@ -296,13 +296,22 @@ setup_shell_config() {
 
 # === Node.js CLI Tools ===
 install_cli_tools() {
+    # Load secrets/env early so PYX_API_KEY is available for Hawaii install.
+    if [[ -f "$SCRIPT_DIR/.env" ]]; then
+        set -a
+        # shellcheck source=/dev/null
+        source "$SCRIPT_DIR/.env"
+        set +a
+    fi
+
     # Bun global binaries land in ~/.bun/bin.
     [[ -d "$HOME/.bun/bin" ]] && export PATH="$HOME/.bun/bin:$PATH"
 
-    if ! has_cmd bun && ! has_cmd npm; then
-        log "bun/npm not found, skipping JS CLI tool installation"
-        return 0
-    fi
+    local has_bun=false
+    local has_npm=false
+    has_cmd bun && has_bun=true
+    has_cmd npm && has_npm=true
+    [[ "$has_bun" == "false" && "$has_npm" == "false" ]] && log "bun/npm not found, skipping JS CLI tool installation"
 
     install_js_cli() {
         local pkg="$1"
@@ -313,10 +322,10 @@ install_cli_tools() {
             return 0
         fi
 
-        if has_cmd bun; then
+        if [[ "$has_bun" == "true" ]]; then
             log "installing $pkg via bun"
             bun install -g "$pkg" || true
-        elif has_cmd npm; then
+        elif [[ "$has_npm" == "true" ]]; then
             log "bun not found, installing $pkg via npm"
             npm install -g "$pkg" || true
         else
