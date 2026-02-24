@@ -68,6 +68,29 @@ fmt_python() {
     log "python formatted"
 }
 
+# Sync claude settings (merge tools/claude.json → ~/.claude/settings.json)
+sync_claude() {
+    local src="$BOX_DIR/tools/claude.json"
+    local dst="$HOME/.claude/settings.json"
+    [[ -f "$src" ]] || return 0
+    has_cmd jq || return 0
+    if [[ -f "$dst" ]]; then
+        local tmp
+        tmp=$(mktemp)
+        if jq -s '.[0] * .[1]' "$dst" "$src" >"$tmp" 2>/dev/null && mv "$tmp" "$dst"; then
+            log "claude settings synced"
+        else
+            rm -f "$tmp"
+            cp "$src" "$dst"
+            log "claude settings copied (merge failed)"
+        fi
+    else
+        mkdir -p "$(dirname "$dst")"
+        cp "$src" "$dst"
+        log "claude settings created"
+    fi
+}
+
 # Encrypt secrets with SOPS (only if .env changed)
 run_sops() {
     [[ -f "$BOX_DIR/.env" ]] || return 0
@@ -101,6 +124,7 @@ run_all() {
     fmt_json
     fmt_typescript
     fmt_python
+    sync_claude
     run_sops
     log "done"
 }
