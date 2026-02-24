@@ -162,6 +162,16 @@ history rewrites (filter-repo, filter-branch, rebase -i, etc):
 - MUST get EXPLICIT approval before any push
 - user says "approve push" or similar → then and only then push
 - if you accidentally delete files from history, user will be VERY upset
+
+bugs:
+google/search FIRST. 5 min research > 1hr guessing blind.
+
+irreversible actions (delete, overwrite, force-push, drop, reset):
+backup FIRST. then ask permission. no backup + no permission = DON'T.
+
+parallelism:
+start long-running tasks first. overlap independent ops.
+don't wait sequentially when operations are independent.
 </critical>
 
 <style severity="critical">

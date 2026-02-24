@@ -199,8 +199,11 @@
     "coder-vscode.coder.tail645fbe.ts.net--Baltsat--main.main": "linux",
     "coder-vscode.coder.tail645fbe.ts.net--baltsat--main.main": "linux",
     "coder-vscode.coder.tail645fbe.ts.net--Baltsat--tpu.main": "linux",
-    "coder-vscode.coder.tail645fbe.ts.net--Baltsat--rag.main": "linux"
+    "coder-vscode.coder.tail645fbe.ts.net--Baltsat--rag.main": "linux",
+    "coder-vscode.coder.tail645fbe.ts.net--Baltsat--messengers.main": "linux",
+    "coder-vscode.coder.tail645fbe.ts.net--Baltsat--representation-matching.main": "linux"
   },
   "remote.SSH.connectTimeout": 1800,
-  "claudeCode.preferredLocation": "panel"
+  "claudeCode.preferredLocation": "panel",
+  "workbench.preferredLightColorTheme": "Default Dark Modern"
 }
