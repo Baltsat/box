@@ -78,6 +78,9 @@ alias preview='open -a "Preview"'
 
 # === Claude ===
 alias claude='claude --dangerously-skip-permissions'
+alias codex='codex --dangerously-bypass-approvals-and-sandbox'
+alias gemini='gemini --yolo'
+alias qwen='qwen --yolo'
 
 # Claude-mem memory sync (between machines)
 # Usage: mem-push <server> or mem-pull <server>

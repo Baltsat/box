@@ -183,7 +183,8 @@
     "coder-vscode.coder.tail645fbe.ts.net--Baltsat--messengers.main": "linux",
     "coder-vscode.coder.tail645fbe.ts.net--Baltsat--coder.main": "linux",
     "coder-vscode.coder.tail645fbe.ts.net--baltsat--messengers.main": "linux",
-    "coder-vscode.coder.tail645fbe.ts.net--Baltsat--representation-matching.main": "linux"
+    "coder-vscode.coder.tail645fbe.ts.net--Baltsat--representation-matching.main": "linux",
+    "coder-vscode.coder.tail645fbe.ts.net--baltsat--representation-matching.main": "linux"
   },
   "workbench.preferredLightColorTheme": "Cursor Dark",
 
