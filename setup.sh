@@ -290,6 +290,7 @@ setup_shell_config() {
         if [[ -f "$shell_rc" ]] && ! grep -qF "box/.env" "$shell_rc"; then
             log "adding .env sourcing to $shell_rc"
             echo "[ -f \"$SCRIPT_DIR/.env\" ] && set -a && $env_line && set +a" >>"$shell_rc"
+            echo "unset ANTHROPIC_API_KEY  # claude code uses subscription by default" >>"$shell_rc"
         fi
     fi
 }
