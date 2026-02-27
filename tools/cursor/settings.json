@@ -184,7 +184,8 @@
     "coder-vscode.coder.tail645fbe.ts.net--Baltsat--coder.main": "linux",
     "coder-vscode.coder.tail645fbe.ts.net--baltsat--messengers.main": "linux",
     "coder-vscode.coder.tail645fbe.ts.net--Baltsat--representation-matching.main": "linux",
-    "coder-vscode.coder.tail645fbe.ts.net--baltsat--representation-matching.main": "linux"
+    "coder-vscode.coder.tail645fbe.ts.net--baltsat--representation-matching.main": "linux",
+    "ssh konstantinbaltsat@35.192.111.203": "linux"
   },
   "workbench.preferredLightColorTheme": "Cursor Dark",
 

@@ -770,15 +770,15 @@ EOF
         return 1
     }
 
-    local happy_base_cmd="happy --yolo"
-    local happy_continue_cmd="happy --resume --yolo"
-    ! command -v happy &>/dev/null && {
+    local cli_base_cmd="claude --dangerously-skip-permissions"
+    local cli_continue_cmd="claude --dangerously-skip-permissions -c"
+    ! command -v claude &>/dev/null && {
         [[ -n "$prompt" ]] && {
-            echo "error: happy not found"
+            echo "error: claude not found"
             return 1
         }
-        happy_base_cmd="bash"
-        happy_continue_cmd="bash"
+        cli_base_cmd="bash"
+        cli_continue_cmd="bash"
     }
 
     local session_name
@@ -789,13 +789,13 @@ EOF
         if [[ "$create_new" == true ]]; then
             local new_window="code-${dir_name}-$(date +%H%M%S)"
             if tmux has-session -t "$session_name" 2>/dev/null; then
-                [[ -n "$prompt" ]] && tmux new-window -d -t "$session_name:" -n "$new_window" -c "$current_dir" "$happy_base_cmd '$prompt'" ||
-                    tmux new-window -d -t "$session_name:" -n "$new_window" -c "$current_dir" "$happy_base_cmd"
+                [[ -n "$prompt" ]] && tmux new-window -d -t "$session_name:" -n "$new_window" -c "$current_dir" "$cli_base_cmd '$prompt'" ||
+                    tmux new-window -d -t "$session_name:" -n "$new_window" -c "$current_dir" "$cli_base_cmd"
                 echo "${session_name}|${new_window}|${current_dir}|${prompt}" >>"$CODE_HISTORY_FILE"
                 tmux attach-session -t "$session_name" \; select-window -t "$new_window"
             else
-                [[ -n "$prompt" ]] && tmux new-session -s "$session_name" -n "$new_window" -c "$current_dir" "$happy_base_cmd '$prompt'" ||
-                    tmux new-session -s "$session_name" -n "$new_window" -c "$current_dir" "$happy_base_cmd"
+                [[ -n "$prompt" ]] && tmux new-session -s "$session_name" -n "$new_window" -c "$current_dir" "$cli_base_cmd '$prompt'" ||
+                    tmux new-session -s "$session_name" -n "$new_window" -c "$current_dir" "$cli_base_cmd"
                 echo "${session_name}|${new_window}|${current_dir}|${prompt}" >>"$CODE_HISTORY_FILE"
             fi
             return 0
@@ -807,7 +807,7 @@ EOF
                 local wp wc
                 wp=$(tmux display-message -p -t "$session_name:$window" "#{pane_current_path}" 2>/dev/null)
                 wc=$(tmux display-message -p -t "$session_name:$window" "#{pane_current_command}" 2>/dev/null)
-                [[ "$wp" == "$current_dir" ]] && [[ "$wc" == *"happy"* ]] && existing+=("$window")
+                [[ "$wp" == "$current_dir" ]] && [[ "$wc" == *"claude"* ]] && existing+=("$window")
             done < <(tmux list-windows -t "$session_name" -F '#W' 2>/dev/null | grep '^code')
 
             if [[ ${#existing[@]} -gt 0 ]]; then
@@ -815,15 +815,15 @@ EOF
                 echo "${session_name}|${existing[-1]}|${current_dir}|${prompt}" >>"$CODE_HISTORY_FILE"
             else
                 local wn="code-${dir_name}"
-                [[ -n "$prompt" ]] && tmux new-window -d -t "$session_name:" -n "$wn" -c "$current_dir" "happy --resume '$prompt'" ||
-                    tmux new-window -d -t "$session_name:" -n "$wn" -c "$current_dir" "$happy_continue_cmd"
+                [[ -n "$prompt" ]] && tmux new-window -d -t "$session_name:" -n "$wn" -c "$current_dir" "claude --dangerously-skip-permissions -c '$prompt'" ||
+                    tmux new-window -d -t "$session_name:" -n "$wn" -c "$current_dir" "$cli_continue_cmd"
                 echo "${session_name}|${wn}|${current_dir}|${prompt}" >>"$CODE_HISTORY_FILE"
                 tmux attach-session -t "$session_name" \; select-window -t "$wn"
             fi
         else
             local wn="code-${dir_name}"
-            [[ -n "$prompt" ]] && tmux new-session -s "$session_name" -n "$wn" -c "$current_dir" "$happy_base_cmd '$prompt'" ||
-                tmux new-session -s "$session_name" -n "$wn" -c "$current_dir" "$happy_base_cmd"
+            [[ -n "$prompt" ]] && tmux new-session -s "$session_name" -n "$wn" -c "$current_dir" "$cli_base_cmd '$prompt'" ||
+                tmux new-session -s "$session_name" -n "$wn" -c "$current_dir" "$cli_base_cmd"
             echo "${session_name}|${wn}|${current_dir}|${prompt}" >>"$CODE_HISTORY_FILE"
         fi
         return 0
@@ -836,8 +836,8 @@ EOF
     if [[ "$create_new" == true ]]; then
         window_name="code-${dir_name}-$(date +%H%M%S)"
         tmux list-windows -F '#W' | grep -q "^${window_name}$" && window_name="${window_name}-$(date +%N | cut -c1-3)"
-        [[ -n "$prompt" ]] && tmux new-window -n "$window_name" -c "$current_dir" "$happy_base_cmd '$prompt'" ||
-            tmux new-window -n "$window_name" -c "$current_dir" "$happy_base_cmd"
+        [[ -n "$prompt" ]] && tmux new-window -n "$window_name" -c "$current_dir" "$cli_base_cmd '$prompt'" ||
+            tmux new-window -n "$window_name" -c "$current_dir" "$cli_base_cmd"
         echo "${current_session}|${window_name}|${current_dir}|${prompt}" >>"$CODE_HISTORY_FILE"
     else
         local existing=()
@@ -845,7 +845,7 @@ EOF
             local wp wc
             wp=$(tmux display-message -p -t "$window" "#{pane_current_path}" 2>/dev/null)
             wc=$(tmux display-message -p -t "$window" "#{pane_current_command}" 2>/dev/null)
-            [[ "$wp" == "$current_dir" ]] && [[ "$wc" == *"happy"* ]] && existing+=("$window")
+            [[ "$wp" == "$current_dir" ]] && [[ "$wc" == *"claude"* ]] && existing+=("$window")
         done < <(tmux list-windows -F '#W' 2>/dev/null | grep '^code')
 
         if [[ ${#existing[@]} -gt 0 ]]; then
@@ -853,8 +853,8 @@ EOF
             echo "${current_session}|${existing[-1]}|${current_dir}|${prompt}" >>"$CODE_HISTORY_FILE"
         else
             window_name="code-${dir_name}"
-            [[ -n "$prompt" ]] && tmux new-window -n "$window_name" -c "$current_dir" "happy --resume '$prompt'" ||
-                tmux new-window -n "$window_name" -c "$current_dir" "$happy_continue_cmd"
+            [[ -n "$prompt" ]] && tmux new-window -n "$window_name" -c "$current_dir" "claude --dangerously-skip-permissions -c '$prompt'" ||
+                tmux new-window -n "$window_name" -c "$current_dir" "$cli_continue_cmd"
             echo "${current_session}|${window_name}|${current_dir}|${prompt}" >>"$CODE_HISTORY_FILE"
         fi
     fi
