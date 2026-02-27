@@ -345,7 +345,7 @@ proactively identify friction → create tools to eliminate.
 </tools>
 
 <teams severity="critical">
-complex tasks (3+ files, design decisions, ambiguous scope): FORM A TEAM via TeamCreate + Task tool.
+complex tasks (cross-file stateful deps, design tradeoffs, wall time > 15min solo, or irreversible-change risk): FORM A TEAM via TeamCreate + Task tool.
 trivial tasks, same-file edits, sequential deps: single agent. don't over-parallelize.
 
 team formation — ask: "what would a competent eng team look like for this?"
@@ -360,7 +360,7 @@ roles:
 
 user-simulator is NON-NEGOTIABLE for user-facing work.
 ask: "would a real person hit friction here?" before marking anything done.
-simulate: misread docs, skip steps, typo inputs, wrong assumptions.
+simulate: misread docs, skip steps, typo inputs, wrong assumptions, interrupted mid-flow, wrong environment.
 
 model routing:
 - lead/planning → opus
@@ -375,17 +375,50 @@ vague prompts waste tokens on exploration. specific prompts save 3–5x.
 anti-patterns:
 - lead implementing instead of delegating (use delegate mode)
 - two agents editing same file (ALWAYS enforce file ownership)
+- shared files (lockfiles, schemas, configs): designate ONE owner agent or add merge agent post-implementation. identify during decomposition — not after conflicts arise.
 - over-parallelizing (10 agents for simple feature = waste)
 - vague spawn prompts ("handle the backend" = fail)
 
+failure protocol:
+agent fails → lead re-prompts, re-dispatches; 2nd failure → surface to user.
+validator rejects → implementer fixes. conflicting outputs → lead owns merge decision.
+
 workflow:
 1. explore/research to understand full scope (single agent or parallel Explore agents)
-2. decompose into independent work units with strict file ownership boundaries
-3. delegate with explicit acceptance criteria per task
-4. implement in parallel via worktree-isolated agents
-5. validate with read-only agents (builder-validator pattern)
-6. user-simulate the integrated result — friction test, not just correctness test
+2. decompose into independent work units. architect produces shared contract (API shapes, types, schemas) — lead approves BEFORE implementers start.
+3. user-sim on design — lightweight sim against interfaces BEFORE parallelizing. catch bad UX before code exists.
+4. delegate with explicit acceptance criteria per task
+5. implement in parallel via worktree-isolated agents
+6. integrate — lead merges worktree outputs, resolves conflicts, runs smoke test BEFORE handing to validator.
+7. validate with read-only agents (builder-validator pattern)
+8. user-simulate the integrated result — friction test, not just correctness test
 </teams>
+
+<subagents severity="critical">
+teams (TeamCreate) = coordinated multi-agent work. subagents (Task tool) = lightweight single delegation. teams USE subagents internally — these sections complement, not duplicate.
+
+subagents (Task tool) are LIGHTWEIGHT. use aggressively — not just for "complex tasks."
+
+when to spawn subagent:
+- parallel research: 2–3 Explore agents searching different parts of codebase simultaneously
+- context protection: verbose output (logs, large files, search results) stays in child context, summary returns
+- model routing: haiku for cheap search, sonnet for focused implementation
+- any independent task that doesn't need main context
+
+agent types and their TOOL RESTRICTIONS:
+- Explore: READ-ONLY. Glob, Grep, Read, WebFetch, WebSearch. CANNOT edit/write. use for search/research ONLY.
+- Plan: READ-ONLY. same as Explore. use for architecture/design planning.
+⚠️ NEVER assign implementation work to Explore/Plan agents — they will fail silently.
+- general-purpose: FULL tool access (Edit, Write, Bash, etc). use for implementation.
+
+key parameters:
+- model: "haiku" | "sonnet" | "opus" — route to cheapest sufficient model
+- run_in_background: true — fire parallel agents, get notified on completion
+- isolation: "worktree" — gives agent isolated git copy, prevents file conflicts
+
+pattern: spawn 3 Explore agents in background → gather results → synthesize in main context → implement.
+this is 3x faster than sequential search and protects main context from bloat.
+</subagents>
 
 <env severity="critical">
 shell: bash | config: ~/box (nix-darwin + home-manager)
