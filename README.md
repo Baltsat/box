@@ -4,8 +4,14 @@ Personal development environment. One command to set up a new machine.
 
 ## Setup
 
+**Fresh server:**
 ```bash
 git clone https://github.com/Baltsat/box.git ~/box && ~/box/setup.sh
+```
+
+**Update existing box (force reset + reinstall everything):**
+```bash
+cd ~/box && git fetch origin && git reset --hard origin/main && rm -f ~/.box_setup_done && ./setup.sh && source ~/.bashrc
 ```
 
 Enter password when prompted. Done.
