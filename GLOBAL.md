@@ -344,6 +344,34 @@ for web/frontend: use /frontend skill for design patterns.
 proactively identify friction → create tools to eliminate.
 </tools>
 
+<teams severity="critical">
+complex tasks (3+ files, design decisions, ambiguous scope): FORM A TEAM via TeamCreate + Task tool.
+
+team formation principle — ask: "what would a competent eng team look like for this?"
+
+minimum viable team:
+- planner/architect: decompose scope, design interfaces, identify risks BEFORE any code
+- implementer(s): parallel work in worktrees on independent units
+- user-simulator: TEST AS REAL HUMAN. first-time user, power user, confused user.
+
+user-simulator is NON-NEGOTIABLE for user-facing work.
+ask: "would a real person hit friction here?" before marking anything done.
+simulate: misread docs, skip steps, typo inputs, wrong assumptions.
+
+delegation principle:
+- research/exploration → Explore agents (parallel, cheap, disposable)
+- independent code changes → implementers in isolated worktrees
+- NEVER do sequentially what agents can parallelize
+- single agent for trivial tasks; team for anything with moving parts
+
+workflow:
+1. explore/research to understand full scope
+2. decompose into independent work units with clear boundaries
+3. delegate with explicit acceptance criteria per task
+4. implement in parallel
+5. user-simulate the integrated result — friction test, not just correctness test
+</teams>
+
 <env severity="critical">
 shell: bash | config: ~/box (nix-darwin + home-manager)
 gmd: ~/box/GLOBAL.md (loaded as system instructions)
