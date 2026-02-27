@@ -346,30 +346,45 @@ proactively identify friction → create tools to eliminate.
 
 <teams severity="critical">
 complex tasks (3+ files, design decisions, ambiguous scope): FORM A TEAM via TeamCreate + Task tool.
+trivial tasks, same-file edits, sequential deps: single agent. don't over-parallelize.
 
-team formation principle — ask: "what would a competent eng team look like for this?"
+team formation — ask: "what would a competent eng team look like for this?"
+sweet spot: 3–5 teammates, 5–6 tasks each. three focused agents > six scattered ones.
 
-minimum viable team:
-- planner/architect: decompose scope, design interfaces, identify risks BEFORE any code
-- implementer(s): parallel work in worktrees on independent units
+roles:
+- lead: coordinates ONLY. NEVER writes code. decompose, delegate, integrate.
+- architect/planner: design interfaces, identify risks BEFORE any code (Explore/Plan agents, read-only)
+- implementer(s): parallel work in isolated worktrees. strict file ownership — ONE agent per directory.
+- validator: read-only verification after builder finishes. chain via blockedBy.
 - user-simulator: TEST AS REAL HUMAN. first-time user, power user, confused user.
 
 user-simulator is NON-NEGOTIABLE for user-facing work.
 ask: "would a real person hit friction here?" before marking anything done.
 simulate: misread docs, skip steps, typo inputs, wrong assumptions.
 
-delegation principle:
-- research/exploration → Explore agents (parallel, cheap, disposable)
-- independent code changes → implementers in isolated worktrees
-- NEVER do sequentially what agents can parallelize
-- single agent for trivial tasks; team for anything with moving parts
+model routing:
+- lead/planning → opus
+- implementation → sonnet (general-purpose)
+- exploration/search → haiku (Explore agent, cheap + disposable)
+
+spawn prompt rules (teammates start with BLANK context):
+every dispatch MUST include: (1) context — what exists, why this matters (2) instructions — exactly what to do
+(3) file references — specific paths, not vague module names (4) success criteria — measurable definition of done.
+vague prompts waste tokens on exploration. specific prompts save 3–5x.
+
+anti-patterns:
+- lead implementing instead of delegating (use delegate mode)
+- two agents editing same file (ALWAYS enforce file ownership)
+- over-parallelizing (10 agents for simple feature = waste)
+- vague spawn prompts ("handle the backend" = fail)
 
 workflow:
-1. explore/research to understand full scope
-2. decompose into independent work units with clear boundaries
+1. explore/research to understand full scope (single agent or parallel Explore agents)
+2. decompose into independent work units with strict file ownership boundaries
 3. delegate with explicit acceptance criteria per task
-4. implement in parallel
-5. user-simulate the integrated result — friction test, not just correctness test
+4. implement in parallel via worktree-isolated agents
+5. validate with read-only agents (builder-validator pattern)
+6. user-simulate the integrated result — friction test, not just correctness test
 </teams>
 
 <env severity="critical">
