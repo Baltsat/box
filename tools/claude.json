@@ -39,10 +39,10 @@
       {
         "hooks": [
           {
-            "type": "agent",
-            "prompt": "Evaluate the user's prompt. If it's short (<30 chars) or a simple command/approval (ap, go, yes, no, ok, commit, push, dw, ut, todos), respond {\"ok\": true} IMMEDIATELY.\n\nOtherwise: does the prompt contain a preference, convention, fact, instruction, or behavioral correction worth persisting to long-term memory?\n\nONLY flag: personal preferences, coding conventions, tool choices, workflow habits, corrections (\"always X\", \"never Y\", \"i prefer X\", \"use X not Y\"), project facts.\nNEVER flag: questions, task requests, code to write, bugs to fix, approvals, greetings.\n\nIf memorable: write a concise 1-line entry to the user's auto memory MEMORY.md file (find it in ~/.claude/projects/*/memory/MEMORY.md for the current project, or create if missing). Then respond {\"ok\": true}.\nIf not memorable: respond {\"ok\": true}.\n\nALWAYS respond {\"ok\": true}. NEVER block the prompt.",
+            "type": "prompt",
+            "prompt": "User prompt: $ARGUMENTS\n\nDoes this contain a personal preference, convention, or behavioral correction worth saving to long-term memory? Examples: 'always use X', 'never do Y', 'i prefer X over Y'. NOT: questions, task requests, code to write, approvals, greetings.\n\nIf memorable: {\"ok\": false, \"reason\": \"AUTO-MEMORY: <what to remember>\"}\nIf not or short/trivial: {\"ok\": true}",
             "model": "haiku",
-            "timeout": 15
+            "timeout": 10
           }
         ]
       }
@@ -98,9 +98,7 @@
     "type": "command",
     "command": "~/.claude/statusline.sh"
   },
-  "enabledPlugins": {
-    "claude-mem@thedotmack": true
-  },
+  "enabledPlugins": {},
   "spinnerTipsEnabled": false,
   "alwaysThinkingEnabled": true,
   "autoUpdatesChannel": "latest",
