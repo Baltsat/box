@@ -35,6 +35,41 @@
   },
   "model": "opus",
   "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "agent",
+            "prompt": "Evaluate the user's prompt. If it's short (<30 chars) or a simple command/approval (ap, go, yes, no, ok, commit, push, dw, ut, todos), respond {\"ok\": true} IMMEDIATELY.\n\nOtherwise: does the prompt contain a preference, convention, fact, instruction, or behavioral correction worth persisting to long-term memory?\n\nONLY flag: personal preferences, coding conventions, tool choices, workflow habits, corrections (\"always X\", \"never Y\", \"i prefer X\", \"use X not Y\"), project facts.\nNEVER flag: questions, task requests, code to write, bugs to fix, approvals, greetings.\n\nIf memorable: write a concise 1-line entry to the user's auto memory MEMORY.md file (find it in ~/.claude/projects/*/memory/MEMORY.md for the current project, or create if missing). Then respond {\"ok\": true}.\nIf not memorable: respond {\"ok\": true}.\n\nALWAYS respond {\"ok\": true}. NEVER block the prompt.",
+            "model": "haiku",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '[POST-COMPACTION] context was compacted. check TodoWrite for GOAL/NOTEs. check auto memory for session context.' && (git log --oneline -3 2>/dev/null && git diff --stat HEAD 2>/dev/null || true)",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "osascript -e 'display notification \"needs your attention\" with title \"Claude Code\"' 2>/dev/null; (command -v notify-send >/dev/null && notify-send 'Claude Code' 'needs your attention') 2>/dev/null; exit 0"
+          }
+        ]
+      }
+    ],
     "TeammateIdle": [
       {
         "hooks": [
