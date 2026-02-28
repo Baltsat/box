@@ -35,18 +35,6 @@
   },
   "model": "opus",
   "hooks": {
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "prompt",
-            "prompt": "Review the conversation context: $ARGUMENTS\n\nDid the user express any personal preferences, conventions, behavioral corrections, or facts worth saving to long-term memory? Examples: 'always use X', 'never do Y', 'i prefer X over Y', 'remember that...'.\n\nDo NOT flag: task requests, questions, code reviews, debugging, approvals, greetings, status checks.\n\nIf stop_hook_active is true in the context, respond {\"ok\": true}.\nIf something memorable was found: {\"ok\": false, \"reason\": \"Save to auto memory: <concise what to remember>\"}\nIf nothing memorable: {\"ok\": true}",
-            "model": "haiku",
-            "timeout": 10
-          }
-        ]
-      }
-    ],
     "SessionStart": [
       {
         "matcher": "compact",
