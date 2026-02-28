@@ -360,14 +360,10 @@ _box_auto_update() {
     local log_file="$HOME/.cache/box_update.log"
     echo "[box] auto-update started: $(date)" >"$log_file"
 
-    # Claude Code
-    if command -v claude &>/dev/null && command -v npm &>/dev/null; then
-        echo "[box] checking claude-code..." >>"$log_file"
-        npm update -g @anthropic-ai/claude-code >>"$log_file" 2>&1 || true
-    fi
-
-    # Claude Code Plugins (update all installed plugins)
+    # Claude Code (native installer)
     if command -v claude &>/dev/null; then
+        echo "[box] checking claude-code..." >>"$log_file"
+        claude update >>"$log_file" 2>&1 || true
         echo "[box] checking claude plugins..." >>"$log_file"
         claude plugin update --all >>"$log_file" 2>&1 || true
     fi
