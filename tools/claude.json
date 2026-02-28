@@ -35,12 +35,12 @@
   },
   "model": "opus",
   "hooks": {
-    "UserPromptSubmit": [
+    "Stop": [
       {
         "hooks": [
           {
             "type": "prompt",
-            "prompt": "User prompt: $ARGUMENTS\n\nDoes this contain a personal preference, convention, or behavioral correction worth saving to long-term memory? Examples: 'always use X', 'never do Y', 'i prefer X over Y'. NOT: questions, task requests, code to write, approvals, greetings.\n\nIf memorable: {\"ok\": false, \"reason\": \"AUTO-MEMORY: <what to remember>\"}\nIf not or short/trivial: {\"ok\": true}",
+            "prompt": "Review the conversation context: $ARGUMENTS\n\nDid the user express any personal preferences, conventions, behavioral corrections, or facts worth saving to long-term memory? Examples: 'always use X', 'never do Y', 'i prefer X over Y', 'remember that...'.\n\nDo NOT flag: task requests, questions, code reviews, debugging, approvals, greetings, status checks.\n\nIf stop_hook_active is true in the context, respond {\"ok\": true}.\nIf something memorable was found: {\"ok\": false, \"reason\": \"Save to auto memory: <concise what to remember>\"}\nIf nothing memorable: {\"ok\": true}",
             "model": "haiku",
             "timeout": 10
           }
