@@ -82,27 +82,6 @@ alias codex='codex --dangerously-bypass-approvals-and-sandbox'
 alias gemini='gemini --yolo'
 alias qwen='qwen --yolo'
 
-# Claude-mem memory sync (between machines)
-# Usage: mem-push <server> or mem-pull <server>
-mem-push() {
-    local server="${1:-}"
-    [[ -z "$server" ]] && {
-        echo "usage: mem-push <server>"
-        return 1
-    }
-    echo "[claude-mem] pushing to $server..."
-    rsync -avz --progress ~/.claude-mem/ "$server":~/.claude-mem/
-}
-mem-pull() {
-    local server="${1:-}"
-    [[ -z "$server" ]] && {
-        echo "usage: mem-pull <server>"
-        return 1
-    }
-    echo "[claude-mem] pulling from $server..."
-    rsync -avz --progress "$server":~/.claude-mem/ ~/.claude-mem/
-}
-alias mem-status='du -sh ~/.claude-mem/ && ls -lah ~/.claude-mem/*.db'
 
 # === Happy Coder (mobile/web access) ===
 alias h='happy'

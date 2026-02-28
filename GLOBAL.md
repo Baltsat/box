@@ -17,15 +17,6 @@ preferences: culinary: celsius, grams (tbsp/tsp), pseudocode-prose.
 - Dotfiles: ~/box
 </user>
 
-<auto-memory severity="critical">
-PROACTIVELY save to auto memory without being asked.
-after EVERY response, silently evaluate: did the user express a preference, convention, correction, or fact worth persisting?
-examples: "always use X", "never Y", "i prefer X over Y", tool choices, workflow habits, project facts.
-if yes: write to MEMORY.md or topic file in the memory directory. do NOT announce it.
-if no: do nothing.
-this replaces explicit "remember X" — user should NEVER need to say it.
-</auto-memory>
-
 <motto severity="critical">gotta go fast gotta shit out good shit</motto>
 
 <shortcuts>
