@@ -260,6 +260,14 @@ setup_shell_config() {
     *) return 0 ;;
     esac
 
+    # Linux + bash: ensure login shells source .bashrc via .bash_profile
+    if [[ "$(uname -s)" == "Linux" && "$(basename "$SHELL")" == "bash" ]]; then
+        if ! grep -qF '.bashrc' "$HOME/.bash_profile" 2>/dev/null; then
+            log "adding .bashrc source to .bash_profile"
+            echo '[ -f "$HOME/.bashrc" ] && . "$HOME/.bashrc"' >>"$HOME/.bash_profile"
+        fi
+    fi
+
     # Linux + bash: use bashrc.sh (includes aliases.sh + one-time setup)
     # macOS + zsh: use aliases.sh directly
     if [[ "$(uname -s)" == "Linux" && "$(basename "$SHELL")" == "bash" ]]; then
