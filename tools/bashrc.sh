@@ -770,8 +770,8 @@ EOF
         return 1
     }
 
-    local cli_base_cmd="claude --dangerously-skip-permissions"
-    local cli_continue_cmd="claude --dangerously-skip-permissions -c"
+    local cli_base_cmd="env -u CLAUDECODE claude --dangerously-skip-permissions"
+    local cli_continue_cmd="env -u CLAUDECODE claude --dangerously-skip-permissions -c"
     ! command -v claude &>/dev/null && {
         [[ -n "$prompt" ]] && {
             echo "error: claude not found"
@@ -782,7 +782,7 @@ EOF
     }
 
     local session_name
-    session_name="$(echo "$dir_name" | tr ' .:-' '____')"
+    session_name="ws-$(echo "$dir_name" | tr ' .:-' '____')"
 
     # Outside tmux
     if [[ -z "$TMUX" ]]; then
@@ -815,7 +815,7 @@ EOF
                 echo "${session_name}|${existing[-1]}|${current_dir}|${prompt}" >>"$CODE_HISTORY_FILE"
             else
                 local wn="code-${dir_name}"
-                [[ -n "$prompt" ]] && tmux new-window -d -t "$session_name:" -n "$wn" -c "$current_dir" "claude --dangerously-skip-permissions -c '$prompt'" ||
+                [[ -n "$prompt" ]] && tmux new-window -d -t "$session_name:" -n "$wn" -c "$current_dir" "env -u CLAUDECODE claude --dangerously-skip-permissions -c '$prompt'" ||
                     tmux new-window -d -t "$session_name:" -n "$wn" -c "$current_dir" "$cli_continue_cmd"
                 echo "${session_name}|${wn}|${current_dir}|${prompt}" >>"$CODE_HISTORY_FILE"
                 tmux attach-session -t "$session_name" \; select-window -t "$wn"
@@ -853,7 +853,7 @@ EOF
             echo "${current_session}|${existing[-1]}|${current_dir}|${prompt}" >>"$CODE_HISTORY_FILE"
         else
             window_name="code-${dir_name}"
-            [[ -n "$prompt" ]] && tmux new-window -n "$window_name" -c "$current_dir" "claude --dangerously-skip-permissions -c '$prompt'" ||
+            [[ -n "$prompt" ]] && tmux new-window -n "$window_name" -c "$current_dir" "env -u CLAUDECODE claude --dangerously-skip-permissions -c '$prompt'" ||
                 tmux new-window -n "$window_name" -c "$current_dir" "$cli_continue_cmd"
             echo "${current_session}|${window_name}|${current_dir}|${prompt}" >>"$CODE_HISTORY_FILE"
         fi
