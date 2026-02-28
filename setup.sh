@@ -334,6 +334,14 @@ install_cli_tools() {
         fi
     }
 
+    # ensure node exists for bun-installed CLI shebangs (#!/usr/bin/env node)
+    if has_cmd bun && ! has_cmd node; then
+        log "symlinking bun as node (for CLI shebangs)"
+        mkdir -p "$HOME/.local/bin"
+        ln -sf "$(which bun)" "$HOME/.local/bin/node"
+        export PATH="$HOME/.local/bin:$PATH"
+    fi
+
     install_js_cli "@anthropic-ai/claude-code" "claude" "always"
     install_js_cli "@openai/codex" "codex"
     install_js_cli "@google/gemini-cli" "gemini"
