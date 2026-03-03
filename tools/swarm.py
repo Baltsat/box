@@ -51,7 +51,7 @@ INBOX_PATH = SWARM_DIR / "inbox.log"
 
 ONBOARDING = (
     'You are "{name}" in a multi-agent swarm. Other agents: {others}.\n'
-    "IMPORTANT: Always respond to the human via: swarm send user \"<your response>\"\n"
+    'IMPORTANT: Always respond to the human via: swarm send user "<your response>"\n'
     'To message another agent: swarm send <name> "<message>"\n'
     'To broadcast: swarm send all "<message>"\n'
     "Messages from others appear as: # [SWARM from=<sender>] <text>"
@@ -535,7 +535,11 @@ def deliver_to_user(sender, body):
     if sys.platform == "darwin":
         preview = body[:100].replace('"', '\\"')
         subprocess.run(
-            ["osascript", "-e", f'display notification "{preview}" with title "swarm: {sender}"'],
+            [
+                "osascript",
+                "-e",
+                f'display notification "{preview}" with title "swarm: {sender}"',
+            ],
             capture_output=True,
         )
     else:
@@ -654,6 +658,12 @@ def cmd_inbox(args):
 
 
 def main():
+    config = load_config()
+    agent_names = set(config["agents"].keys()) | {"all", "user"}
+
+    if len(sys.argv) >= 3 and sys.argv[1] in agent_names:
+        sys.argv = [sys.argv[0], "send", sys.argv[1], " ".join(sys.argv[2:])]
+
     p = argparse.ArgumentParser(prog="swarm", description="multi-agent orchestrator")
     sub = p.add_subparsers(dest="cmd")
 
