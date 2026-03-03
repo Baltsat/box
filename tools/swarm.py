@@ -533,12 +533,13 @@ def deliver_to_user(sender, body):
     with open(INBOX_PATH, "a") as f:
         f.write(line)
     if sys.platform == "darwin":
-        preview = body[:100].replace('"', '\\"')
+        preview = body[:100].replace("\\", "\\\\").replace('"', '\\"')
+        sender_safe = sender.replace("\\", "\\\\").replace('"', '\\"')
         subprocess.run(
             [
                 "osascript",
                 "-e",
-                f'display notification "{preview}" with title "swarm: {sender}"',
+                f'display notification "{preview}" with title "swarm: {sender_safe}"',
             ],
             capture_output=True,
         )
@@ -594,7 +595,6 @@ def daemon_loop(config):
                 )
                 continue
 
-            failed = False
             for agent_name, session in targets:
                 if agent_name in already:
                     continue
@@ -602,7 +602,6 @@ def daemon_loop(config):
                     db.execute(
                         "UPDATE agents SET status='dead' WHERE name=?", (agent_name,)
                     )
-                    failed = True
                     continue
                 inject(session, f"# [SWARM from={sender}] {body}")
                 already.add(agent_name)
@@ -638,6 +637,29 @@ def daemon_loop(config):
         time.sleep(interval)
 
 
+# ── cmd: attach / peek ─────────────────────────────────────────────────────
+
+
+def cmd_attach(args):
+    session = f"swarm-{args.agent}"
+    if not session_exists(session):
+        print(f"{args.agent}: not running")
+        return
+    os.execvp("tmux", ["tmux", "attach-session", "-t", session])
+
+
+def cmd_peek(args):
+    session = f"swarm-{args.agent}"
+    if not session_exists(session):
+        print(f"{args.agent}: not running")
+        return
+    r = tmux("capture-pane", "-t", session, "-p", "-S", f"-{args.last}")
+    if r.stdout:
+        print(r.stdout.rstrip())
+    else:
+        print("(empty pane)")
+
+
 # ── cmd: inbox ─────────────────────────────────────────────────────────────
 
 
@@ -661,8 +683,11 @@ def main():
     config = load_config()
     agent_names = set(config["agents"].keys()) | {"all", "user"}
 
-    if len(sys.argv) >= 3 and sys.argv[1] in agent_names:
-        sys.argv = [sys.argv[0], "send", sys.argv[1], " ".join(sys.argv[2:])]
+    if len(sys.argv) >= 2 and sys.argv[1] in agent_names:
+        if len(sys.argv) >= 3:
+            sys.argv = [sys.argv[0], "send", sys.argv[1], " ".join(sys.argv[2:])]
+        else:
+            sys.argv = [sys.argv[0], "peek", sys.argv[1]]
 
     p = argparse.ArgumentParser(prog="swarm", description="multi-agent orchestrator")
     sub = p.add_subparsers(dest="cmd")
@@ -691,6 +716,13 @@ def main():
     inbox.add_argument("--last", "-n", type=int, default=20)
     inbox.add_argument("--clear", "-c", action="store_true", help="clear inbox")
 
+    attach = sub.add_parser("attach", help="attach to agent tmux session")
+    attach.add_argument("agent", help="agent name")
+
+    peek = sub.add_parser("peek", help="show agent pane output")
+    peek.add_argument("agent", help="agent name")
+    peek.add_argument("--last", "-n", type=int, default=50)
+
     daemon = sub.add_parser("daemon", help="run message router")
     daemon.add_argument("--foreground", "-f", action="store_true")
 
@@ -707,6 +739,8 @@ def main():
         "send": cmd_send,
         "log": cmd_log,
         "inbox": cmd_inbox,
+        "attach": cmd_attach,
+        "peek": cmd_peek,
         "daemon": cmd_daemon,
     }
     cmds[args.cmd](args)
