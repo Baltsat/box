@@ -350,7 +350,12 @@ install_cli_tools() {
         export PATH="$HOME/.local/bin:$PATH"
     fi
 
-    install_js_cli "@anthropic-ai/claude-code" "claude" "always"
+    # Claude Code — native installer (not npm/bun)
+    if ! has_cmd claude; then
+        log "installing claude-code (native)"
+        curl -fsSL https://claude.ai/install.sh 2>/dev/null | sh || true
+    fi
+
     install_js_cli "@openai/codex" "codex"
     install_js_cli "@google/gemini-cli" "gemini"
     install_js_cli "@qwen-code/qwen-code@latest" "qwen"

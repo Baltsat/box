@@ -231,7 +231,11 @@ TMUX_CONF
         failed=1
     }
 
-    _install_js_cli "@anthropic-ai/claude-code" "claude"
+    # Claude Code — native installer (not npm/bun)
+    if ! command -v claude &>/dev/null; then
+        curl -fsSL https://claude.ai/install.sh 2>/dev/null | sh || true
+    fi
+
     _install_js_cli "@openai/codex" "codex"
     _install_js_cli "@google/gemini-cli" "gemini"
     _install_js_cli "@qwen-code/qwen-code@latest" "qwen"
@@ -319,7 +323,6 @@ _box_ensure_js_cli() {
     command -v "$cmd" &>/dev/null && echo "[box] $cmd installed"
 }
 
-_box_ensure_js_cli "@anthropic-ai/claude-code" "claude"
 _box_ensure_js_cli "@openai/codex" "codex"
 _box_ensure_js_cli "@google/gemini-cli" "gemini"
 _box_ensure_js_cli "@qwen-code/qwen-code@latest" "qwen"

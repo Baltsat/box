@@ -81,7 +81,7 @@ alias claude='claude --dangerously-skip-permissions'
 alias codex='codex --dangerously-bypass-approvals-and-sandbox'
 alias gemini='gemini --yolo'
 alias qwen='qwen --yolo'
-
+alias pi='pi'
 
 # === Happy Coder (mobile/web access) ===
 alias h='happy'
@@ -93,6 +93,14 @@ alias hd='happy daemon'
 [[ -d "$HOME/.omnara/bin" ]] && export PATH="$HOME/.omnara/bin:$PATH"
 alias om='omnara'
 alias omd='omnara daemon'
+
+# === Swarm (multi-agent orchestrator) ===
+swarm() { uv run ~/box/tools/swarm.py "$@"; }
+alias sw='swarm'
+alias sws='swarm status'
+alias swu='swarm up'
+alias swd='swarm down'
+alias swl='swarm log'
 
 # System context for Claude (used by c/cc wrappers)
 sys() {
@@ -375,6 +383,12 @@ _box_auto_update() {
     if command -v qwen &>/dev/null && command -v npm &>/dev/null; then
         echo "[box] checking qwen-code..." >>"$log_file"
         npm update -g @qwen-code/qwen-code@latest >>"$log_file" 2>&1 || true
+    fi
+
+    # Pi Coding Agent
+    if command -v pi &>/dev/null && command -v bun &>/dev/null; then
+        echo "[box] checking pi-coding-agent..." >>"$log_file"
+        bun update -g @mariozechner/pi-coding-agent >>"$log_file" 2>&1 || true
     fi
 
     # Repomix

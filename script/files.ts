@@ -31,6 +31,7 @@ const links: [string, string][] = [
   ['GLOBAL.md', '.gemini/GEMINI.md'],
   ['GLOBAL.md', '.qwen/QWEN.md'],
   ['GLOBAL.md', '.copilot/copilot-instructions.md'],
+  ['GLOBAL.md', '.pi/agent/AGENTS.md'],
   // Zed
   ['tools/zed/settings.json', '.config/zed/settings.json'],
   // Zellij
@@ -39,6 +40,8 @@ const links: [string, string][] = [
   ['tools/codex.toml', '.codex/config.toml'],
   // Organize (file automation)
   ['tools/organize/config.yaml', '.config/organize/config.yaml'],
+  // Swarm (multi-agent orchestrator)
+  ['tools/swarm.py', '.local/bin/swarm'],
   // Claude Code statusline
   ['tools/claude/statusline.sh', '.claude/statusline.sh'],
   // Claude Code skills

@@ -282,6 +282,7 @@ DRY BUT NOT WET:
 - inline when: used once, simple operation, breaks narrative flow
 - balance: poetic readability > theoretical reusability
 
+tdd: write failing test FIRST, then implement. RED → GREEN → REFACTOR.
 </code>
 
 <tools severity="critical">
