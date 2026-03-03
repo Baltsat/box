@@ -101,6 +101,11 @@ alias sws='swarm status'
 alias swu='swarm up'
 alias swd='swarm down'
 alias swl='swarm log'
+alias si='swarm inbox'
+sc() { swarm send claude "$*"; }
+sp() { swarm send pi "$*"; }
+sx() { swarm send codex "$*"; }
+sa() { swarm send all "$*"; }
 
 # System context for Claude (used by c/cc wrappers)
 sys() {

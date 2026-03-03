@@ -25,8 +25,7 @@ DEFAULT_CONFIG = {
     "agents": {
         "claude": {
             "cmd": "claude --dangerously-skip-permissions",
-            "ready_patterns": ["Bypass Permissions"],
-            "post_ready": ["Down", "Enter"],
+            "ready_patterns": ["bypass permissions", "claude code", "shift+tab"],
         },
         "pi": {
             "cmd": "pi",
@@ -40,7 +39,7 @@ DEFAULT_CONFIG = {
         },
         "codex": {
             "cmd": "codex --dangerously-bypass-approvals-and-sandbox --no-alt-screen",
-            "ready_patterns": ["% left"],
+            "ready_patterns": ["% left", "openai codex", "context left"],
             "dismiss_keys": ["Down", "Enter"],
         },
     },
@@ -48,8 +47,11 @@ DEFAULT_CONFIG = {
     "max_retries": 5,
 }
 
+INBOX_PATH = SWARM_DIR / "inbox.log"
+
 ONBOARDING = (
     'You are "{name}" in a multi-agent swarm. Other agents: {others}.\n'
+    "IMPORTANT: Always respond to the human via: swarm send user \"<your response>\"\n"
     'To message another agent: swarm send <name> "<message>"\n'
     'To broadcast: swarm send all "<message>"\n'
     "Messages from others appear as: # [SWARM from=<sender>] <text>"
@@ -105,7 +107,7 @@ def auth_check(name):
 def build_cmd(cfg, model=None):
     cmd = cfg["cmd"]
     if model and cfg.get("model_flag"):
-        cmd += f' {cfg["model_flag"]} {model}'
+        cmd += f" {cfg['model_flag']} {model}"
     return cmd
 
 
@@ -186,8 +188,10 @@ def wait_ready(session, patterns, timeout=120, dismiss=None):
     deadline = time.time() + timeout
     tick = 0
     while time.time() < deadline:
-        content = capture_pane(session)
-        if any(p in content for p in patterns):
+        if not session_exists(session):
+            return False
+        content = capture_pane(session).lower()
+        if any(p.lower() in content for p in patterns):
             return True
         if dismiss and tick % 3 == 2:
             for key in dismiss:
@@ -267,10 +271,19 @@ def cmd_up(args):
             time.sleep(0.3)
             tmux("send-keys", "-t", session, f"export SWARM_AGENT={name}", "Enter")
             tmux("send-keys", "-t", session, "unset CLAUDECODE", "Enter")
-            tmux("send-keys", "-t", session, "unalias claude codex pi 2>/dev/null", "Enter")
             tmux(
-                "send-keys", "-t", session,
-                'export PATH="$HOME/.local/bin:$PATH"', "Enter",
+                "send-keys",
+                "-t",
+                session,
+                "unalias claude codex pi 2>/dev/null",
+                "Enter",
+            )
+            tmux(
+                "send-keys",
+                "-t",
+                session,
+                'export PATH="$HOME/.local/bin:$PATH"',
+                "Enter",
             )
             time.sleep(0.2)
             tmux("send-keys", "-t", session, cmd, "Enter")
@@ -376,8 +389,7 @@ def cmd_status(_args):
     db = get_db()
 
     agents = db.execute(
-        "SELECT name, session, status, model, started_at "
-        "FROM agents ORDER BY name"
+        "SELECT name, session, status, model, started_at FROM agents ORDER BY name"
     ).fetchall()
 
     if agents:
@@ -515,6 +527,24 @@ def daemon_stop():
     PID_PATH.unlink(missing_ok=True)
 
 
+def deliver_to_user(sender, body):
+    ts = datetime.now().strftime("%H:%M")
+    line = f"[{ts}] {sender}: {body}\n"
+    with open(INBOX_PATH, "a") as f:
+        f.write(line)
+    if sys.platform == "darwin":
+        preview = body[:100].replace('"', '\\"')
+        subprocess.run(
+            ["osascript", "-e", f'display notification "{preview}" with title "swarm: {sender}"'],
+            capture_output=True,
+        )
+    else:
+        subprocess.run(
+            ["notify-send", f"swarm: {sender}", body[:200]],
+            capture_output=True,
+        )
+
+
 def daemon_loop(config):
     interval = config.get("poll_interval", 0.5)
     max_retries = config.get("max_retries", 5)
@@ -530,6 +560,15 @@ def daemon_loop(config):
         ).fetchall()
 
         for msg_id, sender, recipient, body, attempts, delivered_to_str in rows:
+            if recipient == "user":
+                deliver_to_user(sender, body)
+                db.execute(
+                    "UPDATE messages SET delivered_at=datetime('now'), "
+                    "delivered_to='user' WHERE id=?",
+                    (msg_id,),
+                )
+                continue
+
             already = set(filter(None, (delivered_to_str or "").split(",")))
 
             if recipient == "all":
@@ -589,12 +628,26 @@ def daemon_loop(config):
                 "WHERE status IN ('running','starting')"
             ).fetchall():
                 if not session_exists(session):
-                    db.execute(
-                        "UPDATE agents SET status='dead' WHERE name=?", (name,)
-                    )
+                    db.execute("UPDATE agents SET status='dead' WHERE name=?", (name,))
 
         db.close()
         time.sleep(interval)
+
+
+# ── cmd: inbox ─────────────────────────────────────────────────────────────
+
+
+def cmd_inbox(args):
+    if not INBOX_PATH.exists() or INBOX_PATH.stat().st_size == 0:
+        print("no messages from agents")
+        return
+    lines = INBOX_PATH.read_text().strip().splitlines()
+    if args.clear:
+        INBOX_PATH.write_text("")
+        print(f"cleared {len(lines)} messages")
+        return
+    for line in lines[-(args.last) :]:
+        print(f"  {line}")
 
 
 # ── main ────────────────────────────────────────────────────────────────────
@@ -624,6 +677,10 @@ def main():
     log = sub.add_parser("log", help="show message history")
     log.add_argument("--last", "-n", type=int, default=20)
 
+    inbox = sub.add_parser("inbox", help="show responses from agents")
+    inbox.add_argument("--last", "-n", type=int, default=20)
+    inbox.add_argument("--clear", "-c", action="store_true", help="clear inbox")
+
     daemon = sub.add_parser("daemon", help="run message router")
     daemon.add_argument("--foreground", "-f", action="store_true")
 
@@ -639,6 +696,7 @@ def main():
         "status": cmd_status,
         "send": cmd_send,
         "log": cmd_log,
+        "inbox": cmd_inbox,
         "daemon": cmd_daemon,
     }
     cmds[args.cmd](args)
