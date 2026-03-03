@@ -682,12 +682,16 @@ def cmd_inbox(args):
 def main():
     config = load_config()
     agent_names = set(config["agents"].keys()) | {"all", "user"}
+    subcommands = {"up", "down", "restart", "status", "send", "log", "inbox", "attach", "peek", "daemon"}
 
-    if len(sys.argv) >= 2 and sys.argv[1] in agent_names:
-        if len(sys.argv) >= 3:
-            sys.argv = [sys.argv[0], "send", sys.argv[1], " ".join(sys.argv[2:])]
+    if len(sys.argv) >= 2 and sys.argv[1] not in subcommands and sys.argv[1] not in {"-h", "--help"}:
+        if sys.argv[1] in agent_names:
+            if len(sys.argv) >= 3:
+                sys.argv = [sys.argv[0], "send", sys.argv[1], " ".join(sys.argv[2:])]
+            else:
+                sys.argv = [sys.argv[0], "peek", sys.argv[1]]
         else:
-            sys.argv = [sys.argv[0], "peek", sys.argv[1]]
+            sys.argv = [sys.argv[0], "send", "all", " ".join(sys.argv[1:])]
 
     p = argparse.ArgumentParser(prog="swarm", description="multi-agent orchestrator")
     sub = p.add_subparsers(dest="cmd")
