@@ -92,7 +92,7 @@ alias hd='happy daemon'
 # Add omnara to PATH if installed
 [[ -d "$HOME/.omnara/bin" ]] && export PATH="$HOME/.omnara/bin:$PATH"
 alias om='omnara'
-alias omd='omnara daemon'
+alias omd='env -u CLAUDECODE omnara daemon'
 
 # === Swarm (multi-agent orchestrator) ===
 swarm() { uv run ~/box/tools/swarm.py "$@"; }
