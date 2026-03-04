@@ -29,7 +29,12 @@ DEFAULT_CONFIG = {
         },
         "pi": {
             "cmd": "pi --thinking high",
-            "ready_patterns": ["thinking off", "thinking on", "thinking high", "thinking:"],
+            "ready_patterns": [
+                "thinking off",
+                "thinking on",
+                "thinking high",
+                "thinking:",
+            ],
             "models": [
                 "google-gemini-cli/gemini-3.1-pro-preview",
                 "google-antigravity/gemini-3-pro-high",
