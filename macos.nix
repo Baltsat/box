@@ -334,6 +334,10 @@
       "protonvpn"
       "network-radar"
       "vibetunnel"
+      "http-toolkit"
+
+      # Cloud CLIs
+      "gcloud-cli"
 
       # Media
       "droid"

@@ -81,7 +81,7 @@ alias claude='claude --dangerously-skip-permissions'
 alias codex='codex --dangerously-bypass-approvals-and-sandbox'
 alias gemini='gemini --yolo'
 alias qwen='qwen --yolo'
-alias pi='pi'
+alias pi='pi --thinking high'
 
 # === Happy Coder (mobile/web access) ===
 alias h='happy'
@@ -386,9 +386,9 @@ _box_auto_update() {
     fi
 
     # Pi Coding Agent
-    if command -v pi &>/dev/null && command -v bun &>/dev/null; then
+    if command -v pi &>/dev/null && command -v npm &>/dev/null; then
         echo "[box] checking pi-coding-agent..." >>"$log_file"
-        bun update -g @mariozechner/pi-coding-agent >>"$log_file" 2>&1 || true
+        npm install -g @mariozechner/pi-coding-agent >>"$log_file" 2>&1 || true
     fi
 
     # Repomix

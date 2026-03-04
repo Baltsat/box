@@ -59,6 +59,7 @@
     ffmpeg
     imagemagick
     yt-dlp
+    sox
 
     # Shell
     starship

@@ -27,5 +27,8 @@ steer = true
 personality = true
 multi_agent = true
 
+[notice]
+hide_rate_limit_model_nudge = true
+
 [notice.model_migrations]
 "gpt-5.2" = "gpt-5.2-codex"

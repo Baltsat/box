@@ -28,8 +28,8 @@ DEFAULT_CONFIG = {
             "ready_patterns": ["bypass permissions", "claude code", "shift+tab"],
         },
         "pi": {
-            "cmd": "pi",
-            "ready_patterns": ["thinking off", "thinking on"],
+            "cmd": "pi --thinking high",
+            "ready_patterns": ["thinking off", "thinking on", "thinking high", "thinking:"],
             "models": [
                 "google-gemini-cli/gemini-3.1-pro-preview",
                 "google-antigravity/gemini-3-pro-high",
@@ -682,9 +682,24 @@ def cmd_inbox(args):
 def main():
     config = load_config()
     agent_names = set(config["agents"].keys()) | {"all", "user"}
-    subcommands = {"up", "down", "restart", "status", "send", "log", "inbox", "attach", "peek", "daemon"}
+    subcommands = {
+        "up",
+        "down",
+        "restart",
+        "status",
+        "send",
+        "log",
+        "inbox",
+        "attach",
+        "peek",
+        "daemon",
+    }
 
-    if len(sys.argv) >= 2 and sys.argv[1] not in subcommands and sys.argv[1] not in {"-h", "--help"}:
+    if (
+        len(sys.argv) >= 2
+        and sys.argv[1] not in subcommands
+        and sys.argv[1] not in {"-h", "--help"}
+    ):
         if sys.argv[1] in agent_names:
             if len(sys.argv) >= 3:
                 sys.argv = [sys.argv[0], "send", sys.argv[1], " ".join(sys.argv[2:])]
