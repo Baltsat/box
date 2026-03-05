@@ -2,6 +2,12 @@
 
 Personal development environment. One command to set up a new machine.
 
+## Quick Recovery (Any Server)
+
+```bash
+([ -d "$HOME/box/.git" ] || git clone https://github.com/Baltsat/box.git "$HOME/box") && cd "$HOME/box" && git fetch origin && git reset --hard origin/main && rm -f ~/.box_setup_done && (./setup.sh || (unset NIX_REMOTE NIX_DAEMON_SOCKET_PATH; NIX_REMOTE=local ./setup.sh)) && exec "$SHELL" -l
+```
+
 ## Setup
 
 **Fresh server:**
