@@ -47,7 +47,7 @@ fi
 source_nix() {
     local daemon_sh="/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh"
     local profile_sh="$HOME/.nix-profile/etc/profile.d/nix.sh"
-    if [[ -f $daemon_sh ]] && [[ -S /nix/var/nix/daemon-socket/socket ]]; then
+    if [[ -f $daemon_sh ]] && [[ -S /nix/var/nix/daemon-socket/socket ]] && pgrep -x nix-daemon >/dev/null 2>&1; then
         . "$daemon_sh"
         return 0
     fi
@@ -99,6 +99,48 @@ ensure_nix_access() {
     nix profile list >/dev/null 2>&1 && return 0
 
     die "nix unavailable after daemon recovery and local fallback"
+}
+
+run_home_manager_switch() {
+    local config="$1"
+    local cmd_output=""
+
+    if has_cmd home-manager; then
+        cmd_output="$(home-manager switch --flake ".#$config" -b backup --impure 2>&1)" && return 0
+    else
+        cmd_output="$(nix --extra-experimental-features 'nix-command flakes' run home-manager -- switch --flake ".#$config" -b backup --impure 2>&1)" && return 0
+    fi
+
+    if ! nix_daemon_error "$cmd_output"; then
+        echo "$cmd_output" >&2
+        return 1
+    fi
+
+    log "home-manager failed via nix daemon; attempting recovery"
+    start_nix_daemon_if_possible || true
+    source_nix
+
+    if has_cmd home-manager; then
+        cmd_output="$(home-manager switch --flake ".#$config" -b backup --impure 2>&1)" && return 0
+    else
+        cmd_output="$(nix --extra-experimental-features 'nix-command flakes' run home-manager -- switch --flake ".#$config" -b backup --impure 2>&1)" && return 0
+    fi
+
+    if nix_daemon_error "$cmd_output"; then
+        log "retry via daemon failed; forcing local nix mode"
+        unset NIX_REMOTE NIX_DAEMON_SOCKET_PATH
+        local profile_sh="$HOME/.nix-profile/etc/profile.d/nix.sh"
+        [[ -f $profile_sh ]] && . "$profile_sh"
+        if has_cmd home-manager; then
+            NIX_REMOTE=local home-manager switch --flake ".#$config" -b backup --impure
+        else
+            NIX_REMOTE=local nix --extra-experimental-features 'nix-command flakes' run home-manager -- switch --flake ".#$config" -b backup --impure
+        fi
+        return $?
+    fi
+
+    echo "$cmd_output" >&2
+    return 1
 }
 
 install_nix() {
@@ -232,11 +274,7 @@ apply_config() {
         fi
         log "using config: $config for user: $USER"
 
-        if has_cmd home-manager; then
-            home-manager switch --flake ".#$config" -b backup --impure
-        else
-            nix --extra-experimental-features 'nix-command flakes' run home-manager -- switch --flake ".#$config" -b backup --impure
-        fi
+        run_home_manager_switch "$config"
         ;;
     *)
         die "unsupported platform: $(uname -s)"
