@@ -1,12 +1,12 @@
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI } from '@mariozechner/pi-coding-agent';
 
 const FALLBACK_CHAIN = [
-  { provider: "google-gemini-cli", model: "gemini-3.1-pro-preview" },
-  { provider: "google-antigravity", model: "gemini-3-pro-high" },
-  { provider: "google-antigravity", model: "claude-opus-4-6-thinking" },
-  { provider: "github-copilot", model: "claude-opus-4.6" },
-  { provider: "github-copilot", model: "gemini-3.1-pro-preview" },
-  { provider: "zai", model: "glm-5" },
+  { provider: 'google-gemini-cli', model: 'gemini-3.1-pro-preview' },
+  { provider: 'google-antigravity', model: 'gemini-3-pro-high' },
+  { provider: 'google-antigravity', model: 'claude-opus-4-6-thinking' },
+  { provider: 'github-copilot', model: 'claude-opus-4.6' },
+  { provider: 'github-copilot', model: 'gemini-3.1-pro-preview' },
+  { provider: 'zai', model: 'glm-5' },
 ];
 
 const COOLDOWN_MS = 5 * 60 * 1000;
@@ -48,7 +48,7 @@ export default function (pi: ExtensionAPI) {
       const ok = await pi.setModel(model);
       if (ok) {
         failedProviders.delete(key);
-        ctx.ui.notify(`recovered → ${key}`, "info");
+        ctx.ui.notify(`recovered → ${key}`, 'info');
         scheduleRecovery(ctx);
         return;
       }
@@ -65,11 +65,11 @@ export default function (pi: ExtensionAPI) {
     recoveryTimer = setTimeout(() => tryRecover(ctx), wait);
   }
 
-  pi.on("message_end", async (event, ctx) => {
+  pi.on('message_end', async (event, ctx) => {
     const msg = event.message;
-    if (msg.role !== "assistant" || msg.stopReason !== "error") return;
+    if (msg.role !== 'assistant' || msg.stopReason !== 'error') return;
     if (failoverActive) return;
-    if (!QUOTA_RE.test(msg.errorMessage ?? "")) return;
+    if (!QUOTA_RE.test(msg.errorMessage ?? '')) return;
 
     failoverActive = true;
     const cur = currentIdx(ctx);
@@ -83,30 +83,27 @@ export default function (pi: ExtensionAPI) {
       if (!model) continue;
       const ok = await pi.setModel(model);
       if (ok) {
-        ctx.ui.notify(
-          `quota hit → ${next.provider}/${next.model}`,
-          "warning"
-        );
-        pi.sendUserMessage("continue — provider switched due to quota.", {
-          deliverAs: "followUp",
+        ctx.ui.notify(`quota hit → ${next.provider}/${next.model}`, 'warning');
+        pi.sendUserMessage('continue — provider switched due to quota.', {
+          deliverAs: 'followUp',
         });
         scheduleRecovery(ctx);
         failoverActive = false;
         return;
       }
     }
-    ctx.ui.notify("all providers exhausted", "error");
+    ctx.ui.notify('all providers exhausted', 'error');
     failoverActive = false;
   });
 
-  pi.on("session_start", async (_event, ctx) => {
+  pi.on('session_start', async (_event, ctx) => {
     originalIdx = currentIdx(ctx);
     failedProviders.clear();
     if (recoveryTimer) clearTimeout(recoveryTimer);
   });
 
-  pi.on("session_switch", async (event) => {
-    if (event.reason === "new") {
+  pi.on('session_switch', async (event) => {
+    if (event.reason === 'new') {
       failedProviders.clear();
       if (recoveryTimer) clearTimeout(recoveryTimer);
     }
