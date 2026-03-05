@@ -2,7 +2,6 @@ import type { ExtensionAPI } from '@mariozechner/pi-coding-agent';
 
 const FALLBACK_CHAIN = [
   { provider: 'google-gemini-cli', model: 'gemini-3.1-pro-preview' },
-  { provider: 'google-antigravity', model: 'gemini-3-pro-high' },
   { provider: 'google-antigravity', model: 'claude-opus-4-6-thinking' },
   { provider: 'github-copilot', model: 'claude-opus-4.6' },
   { provider: 'github-copilot', model: 'gemini-3.1-pro-preview' },
