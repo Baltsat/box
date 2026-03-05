@@ -14,7 +14,9 @@ import signal
 import sqlite3
 import subprocess
 import sys
+import tempfile
 import time
+import tomllib
 from datetime import datetime
 from pathlib import Path
 
@@ -66,6 +68,22 @@ ONBOARDING = (
 )
 
 DEFAULT_GO_AGENTS = "claude,codex,pi"
+
+DOCTOR_LIMIT_MIN = {
+    "agent.max_turns": 500,
+    "agent.max_retries": 25,
+    "agents.max_threads": 64,
+    "agents.max_depth": 32,
+    "agents.job_max_runtime_seconds": 172800,
+    "tool_output_token_limit": 250000,
+    "history.persistence": "save-all",
+    "history.max_bytes": 52428800,
+    "project_doc_max_bytes": 1048576,
+    "mcp_servers.codex_apps.tool_timeout_sec": 1800,
+    "features.multi_agent": True,
+    "features.memories": True,
+    "features.sqlite": True,
+}
 
 
 # ── preflight ───────────────────────────────────────────────────────────────
@@ -296,6 +314,126 @@ def parse_runtime_metrics(pane_text):
     }
 
 
+def process_alive(pid):
+    try:
+        os.kill(pid, 0)
+        return True
+    except OSError:
+        return False
+
+
+def collect_status_snapshot():
+    db = get_db()
+    try:
+        config = load_config()
+        max_retries = config.get("max_retries", 5)
+        agent_rows = db.execute(
+            "SELECT name, session, status, model, started_at FROM agents ORDER BY name"
+        ).fetchall()
+
+        agents = []
+        for name, session, status, model, started in agent_rows:
+            alive = session_exists(session)
+            if not alive and status in ("running", "starting"):
+                db.execute("UPDATE agents SET status='dead' WHERE name=?", (name,))
+                status = "dead"
+            metrics = {"context_left": None, "five_hour_left": None}
+            if alive:
+                metrics = parse_runtime_metrics(capture_pane(session))
+            agents.append(
+                {
+                    "name": name,
+                    "session": session,
+                    "status": status,
+                    "model": model,
+                    "started_at": started,
+                    "alive": alive,
+                    "metrics": metrics,
+                }
+            )
+
+        pending = db.execute(
+            "SELECT COUNT(*) FROM messages WHERE delivered_at IS NULL AND attempts < ?",
+            (max_retries,),
+        ).fetchone()[0]
+        failed = db.execute(
+            "SELECT COUNT(*) FROM messages WHERE delivered_at IS NULL AND attempts >= ?",
+            (max_retries,),
+        ).fetchone()[0]
+        total = db.execute("SELECT COUNT(*) FROM messages").fetchone()[0]
+
+        pid = daemon_pid()
+        daemon = {"pid": pid, "running": False, "stale": False}
+        if pid is None:
+            daemon["state"] = "not running"
+        elif process_alive(pid):
+            daemon["running"] = True
+            daemon["state"] = f"running (pid {pid})"
+        else:
+            daemon["stale"] = True
+            daemon["state"] = "dead (stale pid)"
+
+        active = sum(
+            1
+            for a in agents
+            if a["alive"] and a["status"] in {"running", "starting"}
+        )
+
+        return {
+            "agents": agents,
+            "active_agents": active,
+            "queue": {"total": total, "pending": pending, "failed": failed},
+            "daemon": daemon,
+        }
+    finally:
+        db.close()
+
+
+def _fmt_pct(value):
+    return f"{value}%" if value is not None else "-"
+
+
+def render_watch(snapshot):
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    lines = [
+        f"swarm watch  [{now}]",
+        f"daemon: {snapshot['daemon']['state']}",
+        f"agents: {snapshot['active_agents']} active / {len(snapshot['agents'])} registered",
+        (
+            "queue: "
+            f"{snapshot['queue']['pending']} pending | "
+            f"{snapshot['queue']['failed']} failed | "
+            f"{snapshot['queue']['total']} total"
+        ),
+        "",
+    ]
+
+    if snapshot["agents"]:
+        lines.append(
+            "  name         status      ctx-left  5h-left   session"
+        )
+        for a in snapshot["agents"]:
+            icon = "\u25cf" if a["alive"] else "\u25cb"
+            ctx = _fmt_pct(a["metrics"]["context_left"])
+            five = _fmt_pct(a["metrics"]["five_hour_left"])
+            lines.append(
+                f"  {icon} {a['name']:<10} {a['status']:<10} {ctx:<8} {five:<8} {a['session']}"
+            )
+    else:
+        lines.append("  no agents registered")
+
+    return "\n".join(lines)
+
+
+def _nested_get(data, dotted_key):
+    cur = data
+    for part in dotted_key.split("."):
+        if not isinstance(cur, dict) or part not in cur:
+            return None
+        cur = cur[part]
+    return cur
+
+
 def wait_ready(session, patterns, timeout=120, dismiss=None):
     deadline = time.time() + timeout
     tick = 0
@@ -502,58 +640,234 @@ def cmd_restart(args):
 
 
 def cmd_status(_args):
-    db = get_db()
-    config = load_config()
-    max_retries = config.get("max_retries", 5)
-
-    agents = db.execute(
-        "SELECT name, session, status, model, started_at FROM agents ORDER BY name"
-    ).fetchall()
+    snapshot = collect_status_snapshot()
+    agents = snapshot["agents"]
 
     if agents:
         print("agents:")
-        for name, session, status, model, started in agents:
-            alive = session_exists(session)
-            if not alive and status in ("running", "starting"):
-                db.execute("UPDATE agents SET status='dead' WHERE name=?", (name,))
-                status = "dead"
-            icon = "\u25cf" if alive else "\u25cb"
-            model_str = f"  [{model}]" if model else ""
+        for a in agents:
+            icon = "\u25cf" if a["alive"] else "\u25cb"
+            model_str = f"  [{a['model']}]" if a["model"] else ""
             metrics_str = ""
-            if alive:
-                pane = capture_pane(session)
-                metrics = parse_runtime_metrics(pane)
-                metric_parts = []
-                if metrics["context_left"] is not None:
-                    metric_parts.append(f"ctx {metrics['context_left']}% left")
-                if metrics["five_hour_left"] is not None:
-                    metric_parts.append(f"5h {metrics['five_hour_left']}% left")
-                if metric_parts:
-                    metrics_str = "  |  " + "  |  ".join(metric_parts)
-            print(f"  {icon} {name:<12} {status:<10} {session}{model_str}{metrics_str}")
+            metric_parts = []
+            if a["metrics"]["context_left"] is not None:
+                metric_parts.append(f"ctx {a['metrics']['context_left']}% left")
+            if a["metrics"]["five_hour_left"] is not None:
+                metric_parts.append(f"5h {a['metrics']['five_hour_left']}% left")
+            if metric_parts:
+                metrics_str = "  |  " + "  |  ".join(metric_parts)
+            print(
+                f"  {icon} {a['name']:<12} {a['status']:<10} {a['session']}{model_str}{metrics_str}"
+            )
     else:
         print("no agents registered")
 
-    pending = db.execute(
-        "SELECT COUNT(*) FROM messages WHERE delivered_at IS NULL AND attempts < ?",
-        (max_retries,),
-    ).fetchone()[0]
-    failed = db.execute(
-        "SELECT COUNT(*) FROM messages WHERE delivered_at IS NULL AND attempts >= ?",
-        (max_retries,),
-    ).fetchone()[0]
-    total = db.execute("SELECT COUNT(*) FROM messages").fetchone()[0]
+    pending = snapshot["queue"]["pending"]
+    failed = snapshot["queue"]["failed"]
+    total = snapshot["queue"]["total"]
     print(f"\nmessages: {total} total, {pending} pending, {failed} failed")
 
+    daemon = snapshot["daemon"]
+    if daemon["running"]:
+        print(f"daemon: running (pid {daemon['pid']})")
+    elif daemon["stale"]:
+        print("daemon: dead (stale pid)")
+    else:
+        print("daemon: not running")
+
+
+# ── cmd: watch ──────────────────────────────────────────────────────────────
+
+
+def cmd_watch(args):
+    try:
+        while True:
+            snapshot = collect_status_snapshot()
+            if not args.no_clear:
+                print("\033[2J\033[H", end="")
+            print(render_watch(snapshot))
+            if args.once:
+                return
+            print(f"\nrefresh: {args.interval:.1f}s  (ctrl+c to stop)")
+            time.sleep(args.interval)
+    except KeyboardInterrupt:
+        print("\nwatch: stopped")
+
+
+# ── cmd: doctor ─────────────────────────────────────────────────────────────
+
+
+def _doctor_check_macos_permissions():
+    checks = []
+    if sys.platform != "darwin":
+        return checks
+
+    acc = subprocess.run(
+        ["osascript", "-e", 'tell application "System Events" to get name of every process'],
+        capture_output=True,
+        text=True,
+    )
+    checks.append(("permissions.accessibility", acc.returncode == 0, "System Events UI access"))
+
+    auto = subprocess.run(
+        ["osascript", "-e", 'tell application "Finder" to get name'],
+        capture_output=True,
+        text=True,
+    )
+    checks.append(("permissions.automation", auto.returncode == 0, "AppleScript app automation"))
+
+    tmp = Path(tempfile.gettempdir()) / f"swarm-doctor-{os.getpid()}.png"
+    scr = subprocess.run(["screencapture", "-x", str(tmp)], capture_output=True, text=True)
+    ok_scr = scr.returncode == 0 and tmp.exists()
+    checks.append(("permissions.screen_recording", ok_scr, "screen capture permission"))
+    tmp.unlink(missing_ok=True)
+    return checks
+
+
+def _doctor_check_codex_limits():
+    cfg_path = Path.home() / ".codex" / "config.toml"
+    if not cfg_path.exists():
+        return [("codex.config", False, f"missing {cfg_path}")]
+
+    try:
+        data = tomllib.loads(cfg_path.read_text())
+    except Exception as e:  # noqa: BLE001
+        return [("codex.config", False, f"parse failed: {e}")]
+
+    checks = []
+    for key, min_expected in DOCTOR_LIMIT_MIN.items():
+        value = _nested_get(data, key)
+        ok = False
+        if isinstance(min_expected, bool):
+            ok = value is min_expected
+        elif isinstance(min_expected, str):
+            ok = value == min_expected
+        elif isinstance(min_expected, (int, float)):
+            ok = isinstance(value, (int, float)) and value >= min_expected
+
+        detail = f"{key}={value!r} (need >= {min_expected!r})"
+        checks.append((f"codex.{key}", ok, detail))
+    return checks
+
+
+def cmd_doctor(args):
+    config = load_config()
+    results = []
+    fixes = []
+
+    # Core tools
+    tmux_ok = shutil.which("tmux") is not None
+    results.append(("core.tmux", tmux_ok, "tmux binary in PATH"))
+    uv_ok = shutil.which("uv") is not None
+    results.append(("core.uv", uv_ok, "uv binary in PATH"))
+
+    # Agent preflight + auth hints
+    for name, cfg in config.get("agents", {}).items():
+        ok, msg = preflight(name, cfg)
+        results.append((f"agent.{name}.preflight", ok, msg or "ok"))
+        auth_warn = auth_check(name)
+        results.append(
+            (
+                f"agent.{name}.auth",
+                not bool(auth_warn),
+                auth_warn or "credentials detected",
+            )
+        )
+
+    # Database / queue
+    try:
+        db = get_db()
+        total = db.execute("SELECT COUNT(*) FROM messages").fetchone()[0]
+        results.append(("db.sqlite", True, f"ok (messages={total})"))
+
+        stale_rows = []
+        for name, session in db.execute(
+            "SELECT name, session FROM agents WHERE status IN ('running','starting','dead')"
+        ).fetchall():
+            if not session_exists(session):
+                stale_rows.append(name)
+        if stale_rows:
+            results.append(("db.agents.rows", False, f"stale rows: {', '.join(stale_rows)}"))
+            if args.fix:
+                for name in stale_rows:
+                    db.execute("DELETE FROM agents WHERE name=?", (name,))
+                fixes.append(f"removed stale agent rows: {', '.join(stale_rows)}")
+        else:
+            results.append(("db.agents.rows", True, "no stale rows"))
+    finally:
+        try:
+            db.close()
+        except Exception:
+            pass
+
+    # Daemon
     pid = daemon_pid()
     if pid is None:
-        print("daemon: not running")
-        return
-    try:
-        os.kill(pid, 0)
-        print(f"daemon: running (pid {pid})")
-    except ProcessLookupError:
-        print("daemon: dead (stale pid)")
+        results.append(("daemon.pid", True, "no pid file"))
+        daemon_running = False
+    elif process_alive(pid):
+        results.append(("daemon.pid", True, f"running (pid {pid})"))
+        daemon_running = True
+    else:
+        results.append(("daemon.pid", False, f"stale pid file (pid {pid})"))
+        daemon_running = False
+        if args.fix:
+            PID_PATH.unlink(missing_ok=True)
+            fixes.append("removed stale daemon pid file")
+
+    if args.fix and not daemon_running and not args.no_start_daemon:
+        daemon_start(config)
+        fixes.append("started daemon")
+
+    # macOS permissions
+    for key, ok, detail in _doctor_check_macos_permissions():
+        results.append((key, ok, detail))
+    if args.fix and sys.platform == "darwin":
+        failed_perm = [r for r in results if r[0].startswith("permissions.") and not r[1]]
+        if failed_perm:
+            subprocess.run(
+                [
+                    "open",
+                    "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility",
+                ],
+                capture_output=True,
+            )
+            subprocess.run(
+                [
+                    "open",
+                    "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture",
+                ],
+                capture_output=True,
+            )
+            subprocess.run(
+                [
+                    "open",
+                    "x-apple.systempreferences:com.apple.preference.security?Privacy_Automation",
+                ],
+                capture_output=True,
+            )
+            fixes.append("opened Privacy settings panes for permission grants")
+
+    # Codex limits/config
+    results.extend(_doctor_check_codex_limits())
+
+    # Print report
+    ok_count = sum(1 for _, ok, _ in results if ok)
+    fail_count = len(results) - ok_count
+    print("swarm doctor")
+    print("=" * 60)
+    for key, ok, detail in results:
+        mark = "OK" if ok else "WARN"
+        print(f"[{mark:<4}] {key:<36} {detail}")
+
+    if fixes:
+        print("\nauto-fixes:")
+        for item in fixes:
+            print(f"  - {item}")
+
+    print(f"\nsummary: {ok_count} ok, {fail_count} warn")
+    if args.strict and fail_count > 0:
+        raise SystemExit(1)
 
 
 # ── cmd: send ───────────────────────────────────────────────────────────────
@@ -1043,6 +1357,8 @@ def main():
         "down",
         "restart",
         "status",
+        "watch",
+        "doctor",
         "send",
         "chat",
         "log",
@@ -1112,7 +1428,7 @@ def main():
         help="seconds to wait for an immediate response after each message",
     )
 
-    stop = sub.add_parser("stop", help="stop all agents and daemon")
+    sub.add_parser("stop", help="stop all agents and daemon")
 
     reset = sub.add_parser("reset", help="down + go")
     reset.add_argument(
@@ -1149,6 +1465,34 @@ def main():
     restart.add_argument("--project", "-p", help="project directory override")
 
     sub.add_parser("status", help="show running agents + pending msgs")
+
+    watch = sub.add_parser("watch", help="live dashboard for swarm status")
+    watch.add_argument(
+        "--interval",
+        "-i",
+        type=float,
+        default=2.0,
+        help="refresh interval seconds",
+    )
+    watch.add_argument("--once", action="store_true", help="render once and exit")
+    watch.add_argument(
+        "--no-clear",
+        action="store_true",
+        help="do not clear terminal between refreshes",
+    )
+
+    doctor = sub.add_parser("doctor", help="run diagnostics and optional autofixes")
+    doctor.add_argument("--fix", action="store_true", help="apply safe auto-fixes")
+    doctor.add_argument(
+        "--no-start-daemon",
+        action="store_true",
+        help="when --fix is used, do not auto-start daemon",
+    )
+    doctor.add_argument(
+        "--strict",
+        action="store_true",
+        help="exit with non-zero status if any checks warn/fail",
+    )
 
     send = sub.add_parser("send", help="send message to agent")
     send.add_argument("recipient", help="agent name or 'all'")
@@ -1198,6 +1542,8 @@ def main():
         "down": cmd_down,
         "restart": cmd_restart,
         "status": cmd_status,
+        "watch": cmd_watch,
+        "doctor": cmd_doctor,
         "send": cmd_send,
         "chat": cmd_chat,
         "log": cmd_log,
