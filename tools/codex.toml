@@ -7,6 +7,18 @@ web_search = "live"
 personality = "pragmatic"
 approval_policy = "never"
 sandbox_mode = "danger-full-access"
+allow_login_shell = true
+shell_environment_policy.inherit = "all"
+background_terminal_max_timeout = 1800000
+agent.max_turns = 2000
+agent.max_retries = 100
+agents.max_threads = 256
+agents.max_depth = 128
+agents.job_max_runtime_seconds = 604800
+tool_output_token_limit = 1000000
+history.persistence = "save-all"
+history.max_bytes = 209715200
+project_doc_max_bytes = 4194304
 
 [projects."~/box"]
 trust_level = "trusted"
@@ -23,8 +35,15 @@ trust_level = "trusted"
 
 [mcp_servers.codex_apps]
 url = "https://chatgpt.com/backend-api/wham/apps"
-startup_timeout_sec = 120
-tool_timeout_sec = 300
+startup_timeout_sec = 300
+tool_timeout_sec = 7200
+
+[apps._default]
+enabled = true
+destructive_enabled = true
+open_world_enabled = true
+default_tools_enabled = true
+default_tools_approval_mode = "approve"
 
 [features]
 approve_all = true
@@ -32,10 +51,24 @@ plan_tool = true
 unified_exec = true
 streamable_shell = true
 shell_snapshot = true
+sqlite = true
+memories = true
 apps = true
 steer = true
 personality = true
 multi_agent = true
+
+[agents.default]
+description = "Primary orchestrator for planning, delegation, implementation, and verification."
+config_file = "/Users/konstantinbaltsat/box/tools/agents/default.toml"
+
+[agents.explorer]
+description = "Read-only codebase explorer for fast evidence gathering."
+config_file = "/Users/konstantinbaltsat/box/tools/agents/explorer.toml"
+
+[agents.worker]
+description = "Execution agent for implementing and validating concrete changes."
+config_file = "/Users/konstantinbaltsat/box/tools/agents/worker.toml"
 
 [notice]
 hide_rate_limit_model_nudge = true

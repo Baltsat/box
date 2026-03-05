@@ -7,6 +7,7 @@
 import argparse
 import json
 import os
+import re
 import shlex
 import shutil
 import signal
@@ -30,7 +31,7 @@ DEFAULT_CONFIG = {
             "ready_patterns": ["bypass permissions", "claude code", "shift+tab"],
         },
         "pi": {
-            "cmd": "pi --thinking high",
+            "cmd": "pi --thinking high --tools read,bash,edit,write,grep,find,ls",
             "ready_patterns": [
                 "thinking off",
                 "thinking on",
@@ -191,6 +192,108 @@ def inject(session, text):
 def capture_pane(session):
     r = tmux("capture-pane", "-t", session, "-p", "-S", "-50")
     return r.stdout if r.returncode == 0 else ""
+
+
+ANSI_RE = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
+
+
+def strip_ansi(text):
+    if not text:
+        return ""
+    return ANSI_RE.sub("", text).replace("\r", "")
+
+
+def _last_pct(pattern, text):
+    matches = re.findall(pattern, text, flags=re.IGNORECASE)
+    if not matches:
+        return None
+    raw = matches[-1]
+    if isinstance(raw, tuple):
+        raw = next((x for x in raw if x), None)
+    if raw is None:
+        return None
+    try:
+        val = float(raw)
+    except ValueError:
+        return None
+    if val < 0:
+        return None
+    if val > 100:
+        val = 100
+    return int(round(val))
+
+
+def parse_runtime_metrics(pane_text):
+    text = strip_ansi(pane_text)
+    lower = text.lower()
+    five_hour_left = None
+    context_left = None
+
+    for line in lower.splitlines():
+        five_h = re.search(r"5\s*h(?:our)?s?", line)
+        if five_h:
+            pct = None
+            after = line[five_h.end() : five_h.end() + 48]
+            before = line[max(0, five_h.start() - 48) : five_h.start()]
+
+            m_after = re.search(r"(\d{1,3}(?:\.\d+)?)\s*%", after)
+            if m_after:
+                prefix = after[: m_after.start()]
+                if "context" not in prefix:
+                    try:
+                        pct = int(round(float(m_after.group(1))))
+                    except ValueError:
+                        pct = None
+
+            if pct is None:
+                m_before = re.search(r"(\d{1,3}(?:\.\d+)?)\s*%", before)
+                if m_before:
+                    suffix = before[m_before.end() :]
+                    if re.search(r"(left|remaining|quota|usage)", suffix):
+                        try:
+                            pct = int(round(float(m_before.group(1))))
+                        except ValueError:
+                            pct = None
+
+            if pct is not None:
+                if pct < 0:
+                    pct = 0
+                if pct > 100:
+                    pct = 100
+                five_hour_left = pct
+        if "context" in line:
+            pct = _last_pct(
+                r"(?:context(?:\s+window)?[^0-9%]{0,20})(\d{1,3}(?:\.\d+)?)\s*%",
+                line,
+            )
+            if pct is None:
+                pct = _last_pct(
+                    r"(\d{1,3}(?:\.\d+)?)\s*%[^%\n]{0,20}(?:context(?:\s+window)?)",
+                    line,
+                )
+            if pct is not None:
+                context_left = pct
+
+    if five_hour_left is None:
+        # Fallback only when we couldn't find a dedicated 5h line.
+        five_hour_left = _last_pct(
+            r"(\d{1,3}(?:\.\d+)?)\s*%\s*(?:left|remaining)[^\n]{0,24}(?:5\s*h(?:our)?s?)",
+            lower,
+        )
+
+    if context_left is None:
+        context_left = _last_pct(
+            r"(?:context(?:\s+window)?\s*left[^0-9]{0,24})(\d{1,3}(?:\.\d+)?)\s*%",
+            lower,
+        )
+    if context_left is None:
+        # Generic fallback for agents that only print "% left" without a context label.
+        context_left = _last_pct(r"(\d{1,3}(?:\.\d+)?)\s*%\s*left", lower)
+
+    return {
+        "context_left": context_left,
+        "five_hour_left": five_hour_left,
+    }
 
 
 def wait_ready(session, patterns, timeout=120, dismiss=None):
@@ -416,7 +519,18 @@ def cmd_status(_args):
                 status = "dead"
             icon = "\u25cf" if alive else "\u25cb"
             model_str = f"  [{model}]" if model else ""
-            print(f"  {icon} {name:<12} {status:<10} {session}{model_str}")
+            metrics_str = ""
+            if alive:
+                pane = capture_pane(session)
+                metrics = parse_runtime_metrics(pane)
+                metric_parts = []
+                if metrics["context_left"] is not None:
+                    metric_parts.append(f"ctx {metrics['context_left']}% left")
+                if metrics["five_hour_left"] is not None:
+                    metric_parts.append(f"5h {metrics['five_hour_left']}% left")
+                if metric_parts:
+                    metrics_str = "  |  " + "  |  ".join(metric_parts)
+            print(f"  {icon} {name:<12} {status:<10} {session}{model_str}{metrics_str}")
     else:
         print("no agents registered")
 

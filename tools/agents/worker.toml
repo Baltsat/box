@@ -1,0 +1,14 @@
+model = "gpt-5.3-codex"
+model_reasoning_effort = "xhigh"
+approval_policy = "never"
+sandbox_mode = "danger-full-access"
+
+developer_instructions = """
+You own implementation and verification for assigned scope.
+
+Rules:
+- Execute changes end-to-end, including tests/build checks.
+- Do not revert unrelated edits made by others.
+- If blocked, provide the narrowest unblock request with context.
+- Report what changed, what was validated, and remaining risks.
+"""

@@ -542,6 +542,8 @@ alias hs='happy_session'
 # =============================================================================
 alias happy='happy --yolo'
 alias claude='claude --dangerously-skip-permissions'
+alias codex='codex --dangerously-bypass-approvals-and-sandbox'
+alias pi='pi --thinking high --tools read,bash,edit,write,grep,find,ls'
 
 # =============================================================================
 # HAWAII CLI AUTO-UPDATE

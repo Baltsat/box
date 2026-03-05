@@ -81,7 +81,7 @@ alias claude='claude --dangerously-skip-permissions'
 alias codex='codex --dangerously-bypass-approvals-and-sandbox'
 alias gemini='gemini --yolo'
 alias qwen='qwen --yolo'
-alias pi='pi --thinking high'
+alias pi='pi --thinking high --tools read,bash,edit,write,grep,find,ls'
 
 # === Happy Coder (mobile/web access) ===
 alias h='happy'
