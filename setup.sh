@@ -47,9 +47,58 @@ fi
 source_nix() {
     local daemon_sh="/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh"
     local profile_sh="$HOME/.nix-profile/etc/profile.d/nix.sh"
-    [[ -f $daemon_sh ]] && . "$daemon_sh" && return 0
+    if [[ -f $daemon_sh ]] && [[ -S /nix/var/nix/daemon-socket/socket ]]; then
+        . "$daemon_sh"
+        return 0
+    fi
     [[ -f $profile_sh ]] && . "$profile_sh" && return 0
+    [[ -f $daemon_sh ]] && . "$daemon_sh" && return 0
     return 0
+}
+
+nix_daemon_error() {
+    local output="$1"
+    [[ "$output" == *"daemon-socket/socket"* ]] || [[ "$output" == *"cannot connect to socket"* ]] || [[ "$output" == *"Connection refused"* ]]
+}
+
+start_nix_daemon_if_possible() {
+    local daemon_bin="/nix/var/nix/profiles/default/bin/nix-daemon"
+    [[ -x "$daemon_bin" ]] || return 1
+    pgrep -x nix-daemon >/dev/null 2>&1 && return 0
+    has_cmd sudo || return 1
+    sudo -n true >/dev/null 2>&1 || return 1
+
+    log "starting nix daemon"
+    sudo "$daemon_bin" >/dev/null 2>&1 &
+    for _ in $(seq 1 15); do
+        if [[ -S /nix/var/nix/daemon-socket/socket ]] && pgrep -x nix-daemon >/dev/null 2>&1; then
+            return 0
+        fi
+        sleep 1
+    done
+    return 1
+}
+
+ensure_nix_access() {
+    has_cmd nix || return 0
+    nix profile list >/dev/null 2>&1 && return 0
+
+    local probe_err
+    probe_err="$(nix profile list 2>&1 || true)"
+    nix_daemon_error "$probe_err" || return 0
+
+    log "nix daemon unavailable; attempting auto-recovery"
+    start_nix_daemon_if_possible || true
+    source_nix
+    nix profile list >/dev/null 2>&1 && return 0
+
+    log "falling back to local nix mode"
+    unset NIX_REMOTE NIX_DAEMON_SOCKET_PATH
+    local profile_sh="$HOME/.nix-profile/etc/profile.d/nix.sh"
+    [[ -f $profile_sh ]] && . "$profile_sh"
+    nix profile list >/dev/null 2>&1 && return 0
+
+    die "nix unavailable after daemon recovery and local fallback"
 }
 
 install_nix() {
@@ -58,17 +107,7 @@ install_nix() {
     curl --proto '=https' --tlsv1.2 -sSf -L \
         https://install.determinate.systems/nix | sh -s -- install --no-confirm
     source_nix
-    # Start nix daemon if not running (needed in containers)
-    if [[ -f /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh ]]; then
-        if ! pgrep -x nix-daemon >/dev/null 2>&1; then
-            log "starting nix daemon"
-            sudo /nix/var/nix/profiles/default/bin/nix-daemon &
-            for i in $(seq 1 15); do
-                [[ -S /nix/var/nix/daemon-socket/socket ]] && break
-                sleep 1
-            done
-        fi
-    fi
+    start_nix_daemon_if_possible || true
     has_cmd nix || die "nix installation failed"
 }
 
@@ -700,6 +739,7 @@ source_nix
 install_homebrew
 install_nix
 source_nix
+ensure_nix_access
 decrypt_secrets
 apply_config
 source_nix

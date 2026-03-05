@@ -54,8 +54,11 @@ export PATH="$HOME/.local/bin:$HOME/.bun/bin:$HOME/.nix-profile/bin:/nix/var/nix
 # =============================================================================
 # NIX
 # =============================================================================
-if [[ -e '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh' ]]; then
+if [[ -S '/nix/var/nix/daemon-socket/socket' ]] && [[ -e '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh' ]]; then
     . '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh'
+elif [[ -e "$HOME/.nix-profile/etc/profile.d/nix.sh" ]]; then
+    unset NIX_REMOTE NIX_DAEMON_SOCKET_PATH
+    . "$HOME/.nix-profile/etc/profile.d/nix.sh"
 fi
 
 # =============================================================================
