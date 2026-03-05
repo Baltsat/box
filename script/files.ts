@@ -32,6 +32,8 @@ const links: [string, string][] = [
   ['GLOBAL.md', '.qwen/QWEN.md'],
   ['GLOBAL.md', '.copilot/copilot-instructions.md'],
   ['GLOBAL.md', '.pi/agent/AGENTS.md'],
+  ['GLOBAL.md', 'AGENTS.md'],
+  ['GLOBAL.md', '.codex/AGENTS.md'],
   // Zed
   ['tools/zed/settings.json', '.config/zed/settings.json'],
   // Zellij

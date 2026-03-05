@@ -780,6 +780,18 @@ link_configs() {
     fi
 }
 
+sync_global_instructions() {
+    local src="$SCRIPT_DIR/GLOBAL.md"
+    [[ -f "$src" ]] || return 0
+
+    for dst in "$HOME/AGENTS.md" "$HOME/.codex/AGENTS.md"; do
+        mkdir -p "$(dirname "$dst")"
+        ln -sfn "$src" "$dst" 2>/dev/null || cp "$src" "$dst"
+    done
+
+    log "synced global instructions for codex"
+}
+
 repair_codex_config() {
     local codex_dir="$HOME/.codex"
     local codex_cfg="$codex_dir/config.toml"
@@ -824,6 +836,7 @@ source_nix
 install_cli_tools
 apply_tool_configs
 link_configs
+sync_global_instructions
 repair_codex_config
 set_shell
 setup_shell_config

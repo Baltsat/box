@@ -30,6 +30,7 @@ Enter password when prompted. Done.
 4. Installs all packages and apps
 5. Sets up shell (zsh, starship, aliases)
 6. Symlinks config files
+7. Syncs `GLOBAL.md` as global AI instructions (including Codex `AGENTS.md`)
 
 ## Resilient Remote Connect
 
