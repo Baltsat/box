@@ -1,0 +1,29 @@
+{
+  "providers": {
+    "zai": {
+      "baseUrl": "https://api.z.ai/api/anthropic",
+      "apiKey": "!grep '^ZAI_API_KEY=' ~/box/.env | cut -d= -f2",
+      "api": "anthropic-messages",
+      "models": [
+        {
+          "id": "glm-5",
+          "name": "GLM-5 (Z.ai)",
+          "reasoning": true,
+          "input": ["text", "image"],
+          "cost": { "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0 },
+          "contextWindow": 128000,
+          "maxTokens": 16384
+        },
+        {
+          "id": "glm-4.7",
+          "name": "GLM-4.7 (Z.ai)",
+          "reasoning": false,
+          "input": ["text", "image"],
+          "cost": { "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0 },
+          "contextWindow": 128000,
+          "maxTokens": 16384
+        }
+      ]
+    }
+  }
+}

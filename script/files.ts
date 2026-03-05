@@ -58,6 +58,10 @@ const links: [string, string][] = [
   ['tools/claude/skills/frontend', '.claude/skills/frontend'],
   // Claude Code agents
   ['tools/claude/agents/security-reviewer.md', '.claude/agents/security-reviewer.md'],
+  // Pi coding agent
+  ['tools/pi/models.json', '.pi/agent/models.json'],
+  ['tools/pi/auto-failover.ts', '.pi/agent/extensions/auto-failover.ts'],
+  ['tools/pi/statusline.ts', '.pi/agent/extensions/statusline.ts'],
 ];
 
 const macos_links: [string, string][] = [
