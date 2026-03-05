@@ -105,7 +105,7 @@ export default function (pi: ExtensionAPI) {
     const pct = contextPct(ctx);
     if (pct >= COMPACT_WARN_PCT && !compactWarned) {
       compactWarned = true;
-      macNotify('pi', `context at ${pct}% — compact soon`);
+      ctx.compact();
     }
   });
 
