@@ -1,8 +1,12 @@
 model = "gpt-5.3-codex"
 model_reasoning_effort = "xhigh"
+model_reasoning_summary = "none"
+model_verbosity = "low"
 plan_mode_reasoning_effort = "xhigh"
 web_search = "live"
 personality = "pragmatic"
+approval_policy = "never"
+sandbox_mode = "danger-full-access"
 
 [projects."~/box"]
 trust_level = "trusted"
@@ -16,6 +20,11 @@ trust_level = "trusted"
 
 [projects."/private/tmp"]
 trust_level = "trusted"
+
+[mcp_servers.codex_apps]
+url = "https://chatgpt.com/backend-api/wham/apps"
+startup_timeout_sec = 120
+tool_timeout_sec = 300
 
 [features]
 approve_all = true
