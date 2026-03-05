@@ -7,6 +7,7 @@
 import argparse
 import json
 import os
+import shlex
 import shutil
 import signal
 import sqlite3
@@ -62,6 +63,8 @@ ONBOARDING = (
     'To broadcast: swarm send all "<message>"\n'
     "Messages from others appear as: # [SWARM from=<sender>] <text>"
 )
+
+DEFAULT_GO_AGENTS = "claude,codex,pi"
 
 
 # ── preflight ───────────────────────────────────────────────────────────────
@@ -443,6 +446,18 @@ def cmd_status(_args):
 
 
 def cmd_send(args):
+    if args.recipient == "all":
+        if not active_agents():
+            print(f"auto-start: {DEFAULT_GO_AGENTS}")
+            up_args = argparse.Namespace(agents=DEFAULT_GO_AGENTS, project=os.getcwd())
+            cmd_up(up_args)
+    elif args.recipient not in {"all", "user"}:
+        session = f"swarm-{args.recipient}"
+        if not session_exists(session):
+            print(f"auto-start: {args.recipient}")
+            up_args = argparse.Namespace(agents=args.recipient, project=os.getcwd())
+            cmd_up(up_args)
+
     db = get_db()
     sender = os.environ.get("SWARM_AGENT", "user")
     db.execute(
@@ -451,6 +466,194 @@ def cmd_send(args):
     )
     preview = args.message[:80] + ("..." if len(args.message) > 80 else "")
     print(f"\u2192 {args.recipient}: {preview}")
+
+
+def active_agents():
+    db = get_db()
+    try:
+        rows = db.execute(
+            "SELECT name, session FROM agents WHERE status IN ('running','starting')"
+        ).fetchall()
+        return [name for name, session in rows if session_exists(session)]
+    finally:
+        db.close()
+
+
+def cmd_start(args):
+    cmd_go(args)
+
+
+def cmd_stop(args):
+    down_args = argparse.Namespace(agent=None)
+    cmd_down(down_args)
+
+
+def cmd_reset(args):
+    down_args = argparse.Namespace(agent=None)
+    cmd_down(down_args)
+    go_args = argparse.Namespace(
+        recipient=args.recipient,
+        agents=args.agents,
+        project=args.project,
+        wait=args.wait,
+    )
+    cmd_go(go_args)
+
+
+def cmd_clean(_args):
+    db = get_db()
+    try:
+        deleted = db.execute("SELECT COUNT(*) FROM messages").fetchone()[0]
+        db.execute("DELETE FROM messages")
+    finally:
+        db.close()
+
+    INBOX_PATH.write_text("")
+    print(f"cleaned: {deleted} messages, inbox cleared")
+
+
+def fetch_user_messages(last_id, sender=None):
+    db = get_db()
+    try:
+        if sender:
+            rows = db.execute(
+                "SELECT id, sender, body, created_at "
+                "FROM messages "
+                "WHERE recipient='user' AND id>? AND sender=? "
+                "ORDER BY id",
+                (last_id, sender),
+            ).fetchall()
+        else:
+            rows = db.execute(
+                "SELECT id, sender, body, created_at "
+                "FROM messages "
+                "WHERE recipient='user' AND id>? "
+                "ORDER BY id",
+                (last_id,),
+            ).fetchall()
+        return rows
+    finally:
+        db.close()
+
+
+def last_user_message_id(sender=None):
+    db = get_db()
+    try:
+        if sender:
+            row = db.execute(
+                "SELECT COALESCE(MAX(id), 0) "
+                "FROM messages WHERE recipient='user' AND sender=?",
+                (sender,),
+            ).fetchone()
+        else:
+            row = db.execute(
+                "SELECT COALESCE(MAX(id), 0) FROM messages WHERE recipient='user'"
+            ).fetchone()
+        return int(row[0] or 0)
+    finally:
+        db.close()
+
+
+def cmd_chat(args):
+    recipient = args.recipient
+
+    if recipient == "all":
+        if not active_agents():
+            print(f"auto-start: {DEFAULT_GO_AGENTS}")
+            up_args = argparse.Namespace(agents=DEFAULT_GO_AGENTS, project=os.getcwd())
+            cmd_up(up_args)
+    else:
+        session = f"swarm-{recipient}"
+        if not session_exists(session):
+            print(f"auto-start: {recipient}")
+            up_args = argparse.Namespace(agents=recipient, project=os.getcwd())
+            cmd_up(up_args)
+
+    print(f"chat -> {recipient} (type /exit to quit, empty line to refresh)")
+    print("commands: /help /status /peek <agent> /send <agent> <msg> /clear /down")
+    last_id = last_user_message_id(None if recipient == "all" else recipient)
+
+    while True:
+        rows = fetch_user_messages(last_id, None if recipient == "all" else recipient)
+        for msg_id, sender, body, created in rows:
+            last_id = msg_id
+            ts = created[11:16] if created else "??:??"
+            print(f"[{ts}] {sender}: {body}")
+
+        try:
+            text = input("you> ").strip()
+        except (EOFError, KeyboardInterrupt):
+            print("")
+            break
+
+        if not text:
+            continue
+        if text in {"/exit", "/quit", ":q"}:
+            break
+        if text == "/help":
+            print(
+                "commands: /help /status /peek <agent> /send <agent> <msg> /clear /down"
+            )
+            continue
+        if text == "/status":
+            cmd_status(argparse.Namespace())
+            continue
+        if text == "/down":
+            cmd_down(argparse.Namespace(agent=None))
+            break
+        if text == "/clear":
+            cmd_clean(argparse.Namespace())
+            last_id = last_user_message_id(None if recipient == "all" else recipient)
+            continue
+        if text.startswith("/peek "):
+            parts = shlex.split(text)
+            if len(parts) >= 2:
+                cmd_peek(argparse.Namespace(agent=parts[1], last=50))
+            else:
+                print("usage: /peek <agent>")
+            continue
+        if text.startswith("/send "):
+            parts = shlex.split(text)
+            if len(parts) >= 3:
+                target = parts[1]
+                msg = " ".join(parts[2:])
+                cmd_send(argparse.Namespace(recipient=target, message=msg))
+            else:
+                print("usage: /send <agent> <message>")
+            continue
+
+        send_args = argparse.Namespace(recipient=recipient, message=text)
+        cmd_send(send_args)
+
+        deadline = time.time() + args.wait
+        while time.time() < deadline:
+            rows = fetch_user_messages(
+                last_id, None if recipient == "all" else recipient
+            )
+            if rows:
+                for msg_id, sender, body, created in rows:
+                    last_id = msg_id
+                    ts = created[11:16] if created else "??:??"
+                    print(f"[{ts}] {sender}: {body}")
+                break
+            time.sleep(0.3)
+
+
+def cmd_go(args):
+    recipient = args.recipient
+    agents = args.agents
+
+    if not agents:
+        if recipient == "all":
+            agents = DEFAULT_GO_AGENTS
+        else:
+            agents = recipient
+
+    up_args = argparse.Namespace(agents=agents, project=args.project)
+    cmd_up(up_args)
+
+    chat_args = argparse.Namespace(recipient=recipient, wait=args.wait)
+    cmd_chat(chat_args)
 
 
 # ── cmd: log ────────────────────────────────────────────────────────────────
@@ -717,17 +920,26 @@ def main():
     config = load_config()
     agent_names = set(config["agents"].keys()) | {"all", "user"}
     subcommands = {
+        "go",
+        "start",
+        "stop",
+        "reset",
+        "clean",
         "up",
         "down",
         "restart",
         "status",
         "send",
+        "chat",
         "log",
         "inbox",
         "attach",
         "peek",
         "daemon",
     }
+
+    if len(sys.argv) == 1:
+        sys.argv = [sys.argv[0], "go"]
 
     if (
         len(sys.argv) >= 2
@@ -738,12 +950,78 @@ def main():
             if len(sys.argv) >= 3:
                 sys.argv = [sys.argv[0], "send", sys.argv[1], " ".join(sys.argv[2:])]
             else:
-                sys.argv = [sys.argv[0], "peek", sys.argv[1]]
+                sys.argv = [sys.argv[0], "chat", sys.argv[1]]
         else:
             sys.argv = [sys.argv[0], "send", "all", " ".join(sys.argv[1:])]
 
     p = argparse.ArgumentParser(prog="swarm", description="multi-agent orchestrator")
     sub = p.add_subparsers(dest="cmd")
+
+    go = sub.add_parser("go", help="start and enter chat in one command")
+    go.add_argument(
+        "recipient",
+        nargs="?",
+        default="all",
+        help="chat target: agent name or 'all' (default: all)",
+    )
+    go.add_argument(
+        "--agents",
+        "-a",
+        help="agents to start before chat (comma-separated, default: all or recipient)",
+    )
+    go.add_argument("--project", "-p", help="project directory (default: cwd)")
+    go.add_argument(
+        "--wait",
+        "-w",
+        type=float,
+        default=2.0,
+        help="seconds to wait for an immediate response after each message",
+    )
+    start = sub.add_parser("start", help="alias for go")
+    start.add_argument(
+        "recipient",
+        nargs="?",
+        default="all",
+        help="chat target: agent name or 'all' (default: all)",
+    )
+    start.add_argument(
+        "--agents",
+        "-a",
+        help="agents to start before chat (comma-separated, default: all or recipient)",
+    )
+    start.add_argument("--project", "-p", help="project directory (default: cwd)")
+    start.add_argument(
+        "--wait",
+        "-w",
+        type=float,
+        default=2.0,
+        help="seconds to wait for an immediate response after each message",
+    )
+
+    stop = sub.add_parser("stop", help="stop all agents and daemon")
+
+    reset = sub.add_parser("reset", help="down + go")
+    reset.add_argument(
+        "recipient",
+        nargs="?",
+        default="all",
+        help="chat target: agent name or 'all' (default: all)",
+    )
+    reset.add_argument(
+        "--agents",
+        "-a",
+        help="agents to start before chat (comma-separated, default: all or recipient)",
+    )
+    reset.add_argument("--project", "-p", help="project directory (default: cwd)")
+    reset.add_argument(
+        "--wait",
+        "-w",
+        type=float,
+        default=2.0,
+        help="seconds to wait for an immediate response after each message",
+    )
+
+    sub.add_parser("clean", help="clear swarm message history and inbox")
 
     up = sub.add_parser("up", help="start agents + daemon")
     up.add_argument("--agents", "-a", help="comma-separated agent names")
@@ -761,6 +1039,18 @@ def main():
     send = sub.add_parser("send", help="send message to agent")
     send.add_argument("recipient", help="agent name or 'all'")
     send.add_argument("message", help="message text")
+
+    chat = sub.add_parser("chat", help="interactive chat with agent")
+    chat.add_argument(
+        "recipient", nargs="?", default="codex", help="agent name or 'all'"
+    )
+    chat.add_argument(
+        "--wait",
+        "-w",
+        type=float,
+        default=2.0,
+        help="seconds to wait for an immediate response after each message",
+    )
 
     log = sub.add_parser("log", help="show message history")
     log.add_argument("--last", "-n", type=int, default=20)
@@ -785,11 +1075,17 @@ def main():
         return
 
     cmds = {
+        "go": cmd_go,
+        "start": cmd_start,
+        "stop": cmd_stop,
+        "reset": cmd_reset,
+        "clean": cmd_clean,
         "up": cmd_up,
         "down": cmd_down,
         "restart": cmd_restart,
         "status": cmd_status,
         "send": cmd_send,
+        "chat": cmd_chat,
         "log": cmd_log,
         "inbox": cmd_inbox,
         "attach": cmd_attach,
