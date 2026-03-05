@@ -753,6 +753,34 @@ def _doctor_check_codex_limits():
 
         detail = f"{key}={value!r} (need >= {min_expected!r})"
         checks.append((f"codex.{key}", ok, detail))
+
+    agents_cfg = data.get("agents", {})
+    if isinstance(agents_cfg, dict):
+        for agent_name, cfg in agents_cfg.items():
+            if not isinstance(cfg, dict):
+                continue
+            raw = cfg.get("config_file")
+            if not raw:
+                checks.append(
+                    (
+                        f"codex.agents.{agent_name}.config_file",
+                        False,
+                        "missing config_file",
+                    )
+                )
+                continue
+
+            candidate = Path(str(raw)).expanduser()
+            if not candidate.is_absolute():
+                candidate = cfg_path.parent / candidate
+            ok = candidate.exists()
+            checks.append(
+                (
+                    f"codex.agents.{agent_name}.config_file",
+                    ok,
+                    f"{raw!r} -> {candidate}",
+                )
+            )
     return checks
 
 
@@ -779,6 +807,22 @@ def cmd_doctor(args):
                 auth_warn or "credentials detected",
             )
         )
+
+    # Codex runtime sanity check (catches broken config_file references).
+    codex_bin = shutil.which("codex")
+    if codex_bin:
+        rt = subprocess.run(
+            [codex_bin, "features", "list"],
+            capture_output=True,
+            text=True,
+        )
+        if rt.returncode == 0:
+            results.append(("agent.codex.runtime", True, "codex features list ok"))
+        else:
+            detail = (rt.stderr or rt.stdout or "non-zero exit").strip().splitlines()
+            results.append(
+                ("agent.codex.runtime", False, detail[0] if detail else "non-zero exit")
+            )
 
     # Database / queue
     try:

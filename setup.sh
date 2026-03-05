@@ -6,6 +6,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
 log() { echo "[setup] $*"; }
+warn() { echo "[setup] warn: $*" >&2; }
 die() {
     log "error: $*"
     exit 1
@@ -61,6 +62,18 @@ nix_daemon_error() {
     [[ "$output" == *"daemon-socket/socket"* ]] || [[ "$output" == *"cannot connect to socket"* ]] || [[ "$output" == *"Connection refused"* ]]
 }
 
+rewrite_codex_agent_paths() {
+    local cfg="$1"
+    local tmp_cfg
+    tmp_cfg="$(mktemp)"
+    sed -E \
+        -e 's|config_file = ".*tools/agents/default\.toml"|config_file = "agents/default.toml"|' \
+        -e 's|config_file = ".*tools/agents/explorer\.toml"|config_file = "agents/explorer.toml"|' \
+        -e 's|config_file = ".*tools/agents/worker\.toml"|config_file = "agents/worker.toml"|' \
+        "$cfg" >"$tmp_cfg"
+    mv "$tmp_cfg" "$cfg"
+}
+
 start_nix_daemon_if_possible() {
     local daemon_bin="/nix/var/nix/profiles/default/bin/nix-daemon"
     [[ -x "$daemon_bin" ]] || return 1
@@ -101,15 +114,24 @@ ensure_nix_access() {
     die "nix unavailable after daemon recovery and local fallback"
 }
 
-run_home_manager_switch() {
-    local config="$1"
-    local cmd_output=""
+run_home_manager_switch_once() {
+    local cfg="$1"
+    local force_local="${2:-0}"
+    local -a env_prefix=()
+    [[ "$force_local" == "1" ]] && env_prefix=(env NIX_REMOTE=local)
 
     if has_cmd home-manager; then
-        cmd_output="$(home-manager switch --flake ".#$config" -b backup --impure 2>&1)" && return 0
+        "${env_prefix[@]}" home-manager switch --flake ".#$cfg" -b backup --impure
     else
-        cmd_output="$(nix --extra-experimental-features 'nix-command flakes' run home-manager -- switch --flake ".#$config" -b backup --impure 2>&1)" && return 0
+        "${env_prefix[@]}" nix --extra-experimental-features 'nix-command flakes' run home-manager -- switch --flake ".#$cfg" -b backup --impure
     fi
+}
+
+run_home_manager_switch() {
+    local config="$1"
+    local cmd_output
+
+    cmd_output="$(run_home_manager_switch_once "$config" 0 2>&1)" && return 0
 
     if ! nix_daemon_error "$cmd_output"; then
         echo "$cmd_output" >&2
@@ -120,22 +142,14 @@ run_home_manager_switch() {
     start_nix_daemon_if_possible || true
     source_nix
 
-    if has_cmd home-manager; then
-        cmd_output="$(home-manager switch --flake ".#$config" -b backup --impure 2>&1)" && return 0
-    else
-        cmd_output="$(nix --extra-experimental-features 'nix-command flakes' run home-manager -- switch --flake ".#$config" -b backup --impure 2>&1)" && return 0
-    fi
+    cmd_output="$(run_home_manager_switch_once "$config" 0 2>&1)" && return 0
 
     if nix_daemon_error "$cmd_output"; then
         log "retry via daemon failed; forcing local nix mode"
         unset NIX_REMOTE NIX_DAEMON_SOCKET_PATH
         local profile_sh="$HOME/.nix-profile/etc/profile.d/nix.sh"
         [[ -f $profile_sh ]] && . "$profile_sh"
-        if has_cmd home-manager; then
-            NIX_REMOTE=local home-manager switch --flake ".#$config" -b backup --impure
-        else
-            NIX_REMOTE=local nix --extra-experimental-features 'nix-command flakes' run home-manager -- switch --flake ".#$config" -b backup --impure
-        fi
+        run_home_manager_switch_once "$config" 1
         return $?
     fi
 
@@ -766,6 +780,32 @@ link_configs() {
     fi
 }
 
+repair_codex_config() {
+    local codex_dir="$HOME/.codex"
+    local codex_cfg="$codex_dir/config.toml"
+    local src_cfg="$SCRIPT_DIR/tools/codex.toml"
+
+    mkdir -p "$codex_dir/agents"
+    for role in default explorer worker; do
+        local src="$SCRIPT_DIR/tools/agents/$role.toml"
+        local dst="$codex_dir/agents/$role.toml"
+        [[ -f "$src" ]] || continue
+        ln -sfn "$src" "$dst" 2>/dev/null || cp "$src" "$dst"
+    done
+
+    if [[ ! -e "$codex_cfg" ]] && [[ -f "$src_cfg" ]]; then
+        cp "$src_cfg" "$codex_cfg"
+        log "created codex config"
+    fi
+
+    if [[ -f "$codex_cfg" ]] && [[ ! -L "$codex_cfg" ]]; then
+        if grep -Eq 'config_file = ".*tools/agents/(default|explorer|worker)\.toml"' "$codex_cfg"; then
+            log "repairing legacy codex agent config paths"
+            rewrite_codex_agent_paths "$codex_cfg"
+        fi
+    fi
+}
+
 # === Main ===
 log "============================================"
 log "       box setup - full system config      "
@@ -784,6 +824,7 @@ source_nix
 install_cli_tools
 apply_tool_configs
 link_configs
+repair_codex_config
 set_shell
 setup_shell_config
 
@@ -798,6 +839,9 @@ log "  - cli tools (claude, codex, gemini, qwen, happy, repomix, omnara, ccusage
 log "  - ssh keys restored"
 log "  - all tool configs applied"
 log ""
+
+# Prevent immediate duplicate one-time bootstrap in interactive bashrc after setup.
+touch "$HOME/.box_setup_done"
 
 # Reload shell with new config (replaces current process)
 log "reloading shell..."

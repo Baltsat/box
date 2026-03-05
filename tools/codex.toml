@@ -60,15 +60,15 @@ multi_agent = true
 
 [agents.default]
 description = "Primary orchestrator for planning, delegation, implementation, and verification."
-config_file = "/Users/konstantinbaltsat/box/tools/agents/default.toml"
+config_file = "agents/default.toml"
 
 [agents.explorer]
 description = "Read-only codebase explorer for fast evidence gathering."
-config_file = "/Users/konstantinbaltsat/box/tools/agents/explorer.toml"
+config_file = "agents/explorer.toml"
 
 [agents.worker]
 description = "Execution agent for implementing and validating concrete changes."
-config_file = "/Users/konstantinbaltsat/box/tools/agents/worker.toml"
+config_file = "agents/worker.toml"
 
 [notice]
 hide_rate_limit_model_nudge = true

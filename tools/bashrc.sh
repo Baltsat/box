@@ -355,6 +355,38 @@ fi
 # =============================================================================
 BOX_DIR="${BOX_DIR:-$HOME/box}"
 
+_box_rewrite_codex_agent_paths() {
+    local cfg="$1"
+    local tmp_cfg
+    tmp_cfg="$(mktemp)"
+    sed -E \
+        -e 's|config_file = ".*tools/agents/default\.toml"|config_file = "agents/default.toml"|' \
+        -e 's|config_file = ".*tools/agents/explorer\.toml"|config_file = "agents/explorer.toml"|' \
+        -e 's|config_file = ".*tools/agents/worker\.toml"|config_file = "agents/worker.toml"|' \
+        "$cfg" >"$tmp_cfg"
+    mv "$tmp_cfg" "$cfg"
+}
+
+_box_repair_codex_config() {
+    local codex_dir="$HOME/.codex"
+    local codex_cfg="$codex_dir/config.toml"
+    [[ -f "$codex_cfg" ]] || return 0
+
+    mkdir -p "$codex_dir/agents"
+    for role in default explorer worker; do
+        local src="$BOX_DIR/tools/agents/$role.toml"
+        local dst="$codex_dir/agents/$role.toml"
+        [[ -f "$src" ]] || continue
+        ln -sfn "$src" "$dst" 2>/dev/null || cp "$src" "$dst"
+    done
+
+    if grep -Eq 'config_file = ".*tools/agents/(default|explorer|worker)\.toml"' "$codex_cfg"; then
+        _box_rewrite_codex_agent_paths "$codex_cfg"
+    fi
+}
+
+_box_repair_codex_config
+
 # Source shared aliases
 if [[ -f "$BOX_DIR/tools/aliases.sh" ]]; then
     # shellcheck source=/dev/null
@@ -474,12 +506,17 @@ _box_auto_update
 # =============================================================================
 # HAPPY DAEMON AUTO-START
 # =============================================================================
-# Start happy daemon for mobile/web access if not running
-if command -v happy &>/dev/null; then
-    if [[ ! -f "$HOME/.happy/daemon.state.json" ]] || ! pgrep -f "happy.*daemon" >/dev/null 2>&1; then
-        happy daemon start >/dev/null 2>&1 &
-    fi
-fi
+_box_start_happy_daemon() {
+    command -v happy &>/dev/null || return 0
+    [[ -n "${BOX_DISABLE_HAPPY_AUTOSTART:-}" ]] && return 0
+    happy daemon status >/dev/null 2>&1 && return 0
+    pgrep -f "happy.*daemon" >/dev/null 2>&1 && return 0
+
+    happy daemon start >/dev/null 2>&1 </dev/null &
+    disown "$!" 2>/dev/null || true
+}
+
+_box_start_happy_daemon
 
 # =============================================================================
 # HAPPY SESSION - tmux + happy per directory

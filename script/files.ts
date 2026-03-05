@@ -38,6 +38,9 @@ const links: [string, string][] = [
   ['tools/zellij.kdl', '.config/zellij/config.kdl'],
   // Codex
   ['tools/codex.toml', '.codex/config.toml'],
+  ['tools/agents/default.toml', '.codex/agents/default.toml'],
+  ['tools/agents/explorer.toml', '.codex/agents/explorer.toml'],
+  ['tools/agents/worker.toml', '.codex/agents/worker.toml'],
   // Organize (file automation)
   ['tools/organize/config.yaml', '.config/organize/config.yaml'],
   // Swarm (multi-agent orchestrator)
