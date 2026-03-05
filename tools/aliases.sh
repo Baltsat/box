@@ -356,9 +356,13 @@ _box_auto_update() {
     fi
 
     # Codex (OpenAI)
-    if command -v codex &>/dev/null && command -v npm &>/dev/null; then
+    if command -v codex &>/dev/null; then
         echo "[box] checking codex..." >>"$log_file"
-        npm update -g @openai/codex >>"$log_file" 2>&1 || true
+        if command -v bun &>/dev/null; then
+            bun install -g @openai/codex@latest >>"$log_file" 2>&1 || true
+        elif command -v npm &>/dev/null; then
+            npm install -g @openai/codex@latest >>"$log_file" 2>&1 || true
+        fi
     fi
 
     # Happy Coder

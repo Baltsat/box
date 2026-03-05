@@ -19,10 +19,12 @@ tool_output_token_limit = 1000000
 history.persistence = "save-all"
 history.max_bytes = 209715200
 project_doc_max_bytes = 4194304
+suppress_unstable_features_warning = true
+check_for_update_on_startup = false
 
 [projects."~/box"]
 trust_level = "trusted"
-auto_update = false
+auto_update = true
 
 [projects."/Users/konstantinbaltsat"]
 trust_level = "trusted"

@@ -461,6 +461,16 @@ _box_auto_update() {
             local log_file="$HOME/.cache/box_update.log"
             echo "[box] auto-update started: $(date)" >"$log_file"
 
+            # === Codex (OpenAI) ===
+            if command -v codex &>/dev/null; then
+                echo "[box] checking codex..." >>"$log_file"
+                if command -v bun &>/dev/null; then
+                    bun install -g @openai/codex@latest >>"$log_file" 2>&1 || true
+                elif command -v npm &>/dev/null; then
+                    npm install -g @openai/codex@latest >>"$log_file" 2>&1 || true
+                fi
+            fi
+
             # === NPM Global Packages ===
             if command -v npm &>/dev/null; then
                 echo "[box] updating npm globals..." >>"$log_file"
