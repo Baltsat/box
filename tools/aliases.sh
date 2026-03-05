@@ -208,7 +208,7 @@ mssh() {
         if [[ $mosh_ec -eq 0 && $elapsed -ge $min_ok_seconds ]]; then
             if [[ -f "$unhealthy_file" ]]; then
                 local clear_tmp="${unhealthy_file}.tmp.$$"
-                awk -v host="$target" '$1 != host {print $0}' "$unhealthy_file" >"$clear_tmp" 2>/dev/null && \
+                awk -v host="$target" '$1 != host {print $0}' "$unhealthy_file" >"$clear_tmp" 2>/dev/null &&
                     mv "$clear_tmp" "$unhealthy_file" 2>/dev/null || rm -f "$clear_tmp"
             fi
             return 0
