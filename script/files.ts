@@ -62,6 +62,7 @@ const links: [string, string][] = [
   ['tools/pi/models.json', '.pi/agent/models.json'],
   ['tools/pi/auto-failover.ts', '.pi/agent/extensions/auto-failover.ts'],
   ['tools/pi/statusline.ts', '.pi/agent/extensions/statusline.ts'],
+  ['tools/pi/settings.json', '.pi/agent/settings.json'],
 ];
 
 const macos_links: [string, string][] = [
