@@ -31,6 +31,34 @@ Enter password when prompted. Done.
 5. Sets up shell (zsh, starship, aliases)
 6. Symlinks config files
 
+## Resilient Remote Connect
+
+Use `mssh` to keep sessions stable during Wi-Fi/network switches:
+
+```bash
+mssh user@server
+mssh my-ssh-alias
+```
+
+Behavior:
+- If local `mosh` is installed, `mssh` uses `mosh`.
+- `mssh` runs `mosh` with quiet SSH bootstrap flags to reduce noisy helper disconnect lines.
+- If local `mosh` is missing, `mssh` falls back to `ssh`.
+- If `mosh` exits with an error, `mssh` retries with SSH keepalive options.
+- If `mosh` exits too quickly (under 3 seconds), `mssh` also retries with SSH keepalive options.
+- After a failed/too-quick `mosh` attempt, that host is put on a temporary `ssh` cooldown (default: 30 minutes) to avoid repeated failed `mosh` attempts.
+- Override knobs: `MSSH_FORCE_MOSH=1` (bypass cooldown), `MSSH_MOSH_MIN_OK_SECONDS`, `MSSH_MOSH_COOLDOWN_SECONDS`.
+- It opens a normal remote shell (no forced tmux attach).
+
+Scope:
+- `box` installs `mosh` in Linux/server paths.
+- macOS package provisioning is unchanged in `box` (you can still install `mosh` manually on your Mac if desired).
+- Linux `mosh` version is pinned through `flake.lock` (Nix), avoiding distro `apt` version drift.
+
+Prerequisites for `mosh` mode:
+- Remote host must have `mosh-server` available.
+- UDP traffic for mosh must be allowed (default range `60000-61000`).
+
 ## Structure
 
 ```
@@ -65,6 +93,7 @@ After editing nix files:
 ## Customization
 
 - **Packages**: Edit `shared.nix`
+- **Linux-only packages**: Edit `linux.nix`
 - **macOS settings**: Edit `macos.nix`
 - **Homebrew apps**: Edit `homebrew.brews` and `homebrew.casks` in `macos.nix`
 - **Aliases**: Edit `tools/aliases.sh`

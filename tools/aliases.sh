@@ -150,6 +150,99 @@ ns() {
 
 # === Utility Functions ===
 
+# Resilient remote shell helper: prefer mosh for roaming, fallback to ssh.
+# usage: mssh <host> [ssh-or-mosh-args...]
+mssh() {
+    local target="${1:-}"
+    if [[ -z "$target" ]]; then
+        echo "usage: mssh <host> [args...]"
+        return 2
+    fi
+    shift
+    local -a ssh_keepalive=(
+        -o ServerAliveInterval=20
+        -o ServerAliveCountMax=6
+        -o TCPKeepAlive=yes
+    )
+    local mosh_ssh_cmd="ssh -q -o LogLevel=ERROR -o ServerAliveInterval=20 -o ServerAliveCountMax=6 -o TCPKeepAlive=yes"
+    local min_ok_seconds="${MSSH_MOSH_MIN_OK_SECONDS:-3}"
+    local cooldown_seconds="${MSSH_MOSH_COOLDOWN_SECONDS:-1800}"
+    local cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}"
+    local unhealthy_file="$cache_dir/mssh_unhealthy_hosts"
+    local start_seconds=$SECONDS
+    local had_errexit=0
+    [[ "$-" == *e* ]] && had_errexit=1
+
+    if ! [[ "$min_ok_seconds" =~ ^[0-9]+$ ]]; then
+        min_ok_seconds=3
+    fi
+    if ! [[ "$cooldown_seconds" =~ ^[0-9]+$ ]]; then
+        cooldown_seconds=1800
+    fi
+
+    if command -v mosh &>/dev/null; then
+        if [[ -z "${MSSH_FORCE_MOSH:-}" && -f "$unhealthy_file" ]]; then
+            local previous_fail_ts
+            previous_fail_ts="$(awk -v host="$target" '$1 == host {print $2; exit}' "$unhealthy_file" 2>/dev/null)"
+            if [[ "$previous_fail_ts" =~ ^[0-9]+$ ]]; then
+                local now_seconds
+                now_seconds="$(date +%s)"
+                local age_seconds=$((now_seconds - previous_fail_ts))
+                if ((age_seconds >= 0 && age_seconds < cooldown_seconds)); then
+                    echo "[mssh] skipping mosh for $target (recent mosh failure ${age_seconds}s ago); using ssh"
+                    ((had_errexit)) && set +e
+                    command ssh "${ssh_keepalive[@]}" "$target" "$@"
+                    local cached_ssh_ec=$?
+                    ((had_errexit)) && set -e
+                    return $cached_ssh_ec
+                fi
+            fi
+        fi
+
+        ((had_errexit)) && set +e
+        command mosh --ssh="$mosh_ssh_cmd" "$target" "$@"
+        local mosh_ec=$?
+        ((had_errexit)) && set -e
+        local elapsed=$((SECONDS - start_seconds))
+        # If mosh ends too quickly, treat it as unhealthy and fallback to ssh.
+        if [[ $mosh_ec -eq 0 && $elapsed -ge $min_ok_seconds ]]; then
+            if [[ -f "$unhealthy_file" ]]; then
+                local clear_tmp="${unhealthy_file}.tmp.$$"
+                awk -v host="$target" '$1 != host {print $0}' "$unhealthy_file" >"$clear_tmp" 2>/dev/null && \
+                    mv "$clear_tmp" "$unhealthy_file" 2>/dev/null || rm -f "$clear_tmp"
+            fi
+            return 0
+        fi
+
+        local now_seconds
+        now_seconds="$(date +%s)"
+        mkdir -p "$cache_dir" 2>/dev/null || true
+        local write_tmp="${unhealthy_file}.tmp.$$"
+        {
+            [[ -f "$unhealthy_file" ]] && awk -v host="$target" '$1 != host {print $0}' "$unhealthy_file" 2>/dev/null
+            printf "%s %s\n" "$target" "$now_seconds"
+        } >"$write_tmp" 2>/dev/null && mv "$write_tmp" "$unhealthy_file" 2>/dev/null || rm -f "$write_tmp"
+
+        if [[ $mosh_ec -eq 0 ]]; then
+            echo "[mssh] mosh ended quickly (${elapsed}s); retrying with ssh keepalive"
+        else
+            echo "[mssh] mosh exited ($mosh_ec) after ${elapsed}s; retrying with ssh keepalive"
+        fi
+        ((had_errexit)) && set +e
+        command ssh "${ssh_keepalive[@]}" "$target" "$@"
+        local ssh_ec=$?
+        ((had_errexit)) && set -e
+        return $ssh_ec
+    fi
+
+    echo "[mssh] mosh not found locally; using ssh"
+    ((had_errexit)) && set +e
+    command ssh "${ssh_keepalive[@]}" "$target" "$@"
+    local ssh_ec=$?
+    ((had_errexit)) && set -e
+    return $ssh_ec
+}
+
 # Copy all files content to clipboard (for sharing with AI)
 displayall() {
     (tree -I "node_modules|dist" && echo "\n\nFile content:" && find . -type f ! -path "./dist/*" ! -path "./.git/*" ! -path "./node_modules/*" -exec sh -c 'echo "\n--- {} ---"; cat "{}"' \;) | pbcopy
