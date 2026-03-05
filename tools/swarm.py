@@ -7,6 +7,7 @@
 import argparse
 import json
 import os
+import shutil
 import signal
 import sqlite3
 import subprocess
@@ -330,7 +331,11 @@ def cmd_up(args):
         inject(session, ONBOARDING.format(name=name, others=others))
 
     if started:
+        # Ensure we don't fork with an active SQLite handle.
+        db.close()
         daemon_start(config)
+    else:
+        db.close()
 
 
 # ── cmd: down ───────────────────────────────────────────────────────────────
@@ -392,6 +397,8 @@ def cmd_restart(args):
 
 def cmd_status(_args):
     db = get_db()
+    config = load_config()
+    max_retries = config.get("max_retries", 5)
 
     agents = db.execute(
         "SELECT name, session, status, model, started_at FROM agents ORDER BY name"
@@ -411,20 +418,25 @@ def cmd_status(_args):
         print("no agents registered")
 
     pending = db.execute(
-        "SELECT COUNT(*) FROM messages WHERE delivered_at IS NULL"
+        "SELECT COUNT(*) FROM messages WHERE delivered_at IS NULL AND attempts < ?",
+        (max_retries,),
+    ).fetchone()[0]
+    failed = db.execute(
+        "SELECT COUNT(*) FROM messages WHERE delivered_at IS NULL AND attempts >= ?",
+        (max_retries,),
     ).fetchone()[0]
     total = db.execute("SELECT COUNT(*) FROM messages").fetchone()[0]
-    print(f"\nmessages: {total} total, {pending} pending")
+    print(f"\nmessages: {total} total, {pending} pending, {failed} failed")
 
-    if PID_PATH.exists():
-        try:
-            pid = int(PID_PATH.read_text().strip())
-            os.kill(pid, 0)
-            print(f"daemon: running (pid {pid})")
-        except (ProcessLookupError, ValueError):
-            print("daemon: dead (stale pid)")
-    else:
+    pid = daemon_pid()
+    if pid is None:
         print("daemon: not running")
+        return
+    try:
+        os.kill(pid, 0)
+        print(f"daemon: running (pid {pid})")
+    except ProcessLookupError:
+        print("daemon: dead (stale pid)")
 
 
 # ── cmd: send ───────────────────────────────────────────────────────────────
@@ -446,8 +458,10 @@ def cmd_send(args):
 
 def cmd_log(args):
     db = get_db()
+    config = load_config()
+    max_retries = config.get("max_retries", 5)
     rows = db.execute(
-        "SELECT sender, recipient, body, created_at, delivered_at "
+        "SELECT sender, recipient, body, created_at, delivered_at, attempts "
         "FROM messages ORDER BY id DESC LIMIT ?",
         (args.last,),
     ).fetchall()
@@ -456,8 +470,13 @@ def cmd_log(args):
         print("no messages")
         return
 
-    for sender, recipient, body, created, delivered in reversed(rows):
-        icon = "\u2713" if delivered else "\u2026"
+    for sender, recipient, body, created, delivered, attempts in reversed(rows):
+        if delivered:
+            icon = "\u2713"
+        elif attempts >= max_retries:
+            icon = "\u2717"
+        else:
+            icon = "\u2026"
         ts = created[11:16] if created else "??:??"
         print(f"  {icon} [{ts}] {sender} \u2192 {recipient}: {body[:100]}")
 
@@ -481,55 +500,64 @@ def cmd_daemon(args):
 
 
 def daemon_start(config):
-    if PID_PATH.exists():
+    pid = daemon_pid()
+    if pid is not None:
         try:
-            pid = int(PID_PATH.read_text().strip())
             os.kill(pid, 0)
             print(f"daemon: already running (pid {pid})")
             return
-        except (ProcessLookupError, ValueError):
+        except ProcessLookupError:
             PID_PATH.unlink(missing_ok=True)
 
     if LOG_PATH.exists() and LOG_PATH.stat().st_size > 1_000_000:
         LOG_PATH.write_text("")
 
-    pid = os.fork()
-    if pid > 0:
-        print(f"daemon: started (pid {pid})")
+    swarm_bin = shutil.which("swarm") or os.path.abspath(sys.argv[0])
+    LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+
+    with open(os.devnull, "r") as devnull, open(LOG_PATH, "a") as log_file:
+        proc = subprocess.Popen(
+            [swarm_bin, "daemon", "--foreground"],
+            stdin=devnull,
+            stdout=log_file,
+            stderr=log_file,
+            close_fds=True,
+            start_new_session=True,
+            env=os.environ.copy(),
+        )
+
+    PID_PATH.write_text(str(proc.pid))
+    time.sleep(0.2)
+    if proc.poll() is not None:
+        PID_PATH.unlink(missing_ok=True)
+        print("daemon: failed to start (check ~/.swarm/daemon.log)")
         return
 
-    os.setsid()
-    devnull = os.open(os.devnull, os.O_RDWR)
-    log_fd = os.open(str(LOG_PATH), os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o644)
-    os.dup2(devnull, 0)
-    os.dup2(log_fd, 1)
-    os.dup2(log_fd, 2)
-    os.close(devnull)
-    os.close(log_fd)
-
-    PID_PATH.write_text(str(os.getpid()))
-    signal.signal(signal.SIGTERM, lambda *_: sys.exit(0))
-
-    try:
-        daemon_loop(config)
-    finally:
-        try:
-            get_db().execute("PRAGMA wal_checkpoint(TRUNCATE)")
-        except Exception:
-            pass
-        PID_PATH.unlink(missing_ok=True)
+    print(f"daemon: started (pid {proc.pid})")
 
 
 def daemon_stop():
-    if not PID_PATH.exists():
+    pid = daemon_pid()
+    if pid is None:
         return
     try:
-        pid = int(PID_PATH.read_text().strip())
         os.kill(pid, signal.SIGTERM)
         print(f"daemon: stopped (pid {pid})")
-    except (ProcessLookupError, ValueError):
+    except ProcessLookupError:
         pass
     PID_PATH.unlink(missing_ok=True)
+
+
+def daemon_pid():
+    if not PID_PATH.exists():
+        return None
+    raw = PID_PATH.read_text().strip()
+    if not raw:
+        return None
+    try:
+        return int(raw)
+    except ValueError:
+        return None
 
 
 def deliver_to_user(sender, body):
@@ -565,7 +593,8 @@ def daemon_loop(config):
 
         rows = db.execute(
             "SELECT id, sender, recipient, body, attempts, delivered_to "
-            "FROM messages WHERE delivered_at IS NULL AND attempts < ?",
+            "FROM messages WHERE delivered_at IS NULL "
+            "AND (recipient='user' OR attempts < ?)",
             (max_retries,),
         ).fetchall()
 
