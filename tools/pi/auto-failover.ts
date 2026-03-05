@@ -71,11 +71,14 @@ export default function (pi: ExtensionAPI) {
     if (!QUOTA_RE.test(msg.errorMessage ?? '')) return;
 
     failoverActive = true;
-    const cur = currentIdx(ctx);
-    failedProviders.set(providerKey(FALLBACK_CHAIN[cur]), Date.now());
+    const p = msg.provider;
+    const m = msg.model;
+    const cur = FALLBACK_CHAIN.findIndex((f) => f.provider === p && f.model === m);
+    const idx = cur >= 0 ? cur : currentIdx(ctx);
+    failedProviders.set(providerKey(FALLBACK_CHAIN[idx]), Date.now());
 
     for (let i = 1; i < FALLBACK_CHAIN.length; i++) {
-      const next = FALLBACK_CHAIN[(cur + i) % FALLBACK_CHAIN.length];
+      const next = FALLBACK_CHAIN[(idx + i) % FALLBACK_CHAIN.length];
       if (failedProviders.has(providerKey(next))) continue;
 
       const model = ctx.modelRegistry.find(next.provider, next.model);
