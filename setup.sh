@@ -361,6 +361,7 @@ install_cli_tools() {
     install_js_cli "@qwen-code/qwen-code@latest" "qwen"
     install_js_cli "happy-coder" "happy"
     install_js_cli "repomix" "repomix"
+    install_js_cli "@mariozechner/pi-coding-agent" "pi" "always"
 
     # Omnara (AI agent control platform)
     if ! has_cmd omnara; then
