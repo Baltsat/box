@@ -374,9 +374,7 @@ def collect_status_snapshot():
             daemon["state"] = "dead (stale pid)"
 
         active = sum(
-            1
-            for a in agents
-            if a["alive"] and a["status"] in {"running", "starting"}
+            1 for a in agents if a["alive"] and a["status"] in {"running", "starting"}
         )
 
         return {
@@ -409,9 +407,7 @@ def render_watch(snapshot):
     ]
 
     if snapshot["agents"]:
-        lines.append(
-            "  name         status      ctx-left  5h-left   session"
-        )
+        lines.append("  name         status      ctx-left  5h-left   session")
         for a in snapshot["agents"]:
             icon = "\u25cf" if a["alive"] else "\u25cb"
             ctx = _fmt_pct(a["metrics"]["context_left"])
@@ -703,21 +699,31 @@ def _doctor_check_macos_permissions():
         return checks
 
     acc = subprocess.run(
-        ["osascript", "-e", 'tell application "System Events" to get name of every process'],
+        [
+            "osascript",
+            "-e",
+            'tell application "System Events" to get name of every process',
+        ],
         capture_output=True,
         text=True,
     )
-    checks.append(("permissions.accessibility", acc.returncode == 0, "System Events UI access"))
+    checks.append(
+        ("permissions.accessibility", acc.returncode == 0, "System Events UI access")
+    )
 
     auto = subprocess.run(
         ["osascript", "-e", 'tell application "Finder" to get name'],
         capture_output=True,
         text=True,
     )
-    checks.append(("permissions.automation", auto.returncode == 0, "AppleScript app automation"))
+    checks.append(
+        ("permissions.automation", auto.returncode == 0, "AppleScript app automation")
+    )
 
     tmp = Path(tempfile.gettempdir()) / f"swarm-doctor-{os.getpid()}.png"
-    scr = subprocess.run(["screencapture", "-x", str(tmp)], capture_output=True, text=True)
+    scr = subprocess.run(
+        ["screencapture", "-x", str(tmp)], capture_output=True, text=True
+    )
     ok_scr = scr.returncode == 0 and tmp.exists()
     checks.append(("permissions.screen_recording", ok_scr, "screen capture permission"))
     tmp.unlink(missing_ok=True)
@@ -787,7 +793,9 @@ def cmd_doctor(args):
             if not session_exists(session):
                 stale_rows.append(name)
         if stale_rows:
-            results.append(("db.agents.rows", False, f"stale rows: {', '.join(stale_rows)}"))
+            results.append(
+                ("db.agents.rows", False, f"stale rows: {', '.join(stale_rows)}")
+            )
             if args.fix:
                 for name in stale_rows:
                     db.execute("DELETE FROM agents WHERE name=?", (name,))
@@ -823,7 +831,9 @@ def cmd_doctor(args):
     for key, ok, detail in _doctor_check_macos_permissions():
         results.append((key, ok, detail))
     if args.fix and sys.platform == "darwin":
-        failed_perm = [r for r in results if r[0].startswith("permissions.") and not r[1]]
+        failed_perm = [
+            r for r in results if r[0].startswith("permissions.") and not r[1]
+        ]
         if failed_perm:
             subprocess.run(
                 [
