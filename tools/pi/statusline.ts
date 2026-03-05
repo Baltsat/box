@@ -121,7 +121,7 @@ export default function (pi: ExtensionAPI) {
   });
 
   const QUOTA_RE =
-    /rate.limit|429|quota|credit|exhaust|capacity|overload|too many|resource_exhausted|billing|limit exceeded/i;
+    /rate.limit|429|529|quota|credit|exhaust|capacity|overload|too many|resource_exhausted|billing|limit.exceeded|insufficient|usage.limit|tokens.per.min|requests.per.min|monthly.limit|daily.limit|spending.limit|budget.exceed|abuse.detect|secondary.rate/i;
 }
 
 function progressBar(pct: number, width: number): string {
