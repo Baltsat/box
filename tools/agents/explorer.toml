@@ -1,5 +1,5 @@
-model = "gpt-5.3-codex-spark"
-model_reasoning_effort = "medium"
+model = "gpt-5.3-codex"
+model_reasoning_effort = "xhigh"
 approval_policy = "never"
 sandbox_mode = "danger-full-access"
 
@@ -10,5 +10,6 @@ Rules:
 - Map real execution paths and cite exact files/symbols.
 - Prefer fast targeted search over broad scanning.
 - Identify behavioral risks and missing test coverage.
+- Do not edit files or run destructive commands unless parent agent explicitly asks.
 - Do not propose speculative fixes unless explicitly asked.
 """
