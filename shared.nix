@@ -40,6 +40,7 @@
     zellij
     uv
     blesh # bash line editor with autocomplete
+    mosh # keep mosh deterministic through flake.lock on both macOS and Linux
     bat
     htop
     watch

@@ -165,6 +165,7 @@ mssh() {
         -o TCPKeepAlive=yes
     )
     local mosh_ssh_cmd="ssh -q -o LogLevel=ERROR -o ServerAliveInterval=20 -o ServerAliveCountMax=6 -o TCPKeepAlive=yes"
+    local mosh_server_cmd='env PATH="$HOME/.nix-profile/bin:/etc/profiles/per-user/$USER/bin:/nix/var/nix/profiles/default/bin:$PATH" mosh-server'
     local min_ok_seconds="${MSSH_MOSH_MIN_OK_SECONDS:-3}"
     local cooldown_seconds="${MSSH_MOSH_COOLDOWN_SECONDS:-1800}"
     local cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}"
@@ -199,20 +200,31 @@ mssh() {
             fi
         fi
 
+        local mosh_log=""
+        mosh_log="$(mktemp "${TMPDIR:-/tmp}/mssh.mosh.XXXXXX" 2>/dev/null || true)"
         ((had_errexit)) && set +e
-        command mosh --ssh="$mosh_ssh_cmd" "$target" "$@"
+        if [[ -n "$mosh_log" ]]; then
+            command mosh --ssh="$mosh_ssh_cmd" --server="$mosh_server_cmd" "$target" "$@" 2>"$mosh_log"
+        else
+            command mosh --ssh="$mosh_ssh_cmd" --server="$mosh_server_cmd" "$target" "$@"
+        fi
         local mosh_ec=$?
         ((had_errexit)) && set -e
         local elapsed=$((SECONDS - start_seconds))
-        # If mosh ends too quickly, treat it as unhealthy and fallback to ssh.
         if [[ $mosh_ec -eq 0 && $elapsed -ge $min_ok_seconds ]]; then
             if [[ -f "$unhealthy_file" ]]; then
                 local clear_tmp="${unhealthy_file}.tmp.$$"
                 awk -v host="$target" '$1 != host {print $0}' "$unhealthy_file" >"$clear_tmp" 2>/dev/null &&
                     mv "$clear_tmp" "$unhealthy_file" 2>/dev/null || rm -f "$clear_tmp"
             fi
+            [[ -n "$mosh_log" ]] && rm -f "$mosh_log"
             return 0
         fi
+
+        if [[ -n "$mosh_log" && -s "$mosh_log" ]]; then
+            cat "$mosh_log" >&2
+        fi
+        [[ -n "$mosh_log" ]] && rm -f "$mosh_log"
 
         local now_seconds
         now_seconds="$(date +%s)"
@@ -418,8 +430,10 @@ init_box_tools() {
     fi
     command -v fzf &>/dev/null && eval "$(fzf --${SHELL##*/})"
 
-    # Run auto-update check
-    _box_auto_update 2>/dev/null &
+    # Run auto-update check only for local shells; remote ssh/mosh startup must stay silent.
+    if [[ -z "${SSH_CONNECTION:-}" && "${_BOX_IS_REMOTE:-0}" != "1" && "${_BOX_IS_MOSH:-0}" != "1" && "${_BOX_SKIP_ALIAS_AUTO_UPDATE:-0}" != "1" ]]; then
+        _box_auto_update 2>/dev/null &
+    fi
 }
 
 # === Auto-Update (once per day, background, non-blocking) ===

@@ -266,11 +266,12 @@ apply_config() {
 
     case "$(uname -s)" in
     Darwin)
-        log "applying nix-darwin config"
+        local target_user="${BOX_USER:-$USER}"
+        log "applying nix-darwin config for user: $target_user"
         if has_cmd darwin-rebuild; then
-            sudo darwin-rebuild switch --flake .#macos
+            sudo BOX_USER="$target_user" darwin-rebuild switch --flake .#macos --impure
         else
-            sudo nix --extra-experimental-features 'nix-command flakes' run nix-darwin -- switch --flake .#macos
+            sudo BOX_USER="$target_user" nix --extra-experimental-features 'nix-command flakes' run nix-darwin -- switch --impure --flake .#macos
         fi
         ;;
     Linux)
@@ -351,6 +352,8 @@ setup_shell_config() {
     *) return 0 ;;
     esac
 
+    [[ -f "$shell_rc" ]] || touch "$shell_rc"
+
     # Linux + bash: ensure login shells source .bashrc via .bash_profile
     if [[ "$(uname -s)" == "Linux" && "$(basename "$SHELL")" == "bash" ]]; then
         if ! grep -qF '.bashrc' "$HOME/.bash_profile" 2>/dev/null; then
@@ -377,7 +380,7 @@ setup_shell_config() {
     else
         # macOS/zsh: source aliases.sh
         local alias_line="source \"$SCRIPT_DIR/tools/aliases.sh\""
-        if [[ -f "$shell_rc" ]] && ! grep -qF "box/tools/aliases.sh" "$shell_rc"; then
+        if ! grep -qF "box/tools/aliases.sh" "$shell_rc"; then
             log "adding aliases to $shell_rc"
             echo "" >>"$shell_rc"
             echo "# Box aliases" >>"$shell_rc"
@@ -386,7 +389,7 @@ setup_shell_config() {
 
         # Source .env if exists (only for zsh, bashrc.sh handles this for bash)
         local env_line="source \"$SCRIPT_DIR/.env\""
-        if [[ -f "$shell_rc" ]] && ! grep -qF "box/.env" "$shell_rc"; then
+        if ! grep -qF "box/.env" "$shell_rc"; then
             log "adding .env sourcing to $shell_rc"
             echo "[ -f \"$SCRIPT_DIR/.env\" ] && set -a && $env_line && set +a" >>"$shell_rc"
             echo "unset ANTHROPIC_API_KEY  # claude code uses subscription by default" >>"$shell_rc"

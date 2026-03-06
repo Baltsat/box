@@ -13,7 +13,5 @@
   home.packages = with pkgs; [
     htop
     tree
-    # Keep mosh version deterministic through flake.lock pinned nixpkgs.
-    mosh
   ];
 }

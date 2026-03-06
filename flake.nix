@@ -17,8 +17,14 @@
       ...
     }:
     let
-      # Default username - override via BOX_USER env var in setup.sh
       defaultUsername = "konstantinbaltsat";
+      envOr =
+        name: fallback:
+        let
+          value = builtins.getEnv name;
+        in
+        if value != "" then value else fallback;
+      darwinUsername = envOr "BOX_USER" (envOr "USER" defaultUsername);
 
       # Helper to create home-manager config for any user
       mkHomeConfig =
@@ -39,14 +45,14 @@
           {
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
-            home-manager.users.${defaultUsername} = import ./shared.nix;
+            home-manager.users.${darwinUsername} = import ./shared.nix;
             home-manager.extraSpecialArgs = {
-              username = defaultUsername;
+              username = darwinUsername;
             };
           }
         ];
         specialArgs = {
-          username = defaultUsername;
+          username = darwinUsername;
         };
       };
 

@@ -8,6 +8,16 @@ case $- in
 *) return ;;
 esac
 
+_BOX_PARENT_COMM="$(ps -o comm= -p "${PPID:-0}" 2>/dev/null | tr -d '[:space:]')"
+_BOX_IS_MOSH=0
+[[ "$_BOX_PARENT_COMM" == "mosh-server" ]] && _BOX_IS_MOSH=1
+_BOX_IS_SSH=0
+[[ -n "${SSH_CONNECTION:-}" ]] && _BOX_IS_SSH=1
+_BOX_IS_REMOTE=0
+((_BOX_IS_SSH || _BOX_IS_MOSH)) && _BOX_IS_REMOTE=1
+_BOX_ALLOW_STARTUP_MUTATION=1
+((_BOX_IS_REMOTE)) && _BOX_ALLOW_STARTUP_MUTATION=0
+
 # =============================================================================
 # BLESH (Bash Line Editor) - load early with deferred attach
 # =============================================================================
@@ -284,7 +294,7 @@ TMUX_CONF
     fi
 }
 
-_box_first_time_setup
+((_BOX_ALLOW_STARTUP_MUTATION)) && _box_first_time_setup
 
 # Ensure Bun exists even if first-time setup already completed earlier.
 _box_ensure_bun() {
@@ -296,7 +306,7 @@ _box_ensure_bun() {
     command -v bun &>/dev/null && echo "[box] bun installed"
 }
 
-_box_ensure_bun
+((_BOX_ALLOW_STARTUP_MUTATION)) && _box_ensure_bun
 
 # =============================================================================
 # NVM (load after setup)
@@ -326,11 +336,13 @@ _box_ensure_js_cli() {
     command -v "$cmd" &>/dev/null && echo "[box] $cmd installed"
 }
 
-_box_ensure_js_cli "@openai/codex" "codex"
-_box_ensure_js_cli "@google/gemini-cli" "gemini"
-_box_ensure_js_cli "@qwen-code/qwen-code@latest" "qwen"
-_box_ensure_js_cli "happy-coder" "happy"
-_box_ensure_js_cli "repomix" "repomix"
+if ((_BOX_ALLOW_STARTUP_MUTATION)); then
+    _box_ensure_js_cli "@openai/codex" "codex"
+    _box_ensure_js_cli "@google/gemini-cli" "gemini"
+    _box_ensure_js_cli "@qwen-code/qwen-code@latest" "qwen"
+    _box_ensure_js_cli "happy-coder" "happy"
+    _box_ensure_js_cli "repomix" "repomix"
+fi
 
 # =============================================================================
 # PROMPT (fallback if starship not available)
@@ -385,10 +397,11 @@ _box_repair_codex_config() {
     fi
 }
 
-_box_repair_codex_config
+((_BOX_ALLOW_STARTUP_MUTATION)) && _box_repair_codex_config
 
 # Source shared aliases
 if [[ -f "$BOX_DIR/tools/aliases.sh" ]]; then
+    _BOX_SKIP_ALIAS_AUTO_UPDATE=1
     # shellcheck source=/dev/null
     . "$BOX_DIR/tools/aliases.sh"
 fi
@@ -397,6 +410,7 @@ fi
 if command -v init_box_tools &>/dev/null; then
     init_box_tools
 fi
+unset _BOX_SKIP_ALIAS_AUTO_UPDATE
 
 # =============================================================================
 # ENVIRONMENT
@@ -436,7 +450,7 @@ _box_ensure_hawaii() {
     fi
 }
 
-_box_ensure_hawaii
+((_BOX_ALLOW_STARTUP_MUTATION)) && _box_ensure_hawaii
 
 # =============================================================================
 # AUTO-UPDATE (once per day, background, non-blocking)
@@ -511,7 +525,7 @@ _box_auto_update() {
 }
 
 # Run auto-update check (non-blocking)
-_box_auto_update
+((_BOX_ALLOW_STARTUP_MUTATION)) && _box_auto_update
 
 # =============================================================================
 # HAPPY DAEMON AUTO-START
@@ -526,7 +540,7 @@ _box_start_happy_daemon() {
     disown "$!" 2>/dev/null || true
 }
 
-_box_start_happy_daemon
+((_BOX_ALLOW_STARTUP_MUTATION)) && _box_start_happy_daemon
 
 # =============================================================================
 # HAPPY SESSION - tmux + happy per directory
@@ -625,7 +639,7 @@ _hawaii_auto_update() {
 }
 
 # Run hawaii auto-update (non-blocking)
-command -v hawaii &>/dev/null && _hawaii_auto_update
+((_BOX_ALLOW_STARTUP_MUTATION)) && command -v hawaii &>/dev/null && _hawaii_auto_update
 
 # =============================================================================
 # CODE - Workspace management with tmux windows
@@ -827,6 +841,7 @@ EOF
 
     local cli_base_cmd="env -u CLAUDECODE claude --dangerously-skip-permissions"
     local cli_continue_cmd="env -u CLAUDECODE claude --dangerously-skip-permissions -c"
+    local prompt_shell=""
     ! command -v claude &>/dev/null && {
         [[ -n "$prompt" ]] && {
             echo "error: claude not found"
@@ -835,6 +850,7 @@ EOF
         cli_base_cmd="bash"
         cli_continue_cmd="bash"
     }
+    [[ -n "$prompt" ]] && printf -v prompt_shell '%q' "$prompt"
 
     local session_name
     session_name="ws-$(echo "$dir_name" | tr ' .:-' '____')"
@@ -844,12 +860,12 @@ EOF
         if [[ "$create_new" == true ]]; then
             local new_window="code-${dir_name}-$(date +%H%M%S)"
             if tmux has-session -t "$session_name" 2>/dev/null; then
-                [[ -n "$prompt" ]] && tmux new-window -d -t "$session_name:" -n "$new_window" -c "$current_dir" "$cli_base_cmd '$prompt'" ||
+                [[ -n "$prompt" ]] && tmux new-window -d -t "$session_name:" -n "$new_window" -c "$current_dir" "$cli_base_cmd $prompt_shell" ||
                     tmux new-window -d -t "$session_name:" -n "$new_window" -c "$current_dir" "$cli_base_cmd"
                 echo "${session_name}|${new_window}|${current_dir}|${prompt}" >>"$CODE_HISTORY_FILE"
                 tmux attach-session -t "$session_name" \; select-window -t "$new_window"
             else
-                [[ -n "$prompt" ]] && tmux new-session -s "$session_name" -n "$new_window" -c "$current_dir" "$cli_base_cmd '$prompt'" ||
+                [[ -n "$prompt" ]] && tmux new-session -s "$session_name" -n "$new_window" -c "$current_dir" "$cli_base_cmd $prompt_shell" ||
                     tmux new-session -s "$session_name" -n "$new_window" -c "$current_dir" "$cli_base_cmd"
                 echo "${session_name}|${new_window}|${current_dir}|${prompt}" >>"$CODE_HISTORY_FILE"
             fi
@@ -870,14 +886,14 @@ EOF
                 echo "${session_name}|${existing[-1]}|${current_dir}|${prompt}" >>"$CODE_HISTORY_FILE"
             else
                 local wn="code-${dir_name}"
-                [[ -n "$prompt" ]] && tmux new-window -d -t "$session_name:" -n "$wn" -c "$current_dir" "env -u CLAUDECODE claude --dangerously-skip-permissions -c '$prompt'" ||
+                [[ -n "$prompt" ]] && tmux new-window -d -t "$session_name:" -n "$wn" -c "$current_dir" "env -u CLAUDECODE claude --dangerously-skip-permissions -c $prompt_shell" ||
                     tmux new-window -d -t "$session_name:" -n "$wn" -c "$current_dir" "$cli_continue_cmd"
                 echo "${session_name}|${wn}|${current_dir}|${prompt}" >>"$CODE_HISTORY_FILE"
                 tmux attach-session -t "$session_name" \; select-window -t "$wn"
             fi
         else
             local wn="code-${dir_name}"
-            [[ -n "$prompt" ]] && tmux new-session -s "$session_name" -n "$wn" -c "$current_dir" "$cli_base_cmd '$prompt'" ||
+            [[ -n "$prompt" ]] && tmux new-session -s "$session_name" -n "$wn" -c "$current_dir" "$cli_base_cmd $prompt_shell" ||
                 tmux new-session -s "$session_name" -n "$wn" -c "$current_dir" "$cli_base_cmd"
             echo "${session_name}|${wn}|${current_dir}|${prompt}" >>"$CODE_HISTORY_FILE"
         fi
@@ -891,7 +907,7 @@ EOF
     if [[ "$create_new" == true ]]; then
         window_name="code-${dir_name}-$(date +%H%M%S)"
         tmux list-windows -F '#W' | grep -q "^${window_name}$" && window_name="${window_name}-$(date +%N | cut -c1-3)"
-        [[ -n "$prompt" ]] && tmux new-window -n "$window_name" -c "$current_dir" "$cli_base_cmd '$prompt'" ||
+        [[ -n "$prompt" ]] && tmux new-window -n "$window_name" -c "$current_dir" "$cli_base_cmd $prompt_shell" ||
             tmux new-window -n "$window_name" -c "$current_dir" "$cli_base_cmd"
         echo "${current_session}|${window_name}|${current_dir}|${prompt}" >>"$CODE_HISTORY_FILE"
     else
@@ -908,7 +924,7 @@ EOF
             echo "${current_session}|${existing[-1]}|${current_dir}|${prompt}" >>"$CODE_HISTORY_FILE"
         else
             window_name="code-${dir_name}"
-            [[ -n "$prompt" ]] && tmux new-window -n "$window_name" -c "$current_dir" "env -u CLAUDECODE claude --dangerously-skip-permissions -c '$prompt'" ||
+            [[ -n "$prompt" ]] && tmux new-window -n "$window_name" -c "$current_dir" "env -u CLAUDECODE claude --dangerously-skip-permissions -c $prompt_shell" ||
                 tmux new-window -n "$window_name" -c "$current_dir" "$cli_continue_cmd"
             echo "${current_session}|${window_name}|${current_dir}|${prompt}" >>"$CODE_HISTORY_FILE"
         fi
@@ -980,7 +996,7 @@ alias chc='rm -f "$CODE_HISTORY_FILE" && echo "history cleared"'
 # =============================================================================
 # BLESH - Final configuration and attach
 # =============================================================================
-if [[ ${BLE_VERSION-} ]]; then
+if [[ ${BLE_VERSION-} ]] && ((!_BOX_IS_REMOTE)); then
     # Configure blesh options
     bleopt editor="${EDITOR:-vim}"
     bleopt complete_auto_delay=100
