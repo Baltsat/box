@@ -4,10 +4,8 @@ Personal development environment. One command to set up a new machine.
 
 ## Quick Recovery (Any Server)
 
-If the image is bare and `git` is missing, install `git` first.
-
 ```bash
-([ -d "$HOME/box/.git" ] || git clone https://github.com/Baltsat/box.git "$HOME/box") && cd "$HOME/box" && git fetch origin && git reset --hard origin/main && rm -f ~/.box_setup_done && (./setup.sh || (unset NIX_REMOTE NIX_DAEMON_SOCKET_PATH; NIX_REMOTE=local ./setup.sh)) && exec "$SHELL" -l
+(command -v git >/dev/null 2>&1 || { s=""; [ "$(id -u)" -ne 0 ] && s="sudo"; (command -v apt-get >/dev/null 2>&1 && $s apt-get update && $s apt-get install -y git) || (command -v dnf >/dev/null 2>&1 && $s dnf install -y git) || (command -v yum >/dev/null 2>&1 && $s yum install -y git) || (command -v apk >/dev/null 2>&1 && $s apk add --no-cache git bash curl) || (command -v pacman >/dev/null 2>&1 && $s pacman -Sy --noconfirm git) || (command -v zypper >/dev/null 2>&1 && $s zypper --non-interactive install git) || { echo "install git manually" >&2; exit 1; }; }) && ([ -d "$HOME/box/.git" ] || git clone https://github.com/Baltsat/box.git "$HOME/box") && cd "$HOME/box" && git fetch origin && git reset --hard origin/main && rm -f ~/.box_setup_done && (./setup.sh || (unset NIX_REMOTE NIX_DAEMON_SOCKET_PATH; NIX_REMOTE=local ./setup.sh)) && exec "$SHELL" -l
 ```
 
 ## Setup
@@ -17,7 +15,7 @@ If the image is bare and `git` is missing, install `git` first.
 git clone https://github.com/Baltsat/box.git ~/box && ~/box/setup.sh
 ```
 
-If the image is bare and `git` is missing, install `git` first.
+If the image is bare and `git` is missing, use the quick recovery one-liner above.
 
 **Update existing box (force reset + reinstall everything):**
 ```bash

@@ -485,6 +485,16 @@ _box_auto_update() {
                 fi
             fi
 
+            # === Pi Coding Agent ===
+            if command -v pi &>/dev/null; then
+                echo "[box] checking pi-coding-agent..." >>"$log_file"
+                if command -v bun &>/dev/null; then
+                    bun install -g @mariozechner/pi-coding-agent >>"$log_file" 2>&1 || true
+                elif command -v npm &>/dev/null; then
+                    npm install -g @mariozechner/pi-coding-agent >>"$log_file" 2>&1 || true
+                fi
+            fi
+
             # === NPM Global Packages ===
             if command -v npm &>/dev/null; then
                 echo "[box] updating npm globals..." >>"$log_file"

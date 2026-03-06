@@ -257,7 +257,14 @@ mssh() {
 
 # Copy all files content to clipboard (for sharing with AI)
 displayall() {
-    (tree -I "node_modules|dist" && echo "\n\nFile content:" && find . -type f ! -path "./dist/*" ! -path "./.git/*" ! -path "./node_modules/*" -exec sh -c 'echo "\n--- {} ---"; cat "{}"' \;) | pbcopy
+    {
+        tree -I "node_modules|dist"
+        printf "\n\nFile content:\n"
+        while IFS= read -r -d '' file; do
+            printf "\n--- %s ---\n" "$file"
+            cat "$file"
+        done < <(fd -H -t f . . --exclude dist --exclude .git --exclude node_modules -0)
+    } | pbcopy
 }
 
 # Find repos in home directory
@@ -497,9 +504,13 @@ _box_auto_update() {
     fi
 
     # Pi Coding Agent
-    if command -v pi &>/dev/null && command -v npm &>/dev/null; then
+    if command -v pi &>/dev/null; then
         echo "[box] checking pi-coding-agent..." >>"$log_file"
-        npm install -g @mariozechner/pi-coding-agent >>"$log_file" 2>&1 || true
+        if command -v bun &>/dev/null; then
+            bun install -g @mariozechner/pi-coding-agent >>"$log_file" 2>&1 || true
+        elif command -v npm &>/dev/null; then
+            npm install -g @mariozechner/pi-coding-agent >>"$log_file" 2>&1 || true
+        fi
     fi
 
     # Repomix
