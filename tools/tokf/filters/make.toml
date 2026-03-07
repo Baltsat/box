@@ -1,0 +1,13 @@
+command = ["make", "make *"]
+
+skip = [
+  "^make\\[\\d+\\]: Entering directory",
+  "^make\\[\\d+\\]: Leaving directory",
+  "^make\\[\\d+\\]: Nothing to be done",
+]
+
+[on_success]
+tail = 10
+
+[on_failure]
+tail = 20

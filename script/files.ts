@@ -63,6 +63,9 @@ const links: [string, string][] = [
   ['tools/claude/skills/frontend', '.claude/skills/frontend'],
   // Claude Code agents
   ['tools/claude/agents/security-reviewer.md', '.claude/agents/security-reviewer.md'],
+  // tokf skills (token output filter)
+  ['tools/claude/skills/tokf-filter', '.claude/skills/tokf-filter'],
+  ['tools/agents/skills/tokf-run/SKILL.md', '.agents/skills/tokf-run/SKILL.md'],
   // Pi coding agent
   ['tools/pi/models.json', '.pi/agent/models.json'],
   ['tools/pi/auto-failover.ts', '.pi/agent/extensions/auto-failover.ts'],

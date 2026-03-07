@@ -1,0 +1,17 @@
+command = "uv run *"
+
+skip = [
+  "^\\s*Resolved \\d+ packages?",
+  "^\\s*Prepared \\d+ packages?",
+  "^\\s*Installed \\d+ packages?",
+  "^\\s*Downloading",
+  "^\\s*Using Python",
+  "^\\s*Creating virtual",
+  "^Audited",
+]
+
+[on_success]
+output = "{output}"
+
+[on_failure]
+tail = 20

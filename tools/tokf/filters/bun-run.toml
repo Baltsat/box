@@ -1,0 +1,12 @@
+command = "bun run *"
+
+skip = [
+  "^\\$",
+  "^bun run v",
+]
+
+[on_success]
+output = "{output}"
+
+[on_failure]
+tail = 20

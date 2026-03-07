@@ -1,0 +1,26 @@
+command = ["pip install *", "pip3 install *", "uv pip install *", "uv pip uninstall *"]
+
+skip = [
+  "^\\s*Collecting",
+  "^\\s*Downloading",
+  "^\\s*Using cached",
+  "^\\s*Installing collected",
+  "^\\s*Requirement already satisfied",
+  "^\\s*Preparing metadata",
+  "^\\s*Building wheel",
+  "^\\s*Created wheel",
+  "^\\s*Stored in directory",
+  "^\\s*Resolved \\d+",
+  "^\\s*Prepared \\d+",
+  "^\\s*Using Python",
+  "^\\s*Creating virtual",
+  "^Audited",
+  "^WARNING: Running pip",
+  "^\\[notice\\]",
+]
+
+[on_success]
+extract = { pattern = "Successfully installed (.+)", output = "ok: installed {1}" }
+
+[on_failure]
+tail = 10

@@ -1,0 +1,21 @@
+command = ["curl *", "wget *"]
+
+skip = [
+  "^\\s*% Total",
+  "^\\s*Dload",
+  "^\\s+\\d+\\s+\\d+\\s+\\d+",
+  "^  % Total",
+  "^--\\d{4}-\\d{2}-\\d{2}",
+  "^Resolving",
+  "^Connecting to",
+  "^HTTP request sent",
+  "^Length:",
+  "^Saving to:",
+  "^\\s*\\d+K",
+]
+
+[on_success]
+head = 100
+
+[on_failure]
+tail = 10

@@ -1,0 +1,19 @@
+command = ["brew install *", "brew upgrade", "brew upgrade *", "brew reinstall *"]
+
+skip = [
+  "^==> (Downloading|Fetching|Pouring|Installing|Purging)",
+  "^Already downloaded",
+  "^###",
+  "^==> Caveats",
+  "^\\s+/opt/homebrew",
+  "^==> Summary",
+  "^🍺",
+  "^==> \\S+ing dependencies",
+  "^==> Satisfying dependencies",
+]
+
+[on_success]
+head = 5
+
+[on_failure]
+tail = 15

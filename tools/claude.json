@@ -90,6 +90,17 @@
           }
         ]
       }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/box/tools/hooks/tokf-hook.sh"
+          }
+        ]
+      }
     ]
   },
   "statusLine": {

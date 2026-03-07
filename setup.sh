@@ -484,6 +484,27 @@ install_cli_tools() {
         claude install || true
     fi
 
+    # tokf (token output filter for LLM context compression)
+    # macOS: installed via brew (macos.nix). Linux: download pre-built binary.
+    if ! has_cmd tokf && [[ "$(uname -s)" == "Linux" ]]; then
+        local arch
+        arch=$(uname -m)
+        if [[ "$arch" == "x86_64" ]]; then
+            log "installing tokf (linux x86_64)"
+            local tokf_ver
+            tokf_ver=$(curl -fsSL "https://api.github.com/repos/mpecan/tokf/releases" 2>/dev/null | grep -o '"tag_name":"tokf-v[^"]*"' | head -1 | cut -d'"' -f4)
+            if [[ -n "$tokf_ver" ]]; then
+                local tokf_url="https://github.com/mpecan/tokf/releases/download/${tokf_ver}/${tokf_ver}-x86_64-unknown-linux-gnu.tar.gz"
+                mkdir -p "$HOME/.local/bin"
+                curl -fsSL "$tokf_url" | tar xz -C "$HOME/.local/bin" tokf 2>/dev/null || true
+                chmod +x "$HOME/.local/bin/tokf" 2>/dev/null || true
+                export PATH="$HOME/.local/bin:$PATH"
+            fi
+        else
+            log "tokf: no pre-built binary for $arch linux, skipping"
+        fi
+    fi
+
     # ccusage (Claude Code usage tracker)
     if has_cmd bun && ! has_cmd ccusage; then
         log "installing ccusage"
@@ -795,6 +816,30 @@ sync_global_instructions() {
     log "synced global instructions for codex"
 }
 
+setup_tokf() {
+    has_cmd tokf || return 0
+    log "configuring tokf hooks"
+
+    # Symlink custom filters to user-level config (platform-specific paths)
+    local tokf_filters_dir
+    if [[ "$(uname -s)" == "Darwin" ]]; then
+        tokf_filters_dir="$HOME/Library/Application Support/tokf/filters"
+    else
+        tokf_filters_dir="$HOME/.config/tokf/filters"
+    fi
+    if [[ -d "$SCRIPT_DIR/tools/tokf/filters" ]]; then
+        mkdir -p "$(dirname "$tokf_filters_dir")"
+        ln -sfn "$SCRIPT_DIR/tools/tokf/filters" "$tokf_filters_dir"
+        log "linked tokf filters"
+    fi
+
+    # Install Claude Code filter-authoring skill (idempotent)
+    tokf skill install --global 2>/dev/null || true
+
+    # Install Codex CLI skill (idempotent)
+    tokf hook install --tool codex --global 2>/dev/null || true
+}
+
 repair_codex_config() {
     local codex_dir="$HOME/.codex"
     local codex_cfg="$codex_dir/config.toml"
@@ -841,6 +886,7 @@ apply_tool_configs
 link_configs
 sync_global_instructions
 repair_codex_config
+setup_tokf
 set_shell
 setup_shell_config
 
@@ -851,7 +897,7 @@ log ""
 log "installed:"
 log "  - nix + home-manager/nix-darwin"
 log "  - homebrew packages (macOS)"
-log "  - cli tools (claude, codex, gemini, qwen, happy, repomix, omnara, ccusage)"
+log "  - cli tools (claude, codex, gemini, qwen, happy, repomix, omnara, ccusage, tokf)"
 log "  - ssh keys restored"
 log "  - all tool configs applied"
 log ""

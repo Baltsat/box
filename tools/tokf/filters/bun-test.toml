@@ -1,0 +1,19 @@
+command = "bun test"
+
+skip = [
+  "^\\s*$",
+  "^bun test v",
+]
+
+keep = [
+  "^(PASS|FAIL|✓|✗|×|\\d+ pass|\\d+ fail|error|Error)",
+  "^\\s+(✓|✗|×|PASS|FAIL)",
+  "expected .+ received",
+  "^\\s+at ",
+]
+
+[on_success]
+extract = { pattern = "(\\d+) pass", output = "ok: {1} passed" }
+
+[on_failure]
+tail = 30

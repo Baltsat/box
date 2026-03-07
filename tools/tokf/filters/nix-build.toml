@@ -1,0 +1,20 @@
+command = ["nix build *", "nix run *", "darwin-rebuild switch *", "home-manager switch *"]
+
+skip = [
+  "^copying path",
+  "^building '",
+  "^fetching '",
+  "^unpacking '",
+  "^evaluating '",
+  "^  /nix/store/",
+  "^downloading '",
+  "^warning: Git tree.*is dirty",
+  "^warning: not writing modified lock file",
+  "^trace:",
+]
+
+[on_success]
+tail = 5
+
+[on_failure]
+tail = 20

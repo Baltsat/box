@@ -182,6 +182,18 @@ mssh() {
     fi
 
     if command -v mosh &>/dev/null; then
+        local proxy_command
+        proxy_command="$(command ssh -G "$target" 2>/dev/null \
+            | awk '$1 == "proxycommand" { sub(/^proxycommand /, ""); print; exit }')"
+        if [[ -n "$proxy_command" && "$proxy_command" != "none" ]]; then
+            echo "[mssh] proxycommand detected for $target; forcing ssh"
+            ((had_errexit)) && set +e
+            command ssh "${ssh_keepalive[@]}" "$target" "$@"
+            local ssh_ec=$?
+            ((had_errexit)) && set -e
+            return $ssh_ec
+        fi
+
         if [[ -z "${MSSH_FORCE_MOSH:-}" && -f "$unhealthy_file" ]]; then
             local previous_fail_ts
             previous_fail_ts="$(awk -v host="$target" '$1 == host {print $2; exit}' "$unhealthy_file" 2>/dev/null)"
@@ -426,6 +438,19 @@ tk() {
     local session="${1:-$(tmux display-message -p '#S' 2>/dev/null)}"
     [[ -n "$session" ]] && tmux kill-session -t "$session"
 }
+
+# === tokf Auto-Wrappers (AI agent subshells only) ===
+# Codex sets CODEX_CI=1 in subprocesses. When detected, wrap common commands
+# with tokf to auto-compress output before it reaches the LLM context.
+# Shell functions don't propagate to child processes, so tokf (Rust binary)
+# resolves the real binary via PATH — no recursion risk.
+if [[ -n "${CODEX_CI:-}" ]] && command -v tokf &>/dev/null; then
+    for _cmd in git uv bun brew npm pnpm docker gh ruff pytest tsc eslint prettier kubectl go cargo gradle make curl pip pip3 wget; do
+        command -v "$_cmd" &>/dev/null || continue
+        eval "${_cmd}() { tokf run ${_cmd} \"\$@\"; }"
+    done
+    unset _cmd
+fi
 
 # === Tool Initialization (call once in shell rc) ===
 init_box_tools() {

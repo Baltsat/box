@@ -200,6 +200,9 @@
 
       # Torrents
       "autobrr"
+
+      # Token output filter (LLM context compression)
+      "mpecan/tokf/tokf"
     ];
 
     # GUI applications

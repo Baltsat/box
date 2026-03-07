@@ -1,0 +1,17 @@
+command = ["npm install", "npm install *", "npm ci", "npm ci *"]
+
+skip = [
+  "^\\s*$",
+  "^npm warn",
+  "^npm WARN",
+  "^npm notice",
+  "packages are looking for funding",
+  "run `npm fund`",
+  "found 0 vulnerabilities",
+]
+
+[on_success]
+output = "{output}"
+
+[on_failure]
+tail = 15

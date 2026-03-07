@@ -1,0 +1,17 @@
+command = ["bun install", "bun add *", "bun remove *"]
+
+skip = [
+  "^\\$",
+  "^bun install v",
+  "^\\s*Resolving",
+  "^\\s*Resolved,",
+  "^\\s*Downloaded",
+  "^\\s*Saved lockfile",
+  "^\\[.*\\]\\s+Downloading",
+]
+
+[on_success]
+extract = { pattern = "(\\d+) packages? installed", output = "ok: {1} packages installed" }
+
+[on_failure]
+tail = 15
