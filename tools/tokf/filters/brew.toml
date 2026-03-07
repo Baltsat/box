@@ -1,4 +1,9 @@
-command = ["brew install *", "brew upgrade", "brew upgrade *", "brew reinstall *"]
+command = [
+  "brew install *",
+  "brew upgrade",
+  "brew upgrade *",
+  "brew reinstall *",
+]
 
 skip = [
   "^==> (Downloading|Fetching|Pouring|Installing|Purging)",

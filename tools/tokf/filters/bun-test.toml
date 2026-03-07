@@ -1,9 +1,6 @@
 command = "bun test"
 
-skip = [
-  "^\\s*$",
-  "^bun test v",
-]
+skip = ["^\\s*$", "^bun test v"]
 
 keep = [
   "^(PASS|FAIL|✓|✗|×|\\d+ pass|\\d+ fail|error|Error)",

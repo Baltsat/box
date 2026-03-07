@@ -1,4 +1,9 @@
-command = ["nix build *", "nix run *", "darwin-rebuild switch *", "home-manager switch *"]
+command = [
+  "nix build *",
+  "nix run *",
+  "darwin-rebuild switch *",
+  "home-manager switch *",
+]
 
 skip = [
   "^copying path",

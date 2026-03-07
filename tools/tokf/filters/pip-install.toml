@@ -1,4 +1,9 @@
-command = ["pip install *", "pip3 install *", "uv pip install *", "uv pip uninstall *"]
+command = [
+  "pip install *",
+  "pip3 install *",
+  "uv pip install *",
+  "uv pip uninstall *",
+]
 
 skip = [
   "^\\s*Collecting",

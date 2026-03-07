@@ -183,8 +183,8 @@ mssh() {
 
     if command -v mosh &>/dev/null; then
         local proxy_command
-        proxy_command="$(command ssh -G "$target" 2>/dev/null \
-            | awk '$1 == "proxycommand" { sub(/^proxycommand /, ""); print; exit }')"
+        proxy_command="$(command ssh -G "$target" 2>/dev/null |
+            awk '$1 == "proxycommand" { sub(/^proxycommand /, ""); print; exit }')"
         if [[ -n "$proxy_command" && "$proxy_command" != "none" ]]; then
             echo "[mssh] proxycommand detected for $target; forcing ssh"
             ((had_errexit)) && set +e

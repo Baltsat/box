@@ -1,9 +1,6 @@
 command = "bun run *"
 
-skip = [
-  "^\\$",
-  "^bun run v",
-]
+skip = ["^\\$", "^bun run v"]
 
 [on_success]
 output = "{output}"
