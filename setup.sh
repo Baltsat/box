@@ -771,6 +771,12 @@ set -g @yank_selection_mouse 'clipboard'
 
 run '~/.tmux/plugins/tpm/tpm'
 TMUX_CONF
+
+        # Install plugins via TPM (non-interactive)
+        if [[ -x "$HOME/.tmux/plugins/tpm/bin/install_plugins" ]]; then
+            log "installing tmux plugins"
+            "$HOME/.tmux/plugins/tpm/bin/install_plugins" >/dev/null 2>&1 || true
+        fi
     fi
 }
 
