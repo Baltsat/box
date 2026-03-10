@@ -57,6 +57,52 @@ shopt -s checkwinsize
 export BASH_SILENCE_DEPRECATION_WARNING=1
 
 # =============================================================================
+# TMUX AUTO-RESTORE (clean stale sockets + start server for continuum)
+# =============================================================================
+_box_tmux_autostart() {
+    [[ -n "$TMUX" ]] && return 0
+    [[ -n "${CLAUDECODE:-}" ]] && return 0
+    [[ -n "${CODEX_CI:-}" ]] && return 0
+    command -v tmux &>/dev/null || return 0
+
+    # clean stale sockets (zombie tmux servers leave dead sockets behind)
+    local socket_dir="/tmp/tmux-$(id -u)"
+    if [[ -d "$socket_dir" ]]; then
+        for sock in "$socket_dir"/*; do
+            [[ -S "$sock" && ! -L "$sock" ]] || continue
+            tmux -S "$sock" list-sessions &>/dev/null && continue
+            rm -f "$sock"
+        done
+    fi
+
+    # if live tmux server exists, nothing to do
+    tmux list-sessions &>/dev/null && return 0
+
+    # need resurrect data to restore from
+    local resurrect_dir="$HOME/.local/share/tmux/resurrect"
+    [[ -f "$resurrect_dir/last" ]] || return 0
+
+    # start server with temp session, then run resurrect restore directly
+    # (can't rely on continuum auto-restore: zombie tmux processes confuse
+    # its "another server running" check and it skips restore)
+    tmux new-session -d -s _boot 2>/dev/null || return 0
+    local restore_script="$HOME/.tmux/plugins/tmux-resurrect/scripts/restore.sh"
+    if [[ -x "$restore_script" ]]; then
+        tmux run-shell "$restore_script" 2>/dev/null
+        sleep 1
+        # kill temp session if real sessions were restored
+        local session_count
+        session_count="$(tmux list-sessions 2>/dev/null | wc -l)"
+        if [[ "$session_count" -gt 1 ]]; then
+            tmux kill-session -t _boot 2>/dev/null
+        fi
+        echo "[box] tmux restored $(( session_count - 1 )) sessions"
+    fi
+}
+
+((_BOX_ALLOW_STARTUP_MUTATION)) && _box_tmux_autostart
+
+# =============================================================================
 # PATH
 # =============================================================================
 export PATH="$HOME/.local/bin:$HOME/.bun/bin:$HOME/.nix-profile/bin:/nix/var/nix/profiles/default/bin:$HOME/.omnara/bin:$PATH"
