@@ -95,7 +95,7 @@ _box_tmux_autostart() {
         if [[ "$session_count" -gt 1 ]]; then
             tmux kill-session -t _boot 2>/dev/null
         fi
-        echo "[box] tmux restored $(( session_count - 1 )) sessions"
+        echo "[box] tmux restored $((session_count - 1)) sessions"
 
         # re-launch codex resume for any pane that was running codex
         # resurrect saves the command but doesn't re-execute it on restore
@@ -111,7 +111,7 @@ _box_tmux_autostart() {
             [[ -n "$resume_id" ]] || continue
             tmux has-session -t "$session" 2>/dev/null || continue
             tmux send-keys -t "$session" "command codex --dangerously-bypass-approvals-and-sandbox resume $resume_id" Enter
-        done < "$resurrect_file"
+        done <"$resurrect_file"
     fi
 }
 
@@ -712,6 +712,75 @@ _hawaii_auto_update() {
 
 # Run hawaii auto-update (non-blocking)
 ((_BOX_ALLOW_STARTUP_MUTATION)) && command -v hawaii &>/dev/null && _hawaii_auto_update
+
+# =============================================================================
+# HAWAII AUTH CHECK (every shell, cached per hour)
+# =============================================================================
+_box_hawaii_auth_check() {
+    command -v hawaii &>/dev/null || return 0
+    [[ -n "${CLAUDECODE:-}" ]] && return 0
+    [[ -n "${CODEX_CI:-}" ]] && return 0
+
+    local check_file="$HOME/.cache/hawaii_auth_last_check"
+    local now
+    now=$(date +%s)
+    local last_check=0
+
+    mkdir -p "$HOME/.cache" 2>/dev/null
+
+    # safe numeric read — guard against empty/corrupt file causing arithmetic errors
+    local _raw
+    _raw=$(cat "$check_file" 2>/dev/null)
+    [[ "$_raw" =~ ^[0-9]+$ ]] && last_check="$_raw" || last_check=0
+
+    # cache hit: instant return, no network call (use if to avoid set -e false-positive on &&)
+    if [[ $((now - last_check)) -le 3600 ]]; then
+        return 0
+    fi
+
+    # cache miss: do the actual check in background — never blocks shell startup
+    (
+        # portable lock: flock (Linux util-linux) or mkdir fallback (macOS — flock CLI absent)
+        local _lockfile="$HOME/.cache/hawaii_auth.lock"
+        if command -v flock &>/dev/null; then
+            exec 9>"$_lockfile"
+            flock -n 9 2>/dev/null || exit 0
+        else
+            local _lockdir="${_lockfile}.d"
+            mkdir "$_lockdir" 2>/dev/null || exit 0
+            trap '/bin/rm -rf "$_lockdir"' EXIT
+        fi
+
+        # atomic cache write: tmp + rename (prevents partial reads)
+        _write_cache() {
+            local _tmp="${check_file}.tmp.$$"
+            echo "$(date +%s)" >"$_tmp" && /bin/mv "$_tmp" "$check_file" 2>/dev/null || true
+        }
+
+        if hawaii auth status &>/dev/null; then
+            _write_cache; exit 0
+        fi
+
+        # try headless re-auth first (uses PYX_API_KEY)
+        if hawaii auth login --no-browser &>/dev/null; then
+            _write_cache; exit 0
+        fi
+
+        # need device code flow
+        if [[ -n "$TMUX" ]]; then
+            # inside tmux: popup window
+            tmux display-popup -w 80 -h 20 -T " hawaii auth " -E "hawaii auth login" 2>/dev/null \
+                && _write_cache
+        elif ( exec >/dev/tty ) 2>/dev/null; then
+            # /dev/tty is accessible: write device code URL so user can click it
+            hawaii auth login >/dev/tty 2>&1 && _write_cache
+        fi
+        # no /dev/tty (ssh no-pty, cron, etc): silent — user finds out on next hawaii use
+    ) &
+    disown 2>/dev/null || true
+}
+
+_box_hawaii_auth_check
 
 # =============================================================================
 # CODE - Workspace management with tmux windows
