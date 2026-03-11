@@ -100,7 +100,8 @@ _box_tmux_autostart() {
     fi
 }
 
-((_BOX_ALLOW_STARTUP_MUTATION)) && _box_tmux_autostart
+# run always: not a mutation, just socket cleanup + session restore
+_box_tmux_autostart
 
 # =============================================================================
 # PATH
