@@ -34,6 +34,7 @@
     "defaultMode": "bypassPermissions"
   },
   "model": "opusplan",
+  "effortLevel": "high",
   "hooks": {
     "UserPromptSubmit": [
       {
