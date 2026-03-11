@@ -90,13 +90,28 @@ _box_tmux_autostart() {
     if [[ -x "$restore_script" ]]; then
         tmux run-shell "$restore_script" 2>/dev/null
         sleep 1
-        # kill temp session if real sessions were restored
         local session_count
         session_count="$(tmux list-sessions 2>/dev/null | wc -l)"
         if [[ "$session_count" -gt 1 ]]; then
             tmux kill-session -t _boot 2>/dev/null
         fi
         echo "[box] tmux restored $(( session_count - 1 )) sessions"
+
+        # re-launch codex resume for any pane that was running codex
+        # resurrect saves the command but doesn't re-execute it on restore
+        local resurrect_file
+        resurrect_file="$(readlink -f "$resurrect_dir/last")"
+        while IFS=$'\t' read -r type session _rest; do
+            [[ "$type" == "pane" ]] || continue
+            # extract the full command (last colon-prefixed field)
+            local cmd="${_rest##*:}"
+            [[ "$cmd" == *"codex"*"resume"* ]] || continue
+            local resume_id
+            resume_id="$(echo "$cmd" | grep -oE '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}')"
+            [[ -n "$resume_id" ]] || continue
+            tmux has-session -t "$session" 2>/dev/null || continue
+            tmux send-keys -t "$session" "command codex --dangerously-bypass-approvals-and-sandbox resume $resume_id" Enter
+        done < "$resurrect_file"
     fi
 }
 
