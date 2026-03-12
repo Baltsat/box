@@ -499,7 +499,7 @@ install_cli_tools() {
         if [[ "$arch" == "x86_64" ]]; then
             log "installing tokf (linux x86_64)"
             local tokf_ver
-            tokf_ver=$(curl -fsSL "https://api.github.com/repos/mpecan/tokf/releases" 2>/dev/null | grep -o '"tag_name":"tokf-v[^"]*"' | head -1 | cut -d'"' -f4)
+            tokf_ver=$(curl -fsSL "https://api.github.com/repos/mpecan/tokf/releases" 2>/dev/null | grep -oP '"tag_name":\s*"tokf-v[^"]*"' | head -1 | grep -oP 'tokf-v[^"]*')
             if [[ -n "$tokf_ver" ]]; then
                 local tokf_url="https://github.com/mpecan/tokf/releases/download/${tokf_ver}/${tokf_ver}-x86_64-unknown-linux-gnu.tar.gz"
                 mkdir -p "$HOME/.local/bin"
