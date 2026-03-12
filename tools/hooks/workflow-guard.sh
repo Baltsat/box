@@ -32,7 +32,7 @@ lines=$((tracked + untracked_lines))
 _sha() { sha256sum 2>/dev/null || shasum -a 256; }
 marker="/tmp/ar-$(printf '%s' "$repo" | _sha | cut -d' ' -f1)"
 if [[ -f "$marker" ]]; then
-    marker_age=$(($(date +%s) - $(stat -f %m "$marker" 2>/dev/null || stat -c %Y "$marker" 2>/dev/null || echo 0)))
+    marker_age=$(($(date +%s) - $(stat -c %Y "$marker" 2>/dev/null || stat -f %m "$marker" 2>/dev/null || echo 0)))
     current_fp=$(cd "$repo" && {
         git diff HEAD 2>/dev/null
         git ls-files --others --exclude-standard 2>/dev/null | sort | while IFS= read -r f; do
