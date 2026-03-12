@@ -12,7 +12,7 @@
 # auto-detects model: CODEX_CI set → Codex → spawn Claude; CLAUDECODE set → Claude → spawn Codex
 
 set -euo pipefail
-set -m  # job control: each background task gets its own process group (enables kill -- -$pid)
+set -m # job control: each background task gets its own process group (enables kill -- -$pid)
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PRINCIPLES="$SCRIPT_DIR/principles.md"
@@ -26,19 +26,41 @@ MAX_DIFF_BYTES=204800
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --lenses) LENSES="$2"; shift 2 ;;
-        --intent) INTENT="$2"; shift 2 ;;
-        --diff-file) DIFF_FILE="$2"; shift 2 ;;
-        --timeout) TIMEOUT="$2"; shift 2 ;;
-        --reviewer-model) EXPLICIT_REVIEWER_MODEL="$2"; shift 2 ;;
-        --help|-h)
-            sed -n '2,9p' "$0" | sed 's/^# \?//'
-            exit 0 ;;
-        *) echo "unknown arg: $1" >&2; exit 1 ;;
+    --lenses)
+        LENSES="$2"
+        shift 2
+        ;;
+    --intent)
+        INTENT="$2"
+        shift 2
+        ;;
+    --diff-file)
+        DIFF_FILE="$2"
+        shift 2
+        ;;
+    --timeout)
+        TIMEOUT="$2"
+        shift 2
+        ;;
+    --reviewer-model)
+        EXPLICIT_REVIEWER_MODEL="$2"
+        shift 2
+        ;;
+    --help | -h)
+        sed -n '2,9p' "$0" | sed 's/^# \?//'
+        exit 0
+        ;;
+    *)
+        echo "unknown arg: $1" >&2
+        exit 1
+        ;;
     esac
 done
 
-[[ -z "$INTENT" ]] && { echo "error: --intent required" >&2; exit 1; }
+[[ -z "$INTENT" ]] && {
+    echo "error: --intent required" >&2
+    exit 1
+}
 
 # detect current runner: if/elif preserves CODEX_CI precedence over CLAUDECODE
 current_runner=""
@@ -51,7 +73,8 @@ fi
 # set reviewer model: validate explicit override against current runner; else auto-detect
 if [[ -n "$EXPLICIT_REVIEWER_MODEL" ]]; then
     [[ "$EXPLICIT_REVIEWER_MODEL" == "claude" || "$EXPLICIT_REVIEWER_MODEL" == "codex" ]] || {
-        echo "error: --reviewer-model must be claude or codex" >&2; exit 1
+        echo "error: --reviewer-model must be claude or codex" >&2
+        exit 1
     }
     if [[ -n "$current_runner" && "$EXPLICIT_REVIEWER_MODEL" == "$current_runner" ]]; then
         echo "error: --reviewer-model '$EXPLICIT_REVIEWER_MODEL' matches current runner — same-model review forbidden" >&2
@@ -63,7 +86,7 @@ elif [[ "$current_runner" == "codex" ]]; then
 elif [[ "$current_runner" == "claude" ]]; then
     REVIEWER_MODEL="codex"
 else
-    REVIEWER_MODEL="claude"  # manual invocation outside either model
+    REVIEWER_MODEL="claude" # manual invocation outside either model
 fi
 
 REVIEW_DIR=$(mktemp -d /tmp/adversarial-review.XXXXXX)
@@ -76,8 +99,8 @@ else
     DIFF_CONTENT=$(git diff HEAD 2>/dev/null || true)
     # include untracked regular files under 100KB (git ls-files --others already filters via gitignore)
     while IFS= read -r -d '' f; do
-        [[ -f "$f" ]] || continue  # skip symlinks, devices, pipes, fifos
-        local_size=$(wc -c < "$f" 2>/dev/null || echo 0)
+        [[ -f "$f" ]] || continue # skip symlinks, devices, pipes, fifos
+        local_size=$(wc -c <"$f" 2>/dev/null || echo 0)
         if [[ $local_size -gt 102400 ]]; then
             DIFF_CONTENT+=$'\n=== new untracked file: '"$f"' (skipped: '"$local_size"' bytes) ==='$'\n'
         else
@@ -89,8 +112,8 @@ fi
 
 # enforce 200KB byte cap on total payload (write to temp, measure bytes, truncate by bytes)
 diff_raw="$REVIEW_DIR/diff.raw"
-printf '%s' "$DIFF_CONTENT" > "$diff_raw"
-diff_bytes=$(wc -c < "$diff_raw")
+printf '%s' "$DIFF_CONTENT" >"$diff_raw"
+diff_bytes=$(wc -c <"$diff_raw")
 if [[ $diff_bytes -gt $MAX_DIFF_BYTES ]]; then
     DIFF_CONTENT="$(head -c "$MAX_DIFF_BYTES" "$diff_raw")"$'\n... diff truncated at 200KB ...'
 fi
@@ -100,15 +123,21 @@ rm -f "$diff_raw"
 
 # validate and normalize lens list
 declare -a LENS_LIST=()
-IFS=',' read -ra RAW_LENSES <<< "$LENSES"
+IFS=',' read -ra RAW_LENSES <<<"$LENSES"
 for l in "${RAW_LENSES[@]}"; do
     l="${l// /}"
     case "$l" in
-        skeptic|architect|minimalist) LENS_LIST+=("$l") ;;
-        *) echo "error: unknown lens: $l (valid: skeptic, architect, minimalist)" >&2; exit 1 ;;
+    skeptic | architect | minimalist) LENS_LIST+=("$l") ;;
+    *)
+        echo "error: unknown lens: $l (valid: skeptic, architect, minimalist)" >&2
+        exit 1
+        ;;
     esac
 done
-[[ ${#LENS_LIST[@]} -eq 0 ]] && { echo "error: no valid lenses specified" >&2; exit 1; }
+[[ ${#LENS_LIST[@]} -eq 0 ]] && {
+    echo "error: no valid lenses specified" >&2
+    exit 1
+}
 
 spawn_reviewer() {
     local lens="$1"
@@ -121,7 +150,10 @@ spawn_reviewer() {
     lens_cap=$(echo "$lens" | awk '{print toupper(substr($0,1,1)) substr($0,2)}')
     local lens_text
     lens_text=$(awk "/^## $lens_cap/{found=1; next} found && /^## /{exit} found{print}" "$LENSES_FILE")
-    [[ -z "$lens_text" ]] && { echo "error: lens '$lens' not found in $LENSES_FILE" >&2; exit 1; }
+    [[ -z "$lens_text" ]] && {
+        echo "error: lens '$lens' not found in $LENSES_FILE" >&2
+        exit 1
+    }
 
     local prompt
     prompt="INTENT: $INTENT
@@ -143,16 +175,16 @@ INSTRUCTIONS: you are an adversarial reviewer. your job is to find real problems
         (
             set +e
             command codex exec --skip-git-repo-check --ephemeral -s read-only \
-                -o "$out" "$prompt" > "$log" 2>&1
-            echo $? > "$status_file"
+                -o "$out" "$prompt" >"$log" 2>&1
+            echo $? >"$status_file"
         ) &
     else
         (
             set +e
             env -u CLAUDECODE command claude --dangerously-skip-permissions \
                 --model claude-sonnet-4-6 --permission-mode plan -p "$prompt" \
-                > "$out" 2>"$log"
-            echo $? > "$status_file"
+                >"$out" 2>"$log"
+            echo $? >"$status_file"
         ) &
     fi
     echo $!
