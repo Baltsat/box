@@ -36,6 +36,17 @@
   "model": "opusplan",
   "effortLevel": "high",
   "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/box/tools/hooks/workflow-guard.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
     "UserPromptSubmit": [
       {
         "hooks": [

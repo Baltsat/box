@@ -268,4 +268,12 @@ for lens in "${LENS_LIST[@]}"; do
 done
 
 echo "=== review complete ===" >&2
+
+# write fingerprinted marker so stop hook knows this exact state was reviewed
+if [[ $exit_code -eq 0 ]]; then
+    _repo=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+    _marker="/tmp/ar-$(printf '%s' "$_repo" | shasum -a 256 | cut -d' ' -f1)"
+    { git diff HEAD 2>/dev/null; git ls-files --others --exclude-standard 2>/dev/null | sort | while IFS= read -r f; do printf '=== %s ===\n' "$f"; cat "$f" 2>/dev/null; done; } | shasum -a 256 | cut -d' ' -f1 > "$_marker"
+fi
+
 exit $exit_code
