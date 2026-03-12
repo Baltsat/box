@@ -235,7 +235,7 @@ mssh() {
         if [[ -n "$proxy_command" && "$proxy_command" != "none" ]]; then
             echo "[mssh] proxycommand detected for $target; forcing ssh"
             ((had_errexit)) && set +e
-            command ssh "${ssh_keepalive[@]}" "$target" "$@"
+            command ssh -t "${ssh_keepalive[@]}" "$target" "$@"
             local ssh_ec=$?
             ((had_errexit)) && set -e
             return $ssh_ec
@@ -251,7 +251,7 @@ mssh() {
                 if ((age_seconds >= 0 && age_seconds < cooldown_seconds)); then
                     echo "[mssh] skipping mosh for $target (recent mosh failure ${age_seconds}s ago); using ssh"
                     ((had_errexit)) && set +e
-                    command ssh "${ssh_keepalive[@]}" "$target" "$@"
+                    command ssh -t "${ssh_keepalive[@]}" "$target" "$@"
                     local cached_ssh_ec=$?
                     ((had_errexit)) && set -e
                     return $cached_ssh_ec
@@ -300,7 +300,7 @@ mssh() {
             echo "[mssh] mosh exited ($mosh_ec) after ${elapsed}s; retrying with ssh keepalive"
         fi
         ((had_errexit)) && set +e
-        command ssh "${ssh_keepalive[@]}" "$target" "$@"
+        command ssh -t "${ssh_keepalive[@]}" "$target" "$@"
         local ssh_ec=$?
         ((had_errexit)) && set -e
         return $ssh_ec
@@ -308,7 +308,7 @@ mssh() {
 
     echo "[mssh] mosh not found locally; using ssh"
     ((had_errexit)) && set +e
-    command ssh "${ssh_keepalive[@]}" "$target" "$@"
+    command ssh -t "${ssh_keepalive[@]}" "$target" "$@"
     local ssh_ec=$?
     ((had_errexit)) && set -e
     return $ssh_ec
@@ -423,6 +423,18 @@ dev() {
     fi
     echo "[dev] tunneling localhost:$port..."
     cloudflared tunnel --url "http://localhost:$port"
+}
+
+# === Claude Memory ===
+mem-export() {
+    local box_mem="$HOME/box/claude/memory"
+    mkdir -p "$box_mem"
+    local encoded
+    encoded=$(echo "$HOME" | sed 's|/|-|g' | sed 's|^-||')
+    local src="$HOME/.claude/projects/-${encoded}/memory"
+    [[ -d "$src" ]] || { echo "no memory at $src"; return 1; }
+    cp "$src"/*.md "$box_mem/" 2>/dev/null
+    echo "exported to $box_mem ($(ls "$box_mem"/*.md 2>/dev/null | wc -l | tr -d ' ') files)"
 }
 
 # === Fancy Quotes ===
