@@ -78,8 +78,63 @@ alias preview='open -a "Preview"'
 
 # === Claude ===
 alias claude='claude --dangerously-skip-permissions'
-alias codex='codex --dangerously-bypass-approvals-and-sandbox'
-cdx() { command codex exec --skip-git-repo-check --ephemeral -o /dev/stdout "$@"; }
+
+_box_codex_no_alt_screen=-1
+_box_codex_remote=-1
+
+_box_codex_detect_remote() {
+    [[ "${_box_codex_remote}" == "1" ]] && return 0
+    [[ "${_box_codex_remote}" == "0" ]] && return 1
+    if [[ "${_BOX_IS_REMOTE:-0}" == "1" ]]; then
+        _box_codex_remote=1
+        return 0
+    fi
+    if [[ -n "${SSH_CONNECTION:-}" || -n "${SSH_TTY:-}" || -n "${SSH_CLIENT:-}" ]]; then
+        _box_codex_remote=1
+        return 0
+    fi
+    local parent
+    parent="$(ps -o comm= -p "${PPID:-0}" 2>/dev/null | tr -d '[:space:]')"
+    if [[ "$parent" == *ssh* || "$parent" == *sshd* || "$parent" == *mosh* ]]; then
+        _box_codex_remote=1
+        return 0
+    fi
+    _box_codex_remote=0
+    return 1
+}
+
+_box_codex_supports_no_alt_screen() {
+    [[ "${_box_codex_no_alt_screen}" == "1" ]] && return 0
+    [[ "${_box_codex_no_alt_screen}" == "0" ]] && return 1
+    local codex_path
+    codex_path="$(type -P codex 2>/dev/null || true)"
+    if [[ -z "$codex_path" || ! -x "$codex_path" ]]; then
+        _box_codex_no_alt_screen=0
+        return 1
+    fi
+    if command codex --help 2>&1 | grep -qF -- "--no-alt-screen"; then
+        _box_codex_no_alt_screen=1
+        return 0
+    fi
+    _box_codex_no_alt_screen=0
+    return 1
+}
+
+codex() {
+    local -a codex_args=("--dangerously-bypass-approvals-and-sandbox")
+    if _box_codex_detect_remote && _box_codex_supports_no_alt_screen; then
+        codex_args+=(--no-alt-screen)
+    fi
+    command codex "${codex_args[@]}" "$@"
+}
+
+cdx() {
+    local -a codex_args=()
+    if _box_codex_detect_remote && _box_codex_supports_no_alt_screen; then
+        codex_args+=(--no-alt-screen)
+    fi
+    command codex "${codex_args[@]}" exec --skip-git-repo-check --ephemeral -o /dev/stdout "$@"
+}
 alias gemini='gemini --yolo'
 alias qwen='qwen --yolo'
 alias pi='pi --thinking high --tools read,bash,edit,write,grep,find,ls'
