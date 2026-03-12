@@ -114,6 +114,22 @@ cdx() {
     command codex "${codex_args[@]}" exec --skip-git-repo-check --ephemeral -o /dev/stdout "$@"
 }
 
+codex_tmux() {
+    local -a codex_args=()
+    if _box_codex_supports_no_alt_screen; then
+        codex_args+=(--no-alt-screen)
+    fi
+    local cmd="codex"
+    local arg
+    for arg in "${codex_args[@]}"; do
+        cmd+=" $(printf '%q' "$arg")"
+    done
+    for arg in "$@"; do
+        cmd+=" $(printf '%q' "$arg")"
+    done
+    command tmux new-session -A -s codex "$cmd"
+}
+
 alias gemini='gemini --yolo'
 alias qwen='qwen --yolo'
 alias pi='pi --thinking high --tools read,bash,edit,write,grep,find,ls'
