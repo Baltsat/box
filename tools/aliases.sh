@@ -203,50 +203,27 @@ ns() {
 
 # Transparent mosh: interactive sessions → mssh, everything else → plain ssh.
 # Handles: remote commands, port-forwarding flags, non-terminal stdin.
-ssh() {
-    # Route to mssh (mosh+fallback) only when safe: interactive, no flags before hostname.
-    # mssh expects hostname as $1 — any flag before hostname breaks it (wrong target,
-    # mosh fails, host gets cached as unhealthy for 30min). Be conservative: if ANY
-    # flag precedes the hostname, go straight to command ssh.
-    local dominated=0 positionals=0 pre_host_flag=0
-    local -a a=("$@")
-
-    for ((i = 0; i < ${#a[@]}; i++)); do
-        case "${a[i]}" in
-        # flags that mosh fundamentally can't handle: route to command ssh
-        -[NfGOTLRDW] | -[NfGOTLRDW]*)
-            dominated=1
-            break
-            ;;
-        # arg-consuming flags: skip next token; mark pre_host_flag if before hostname
-        -[bcEeFIiJlmopQSw])
-            ((positionals == 0)) && pre_host_flag=1
-            ((i++))
-            ;;
-        # end-of-options: remote command follows if >1 token remains
-        --)
-            ((${#a[@]} - i - 1 > 1)) && dominated=1
-            break
-            ;;
-        # other flags before hostname: mosh can't handle ssh-specific flags
-        -*) ((positionals == 0)) && pre_host_flag=1 ;;
-        # positional: first = host, second+ = remote command
-        *)
-            ((positionals++))
-            ((positionals >= 2)) && {
-                dominated=1
-                break
-            }
-            ;;
-        esac
-    done
-
-    if ((dominated || pre_host_flag)) || [[ ! -t 0 ]]; then
-        command ssh "$@"
-    else
-        mssh "$@"
-    fi
-}
+# DISABLED: ssh now calls OpenSSH directly; use mssh explicitly for mosh.
+# To re-enable: uncomment the ssh() function below.
+#
+# ssh() {
+#     local dominated=0 positionals=0 pre_host_flag=0
+#     local -a a=("$@")
+#     for ((i = 0; i < ${#a[@]}; i++)); do
+#         case "${a[i]}" in
+#         -[NfGOTLRDW] | -[NfGOTLRDW]*) dominated=1; break ;;
+#         -[bcEeFIiJlmopQSw]) ((positionals == 0)) && pre_host_flag=1; ((i++)) ;;
+#         --) ((${#a[@]} - i - 1 > 1)) && dominated=1; break ;;
+#         -*) ((positionals == 0)) && pre_host_flag=1 ;;
+#         *) ((positionals++)); ((positionals >= 2)) && { dominated=1; break; } ;;
+#         esac
+#     done
+#     if ((dominated || pre_host_flag)) || [[ ! -t 0 ]]; then
+#         command ssh "$@"
+#     else
+#         mssh "$@"
+#     fi
+# }
 
 # Resilient remote shell helper: prefer mosh for roaming, fallback to ssh.
 # usage: mssh <host> [ssh-or-mosh-args...]

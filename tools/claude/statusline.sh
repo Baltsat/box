@@ -109,4 +109,4 @@ if [ -n "$five_hour_left" ]; then
 fi
 
 # Output
-echo -e "${BLUE}${dir_name}${NC} ${GRAY}|${NC} ${CYAN}${model_name}${NC} ${GRAY}|${NC} ${CTX_COLOR}${bar}${NC}${quota_info}${git_info:+ ${GRAY}|${NC}}${git_info}"
+echo -e "${BLUE}${dir_name}${NC} ${GRAY}|${NC} ${CYAN}${model_name}${NC} ${GRAY}|${NC} ${GRAY}${bar}${NC}${quota_info}${git_info:+ ${GRAY}|${NC}}${git_info}"

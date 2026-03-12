@@ -20,3 +20,6 @@
 ## box aliases
 - `rm` is aliased to `_box_protected_rm` — use `/bin/rm` for actual removal
 - bash env doesn't have aliases loaded, use full paths
+
+## vitalis health app
+- [project_vitalis_phase0.md](project_vitalis_phase0.md) — Phase 0 implementation context
