@@ -895,7 +895,7 @@ sync_claude_memory() {
             local name
             name=$(basename "$f")
             if [[ "$name" == "MEMORY.md" ]]; then
-                cat "$f" >> "$dst/MEMORY.md"
+                cat "$f" >>"$dst/MEMORY.md"
             else
                 [[ -f "$dst/$name" ]] || [[ -L "$dst/$name" ]] || cp "$f" "$dst/$name"
             fi

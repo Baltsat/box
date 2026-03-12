@@ -385,6 +385,31 @@ create unhobbling tools at ~/box/tools/:
 for TS throwaway: prefer bun. use /bun skill for APIs.
 for web/frontend: use /frontend skill for design patterns.
 proactively identify friction → create tools to eliminate.
+
+codex delegation:
+MCP tool `codex_implement(spec, dir, timeout)` — native tool for delegating implementation to codex.
+CLI shortcut: `cdx "spec"` (aliases.sh wrapper around `codex exec`).
+
+when to delegate:
+- concrete implementations with clear spec (implement function X, fix bug Y per spec)
+- boilerplate, tests, migrations, CRUD
+- focused coding tasks where codex excels (detailed implementation from a plan)
+
+when NOT:
+- architectural decisions, design choices
+- <10 lines — do it yourself
+- tasks requiring repo-wide context from context window
+
+flow:
+1. claude plans, writes detailed spec
+2. codex_implement(spec="...", dir="/path") → codex implements
+3. claude reviews changes
+4. adversarial review per <adversarial-review> section
+5. iterate if needed
+
+codex does NOT commit — claude owns git state.
+for tasks >5 min: fallback to Bash + run_in_background:
+  codex exec --skip-git-repo-check --ephemeral -C /path -o /tmp/result.md "spec"
 </tools>
 
 <teams severity="critical">
