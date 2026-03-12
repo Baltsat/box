@@ -103,13 +103,10 @@ else
     git_info=""
 fi
 
-tokens_left_fmt=$(fmt_tokens "$tokens_left")
-context_info="${GRAY}${bar}${NC} ${CTX_COLOR}${context_percent}% used${NC} ${GRAY}/${NC} ${GREEN}${context_left}% left${NC} ${GRAY}(${tokens_left_fmt})${NC}"
-
 quota_info=""
 if [ -n "$five_hour_left" ]; then
-    quota_info="${GRAY}|${NC} ${CYAN}5h${NC} ${five_hour_left}% left"
+    quota_info=" ${GRAY}|${NC} ${CYAN}5h${NC} ${five_hour_left}% left"
 fi
 
 # Output
-echo -e "${BLUE}${dir_name}${NC} ${GRAY}|${NC} ${CYAN}${model_name}${NC} ${GRAY}|${NC} ${context_info} ${quota_info}${git_info:+ ${GRAY}|${NC}}${git_info}"
+echo -e "${BLUE}${dir_name}${NC} ${GRAY}|${NC} ${CYAN}${model_name}${NC} ${GRAY}|${NC} ${CTX_COLOR}${bar}${NC}${quota_info}${git_info:+ ${GRAY}|${NC}}${git_info}"
