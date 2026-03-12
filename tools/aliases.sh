@@ -79,6 +79,7 @@ alias preview='open -a "Preview"'
 # === Claude ===
 alias claude='claude --dangerously-skip-permissions'
 alias codex='codex --dangerously-bypass-approvals-and-sandbox'
+cdx() { command codex exec --skip-git-repo-check --ephemeral -o /dev/stdout "$@"; }
 alias gemini='gemini --yolo'
 alias qwen='qwen --yolo'
 alias pi='pi --thinking high --tools read,bash,edit,write,grep,find,ls'
@@ -423,18 +424,6 @@ dev() {
     fi
     echo "[dev] tunneling localhost:$port..."
     cloudflared tunnel --url "http://localhost:$port"
-}
-
-# === Claude Memory ===
-mem-export() {
-    local box_mem="$HOME/box/claude/memory"
-    mkdir -p "$box_mem"
-    local encoded
-    encoded=$(echo "$HOME" | sed 's|/|-|g' | sed 's|^-||')
-    local src="$HOME/.claude/projects/-${encoded}/memory"
-    [[ -d "$src" ]] || { echo "no memory at $src"; return 1; }
-    cp "$src"/*.md "$box_mem/" 2>/dev/null
-    echo "exported to $box_mem ($(ls "$box_mem"/*.md 2>/dev/null | wc -l | tr -d ' ') files)"
 }
 
 # === Fancy Quotes ===

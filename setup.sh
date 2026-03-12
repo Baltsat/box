@@ -856,6 +856,56 @@ setup_tokf() {
     tokf hook install --tool codex --global 2>/dev/null || true
 }
 
+sync_claude_memory() {
+    local box_mem="$SCRIPT_DIR/claude/memory"
+    [[ -d "$box_mem" ]] || return 0
+
+    local settings="$HOME/.claude/settings.json"
+    if [[ -f "$settings" ]] && has_cmd jq; then
+        local mem_dir
+        if [[ "$(uname -s)" == "Darwin" ]]; then
+            mem_dir="$HOME/box/claude/memory"
+        else
+            mem_dir="$HOME/.claude/global-memory"
+        fi
+        local tmp="${settings}.tmp.$$"
+        jq --arg d "$mem_dir" '.autoMemoryDirectory = $d' "$settings" >"$tmp" && mv "$tmp" "$settings" || rm -f "$tmp"
+    fi
+
+    [[ "$(uname -s)" == "Darwin" ]] && return 0
+
+    local dst="$HOME/.claude/global-memory"
+    mkdir -p "$dst"
+
+    for f in "$box_mem"/*.md; do
+        [[ -f "$f" ]] || continue
+        [[ "$(basename "$f")" == "MEMORY.md" ]] && continue
+        ln -sfn "$f" "$dst/$(basename "$f")"
+    done
+
+    for f in "$dst"/*.md; do
+        [[ -L "$f" ]] && [[ ! -e "$f" ]] && rm -f "$f"
+    done
+
+    [[ -f "$box_mem/MEMORY.md" ]] && [[ ! -f "$dst/MEMORY.md" ]] && cp "$box_mem/MEMORY.md" "$dst/MEMORY.md"
+
+    if [[ ! -f "$dst/.migrated" ]]; then
+        for f in "$HOME/.claude/projects"/*/memory/*.md; do
+            [[ -f "$f" ]] || continue
+            local name
+            name=$(basename "$f")
+            if [[ "$name" == "MEMORY.md" ]]; then
+                cat "$f" >> "$dst/MEMORY.md"
+            else
+                [[ -f "$dst/$name" ]] || [[ -L "$dst/$name" ]] || cp "$f" "$dst/$name"
+            fi
+        done
+        touch "$dst/.migrated"
+    fi
+
+    log "synced claude memory → $dst"
+}
+
 repair_codex_config() {
     local codex_dir="$HOME/.codex"
     local codex_cfg="$codex_dir/config.toml"
@@ -901,6 +951,7 @@ install_cli_tools
 apply_tool_configs
 link_configs
 sync_global_instructions
+sync_claude_memory
 repair_codex_config
 setup_tokf
 set_shell
