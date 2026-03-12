@@ -143,6 +143,7 @@ spawn_reviewer() {
     local lens="$1"
     local out="$REVIEW_DIR/$lens.md"
     local log="$REVIEW_DIR/$lens.log"
+    local prompt_file="$REVIEW_DIR/$lens.prompt"
     local status_file="$REVIEW_DIR/$lens.status"
 
     # extract lens section: from ## Lens through next ## heading (portable awk, no head -n -1)
@@ -168,6 +169,7 @@ CHANGES UNDER REVIEW:
 $DIFF_CONTENT
 
 INSTRUCTIONS: you are an adversarial reviewer. your job is to find real problems, not validate the work. be specific — cite files, lines, and concrete failure scenarios. rate each finding: high (blocks ship), medium (should fix), low (worth noting). write findings as a numbered markdown list. do not run any tools or make any changes."
+    printf '%s' "$prompt" >"$prompt_file"
 
     # subshell with set +e: ensures status file is always written even on reviewer failure.
     # set -m (main script) gives this subshell its own process group = kill -- -$pid kills all children.
@@ -175,30 +177,34 @@ INSTRUCTIONS: you are an adversarial reviewer. your job is to find real problems
         (
             set +e
             command codex exec --skip-git-repo-check --ephemeral -s read-only \
-                -o "$out" "$prompt" >"$log" 2>&1
+                -o "$out" \
+                "Read the file at $prompt_file and follow ALL instructions inside. It contains a complete adversarial review task." \
+                >"$log" 2>&1
             echo $? >"$status_file"
         ) &
     else
         (
             set +e
-            env -u CLAUDECODE command claude --dangerously-skip-permissions \
-                --model claude-sonnet-4-6 --permission-mode plan -p "$prompt" \
+            env -u CLAUDECODE claude --dangerously-skip-permissions \
+                --model claude-sonnet-4-6 --permission-mode plan -p \
+                <"$prompt_file" \
                 >"$out" 2>"$log"
             echo $? >"$status_file"
         ) &
     fi
-    echo $!
+    spawn_pid=$!
 }
 
 declare -a PIDS=()
+spawn_pid=""
 
 echo "=== adversarial review starting ===" >&2
 echo "model: $REVIEWER_MODEL | lenses: $LENSES | timeout: ${TIMEOUT}s" >&2
 
 for lens in "${LENS_LIST[@]}"; do
-    pid=$(spawn_reviewer "$lens")
-    PIDS+=("$pid")
-    echo "spawned $lens reviewer (pid $pid)" >&2
+    spawn_reviewer "$lens"
+    PIDS+=("$spawn_pid")
+    echo "spawned $lens reviewer (pid $spawn_pid)" >&2
 done
 
 # poll for completion with deadline (macOS-safe: no tail --pid)
