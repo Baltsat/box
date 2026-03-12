@@ -19,6 +19,25 @@ preferences: culinary: celsius, grams (tbsp/tsp), pseudocode-prose.
 
 <motto severity="critical">gotta go fast gotta shit out good shit</motto>
 
+<codex-for-teammates severity="critical">
+if you are an implementer teammate (spawned via TeamCreate to write code):
+you HAVE codex MCP tools available. USE THEM.
+
+delegate to codex when:
+- boilerplate, CRUD, tests, repetitive screens
+- focused implementation with clear spec (>10 lines)
+- any concrete coding task where spec is unambiguous
+NOT migrations (shared state — one owner, handle manually)
+
+how: threadId = codex(prompt="detailed spec with file paths and context", cwd="/project/root", sandbox="workspace-write", approval-policy="never")
+iterate: codex-reply(threadId, "fix X") — capture threadId from initial call to continue the session
+review the output yourself before marking task done.
+
+do NOT delegate: architectural decisions, design choices, tasks needing repo-wide context.
+codex does NOT commit — you own your changes.
+if codex is unavailable or errors → implement directly yourself.
+</codex-for-teammates>
+
 <shortcuts>
 a = approve
 ap = I APPROVE DESIGN EDIT THAT IN WITH CHANGES I SUGGESTED AND ALLOW TO DO ACTIONS I SAY YOU NEED TO DO PRIOR TO EDITS
@@ -387,12 +406,19 @@ for web/frontend: use /frontend skill for design patterns.
 proactively identify friction → create tools to eliminate.
 
 codex delegation:
-MCP tool `codex_implement(spec, dir, timeout)` — native tool for delegating implementation to codex.
+native MCP server: `codex mcp-server` (stdio JSON-RPC, registered as `codex-delegate`).
 CLI shortcut: `cdx "spec"` (aliases.sh wrapper around `codex exec`).
+
+MCP tools:
+- `codex(prompt, cwd?, model?, approval-policy?, sandbox?)` — new session
+  sandbox: "read-only" | "workspace-write" | "danger-full-access"
+  approval-policy: "untrusted" | "on-failure" | "on-request" | "never"
+  also: developer-instructions?, base-instructions?
+- `codex-reply(threadId, prompt)` — continue existing session (multi-turn)
 
 when to delegate:
 - concrete implementations with clear spec (implement function X, fix bug Y per spec)
-- boilerplate, tests, migrations, CRUD
+- boilerplate, tests, CRUD (not migrations — shared state)
 - focused coding tasks where codex excels (detailed implementation from a plan)
 
 when NOT:
@@ -402,10 +428,10 @@ when NOT:
 
 flow:
 1. claude plans, writes detailed spec
-2. codex_implement(spec="...", dir="/path") → codex implements
-3. claude reviews changes
-4. adversarial review per <adversarial-review> section
-5. iterate if needed
+2. codex(prompt="...", cwd="/path") → codex implements
+3. codex-reply(threadId, "fix X") if iteration needed
+4. claude reviews changes
+5. adversarial review per <adversarial-review> section
 
 codex does NOT commit — claude owns git state.
 for tasks >5 min: fallback to Bash + run_in_background:
@@ -437,7 +463,8 @@ model routing:
 
 spawn prompt rules (teammates start with BLANK context):
 every dispatch MUST include: (1) context — what exists, why this matters (2) instructions — exactly what to do
-(3) file references — specific paths, not vague module names (4) success criteria — measurable definition of done.
+(3) file references — specific paths, not vague module names (4) success criteria — measurable definition of done
+(5) for implementers: remind them to use codex for boilerplate/CRUD/tests/screens (>10 lines, clear spec) — codex(prompt=..., cwd="/project/root", sandbox="workspace-write", approval-policy="never")
 vague prompts waste tokens on exploration. specific prompts save 3–5x.
 
 anti-patterns:

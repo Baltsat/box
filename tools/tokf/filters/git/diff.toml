@@ -1,0 +1,15 @@
+# git-diff.toml — pass through full diff, skip binary noise
+# Raw: full unified diff
+# Filtered: same, minus binary file lines (useless in LLM context)
+
+command = "git diff"
+
+skip = ["^Binary files .* differ$", "^index [0-9a-f]+\\.\\.[0-9a-f]+ [0-9]+$"]
+
+match_output = [{ contains = "fatal:", output = "✗ {line_containing}" }]
+
+[on_success]
+output = "{output}"
+
+[on_failure]
+tail = 5

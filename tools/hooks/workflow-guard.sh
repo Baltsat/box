@@ -22,7 +22,7 @@ untracked_lines=0
 untracked_files=$(cd "$repo" && git ls-files --others --exclude-standard 2>/dev/null || true)
 if [[ -n "$untracked_files" ]]; then
     untracked_lines=$(cd "$repo" && printf '%s\n' "$untracked_files" | while IFS= read -r f; do
-        wc -l < "$f" 2>/dev/null || echo 0
+        wc -l <"$f" 2>/dev/null || echo 0
     done | awk '{s+=$1} END {print s+0}')
 fi
 lines=$((tracked + untracked_lines))
@@ -31,8 +31,14 @@ lines=$((tracked + untracked_lines))
 # check AR marker (per-repo, fingerprinted to exact worktree state)
 marker="/tmp/ar-$(printf '%s' "$repo" | shasum -a 256 | cut -d' ' -f1)"
 if [[ -f "$marker" ]]; then
-    marker_age=$(( $(date +%s) - $(stat -f %m "$marker" 2>/dev/null || stat -c %Y "$marker" 2>/dev/null || echo 0) ))
-    current_fp=$(cd "$repo" && { git diff HEAD 2>/dev/null; git ls-files --others --exclude-standard 2>/dev/null | sort | while IFS= read -r f; do printf '=== %s ===\n' "$f"; cat "$f" 2>/dev/null; done; } | shasum -a 256 | cut -d' ' -f1)
+    marker_age=$(($(date +%s) - $(stat -f %m "$marker" 2>/dev/null || stat -c %Y "$marker" 2>/dev/null || echo 0)))
+    current_fp=$(cd "$repo" && {
+        git diff HEAD 2>/dev/null
+        git ls-files --others --exclude-standard 2>/dev/null | sort | while IFS= read -r f; do
+            printf '=== %s ===\n' "$f"
+            cat "$f" 2>/dev/null
+        done
+    } | shasum -a 256 | cut -d' ' -f1)
     stored_fp=$(cat "$marker" 2>/dev/null || true)
     [[ "$marker_age" -lt 3600 && "$current_fp" == "$stored_fp" ]] && exit 0
 fi
