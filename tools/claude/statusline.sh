@@ -76,7 +76,7 @@ if [ "$context_percent" -ge 90 ]; then
 elif [ "$context_percent" -ge 75 ]; then
     CTX_COLOR="$YELLOW"
 else
-    CTX_COLOR="$GREEN"
+    CTX_COLOR="$GRAY"
 fi
 
 # Git info
