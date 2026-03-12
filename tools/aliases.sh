@@ -80,28 +80,6 @@ alias preview='open -a "Preview"'
 alias claude='claude --dangerously-skip-permissions'
 
 _box_codex_no_alt_screen=-1
-_box_codex_remote=-1
-
-_box_codex_detect_remote() {
-    [[ "${_box_codex_remote}" == "1" ]] && return 0
-    [[ "${_box_codex_remote}" == "0" ]] && return 1
-    if [[ "${_BOX_IS_REMOTE:-0}" == "1" ]]; then
-        _box_codex_remote=1
-        return 0
-    fi
-    if [[ -n "${SSH_CONNECTION:-}" || -n "${SSH_TTY:-}" || -n "${SSH_CLIENT:-}" ]]; then
-        _box_codex_remote=1
-        return 0
-    fi
-    local parent
-    parent="$(ps -o comm= -p "${PPID:-0}" 2>/dev/null | tr -d '[:space:]')"
-    if [[ "$parent" == *ssh* || "$parent" == *sshd* || "$parent" == *mosh* ]]; then
-        _box_codex_remote=1
-        return 0
-    fi
-    _box_codex_remote=0
-    return 1
-}
 
 _box_codex_supports_no_alt_screen() {
     [[ "${_box_codex_no_alt_screen}" == "1" ]] && return 0
@@ -122,7 +100,7 @@ _box_codex_supports_no_alt_screen() {
 
 codex() {
     local -a codex_args=("--dangerously-bypass-approvals-and-sandbox")
-    if _box_codex_detect_remote && _box_codex_supports_no_alt_screen; then
+    if _box_codex_supports_no_alt_screen; then
         codex_args+=(--no-alt-screen)
     fi
     command codex "${codex_args[@]}" "$@"
@@ -130,10 +108,21 @@ codex() {
 
 cdx() {
     local -a codex_args=()
-    if _box_codex_detect_remote && _box_codex_supports_no_alt_screen; then
+    if _box_codex_supports_no_alt_screen; then
         codex_args+=(--no-alt-screen)
     fi
     command codex "${codex_args[@]}" exec --skip-git-repo-check --ephemeral -o /dev/stdout "$@"
+}
+
+codex_tmux() {
+    local -a codex_args=(--no-alt-screen "$@")
+    local -a cmd=()
+    local arg
+    cmd+=(codex)
+    for arg in "${codex_args[@]}"; do
+        cmd+=("$(printf '%q' "$arg")")
+    done
+    command tmux new-session -A -s codex "${cmd[*]}"
 }
 alias gemini='gemini --yolo'
 alias qwen='qwen --yolo'
