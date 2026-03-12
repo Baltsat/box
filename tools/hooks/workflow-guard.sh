@@ -29,7 +29,8 @@ lines=$((tracked + untracked_lines))
 [[ "$lines" -lt 10 ]] && exit 0
 
 # check AR marker (per-repo, fingerprinted to exact worktree state)
-marker="/tmp/ar-$(printf '%s' "$repo" | shasum -a 256 | cut -d' ' -f1)"
+_sha() { sha256sum 2>/dev/null || shasum -a 256; }
+marker="/tmp/ar-$(printf '%s' "$repo" | _sha | cut -d' ' -f1)"
 if [[ -f "$marker" ]]; then
     marker_age=$(($(date +%s) - $(stat -f %m "$marker" 2>/dev/null || stat -c %Y "$marker" 2>/dev/null || echo 0)))
     current_fp=$(cd "$repo" && {
@@ -38,7 +39,7 @@ if [[ -f "$marker" ]]; then
             printf '=== %s ===\n' "$f"
             cat "$f" 2>/dev/null
         done
-    } | shasum -a 256 | cut -d' ' -f1)
+    } | _sha | cut -d' ' -f1)
     stored_fp=$(cat "$marker" 2>/dev/null || true)
     [[ "$marker_age" -lt 3600 && "$current_fp" == "$stored_fp" ]] && exit 0
 fi
