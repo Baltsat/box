@@ -29,13 +29,14 @@ delegate to codex when:
 - any concrete coding task where spec is unambiguous
 NOT migrations (shared state — one owner, handle manually)
 
-how: threadId = codex(prompt="detailed spec with file paths and context", cwd="/project/root", sandbox="workspace-write", approval-policy="never")
+how: threadId = codex(prompt="detailed spec listing EXACT files to modify", cwd="<project-root>", sandbox="workspace-write", approval-policy="never")
 iterate: codex-reply(threadId, "fix X") — capture threadId from initial call to continue the session
 review the output yourself before marking task done.
 
 do NOT delegate: architectural decisions, design choices, tasks needing repo-wide context.
 codex does NOT commit — you own your changes.
-if codex is unavailable or errors → implement directly yourself.
+while codex is running — do not edit the same files locally.
+if codex unavailable or errors → implement directly yourself.
 </codex-for-teammates>
 
 <shortcuts>
@@ -418,7 +419,7 @@ MCP tools:
 
 when to delegate:
 - concrete implementations with clear spec (implement function X, fix bug Y per spec)
-- boilerplate, tests, CRUD (not migrations — shared state)
+- boilerplate, tests, CRUD, repetitive screens (not migrations — shared state)
 - focused coding tasks where codex excels (detailed implementation from a plan)
 
 when NOT:
@@ -428,7 +429,7 @@ when NOT:
 
 flow:
 1. claude plans, writes detailed spec
-2. codex(prompt="...", cwd="/path") → codex implements
+2. threadId = codex(prompt="...", cwd="<project-root>", sandbox="workspace-write", approval-policy="never") → codex implements
 3. codex-reply(threadId, "fix X") if iteration needed
 4. claude reviews changes
 5. adversarial review per <adversarial-review> section
@@ -464,7 +465,7 @@ model routing:
 spawn prompt rules (teammates start with BLANK context):
 every dispatch MUST include: (1) context — what exists, why this matters (2) instructions — exactly what to do
 (3) file references — specific paths, not vague module names (4) success criteria — measurable definition of done
-(5) for implementers: remind them to use codex for boilerplate/CRUD/tests/screens (>10 lines, clear spec) — codex(prompt=..., cwd="/project/root", sandbox="workspace-write", approval-policy="never")
+(5) for implementers: remind them to use codex for boilerplate/CRUD/tests/screens (>10 lines, clear spec) — codex(prompt=..., cwd="<project-root>", sandbox="workspace-write", approval-policy="never")
 vague prompts waste tokens on exploration. specific prompts save 3–5x.
 
 anti-patterns:
@@ -483,8 +484,8 @@ workflow:
 2. decompose into independent work units. architect produces shared contract (API shapes, types, schemas) — lead approves BEFORE implementers start.
 3. user-sim on design — lightweight sim against interfaces BEFORE parallelizing. catch bad UX before code exists.
 4. delegate with explicit acceptance criteria per task
-5. implement in parallel via worktree-isolated agents
-6. integrate — lead merges worktree outputs, resolves conflicts, runs smoke test BEFORE handing to validator.
+5. implement in parallel — shared repo, strict file ownership (one agent per directory/file set)
+6. integrate — lead reviews all changes, resolves any conflicts, runs smoke test BEFORE handing to validator.
 7. validate with read-only agents (builder-validator pattern)
 8. user-simulate the integrated result — friction test, not just correctness test
 </teams>
