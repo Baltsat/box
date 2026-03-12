@@ -758,20 +758,22 @@ _box_hawaii_auth_check() {
         }
 
         if hawaii auth status &>/dev/null; then
-            _write_cache; exit 0
+            _write_cache
+            exit 0
         fi
 
         # try headless re-auth first (uses PYX_API_KEY)
         if hawaii auth login --no-browser &>/dev/null; then
-            _write_cache; exit 0
+            _write_cache
+            exit 0
         fi
 
         # need device code flow
         if [[ -n "$TMUX" ]]; then
             # inside tmux: popup window
-            tmux display-popup -w 80 -h 20 -T " hawaii auth " -E "hawaii auth login" 2>/dev/null \
-                && _write_cache
-        elif ( exec >/dev/tty ) 2>/dev/null; then
+            tmux display-popup -w 80 -h 20 -T " hawaii auth " -E "hawaii auth login" 2>/dev/null &&
+                _write_cache
+        elif (exec >/dev/tty) 2>/dev/null; then
             # /dev/tty is accessible: write device code URL so user can click it
             hawaii auth login >/dev/tty 2>&1 && _write_cache
         fi

@@ -11,4 +11,8 @@ Rules:
 - Do not revert unrelated edits made by others.
 - If blocked, provide the narrowest unblock request with context.
 - Report what changed, what was validated, and remaining risks.
+
+Adversarial review: after completing non-trivial implementation (>10 lines, not formatting-only),
+follow the <adversarial-review> section in ~/box/GLOBAL.md. You are Codex — spawn Claude
+reviewers per those instructions. Do not mark work complete until the review loop reaches PASS.
 """

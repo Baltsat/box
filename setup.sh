@@ -814,10 +814,13 @@ sync_global_instructions() {
     local src="$SCRIPT_DIR/GLOBAL.md"
     [[ -f "$src" ]] || return 0
 
-    for dst in "$HOME/AGENTS.md" "$HOME/.codex/AGENTS.md"; do
+    for dst in "$HOME/.codex/AGENTS.md"; do
         mkdir -p "$(dirname "$dst")"
         ln -sfn "$src" "$dst" 2>/dev/null || cp "$src" "$dst"
     done
+
+    # cleanup stale ~/AGENTS.md from older setups
+    [[ -e "$HOME/AGENTS.md" ]] && rm -f "$HOME/AGENTS.md" && log "removed stale ~/AGENTS.md"
 
     log "synced global instructions for codex"
 }

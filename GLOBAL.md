@@ -32,10 +32,11 @@ cmd = local cmd (./CLAUDE.md)
 yn = yes/no question (MUST answer yes or no first, then elaborate)
 cl = clipboard: pbcopy << 'EOF', one per response
 bg = background: run, sleep, check. laser focus.
+ar = adversarial review (trigger cross-model review on current changes, even without prior implementation)
 </shortcuts>
 
 <workflow severity="critical">
-DEFAULT: (1) ultrathink → reason through implications (2) show full design inline with exact code/edits (3) discuss tradeoffs, AskUserQuestion if ambiguous (4) WAIT for explicit "i approve" or "ap" (5) ONLY THEN execute edits
+DEFAULT: (1) ultrathink → reason through implications (2) show full design inline with exact code/edits (3) discuss tradeoffs, AskUserQuestion if ambiguous (4) WAIT for explicit "i approve" or "ap" (5) ONLY THEN execute edits (6) after implementation, run adversarial review (see <adversarial-review>). do NOT report completion until review loop reaches PASS.
 
 modes:
 
@@ -461,6 +462,84 @@ key parameters:
 pattern: spawn 3 Explore agents in background → gather results → synthesize in main context → implement.
 this is 3x faster than sequential search and protects main context from bloat.
 </subagents>
+
+<adversarial-review severity="critical">
+post-implementation default. after completing implementation of a plan or significant changes,
+AUTOMATICALLY spawn adversarial reviewers on the OPPOSITE model before reporting completion.
+
+⚠️ HARD CONSTRAINT: reviewers MUST run via the opposite model's CLI (codex exec or claude -p).
+do NOT use subagents, the Agent tool, or any internal delegation mechanism as reviewers —
+those run on YOUR OWN model, which defeats the purpose. same-model review = self-validation.
+
+skip when: trivial changes (<10 lines, formatting/typo-only). do NOT skip config edits —
+this is a config repo; behavioral config changes are the main risk surface.
+
+scaling:
+- <50 lines changed, 1-2 files → 1 reviewer (skeptic)
+- 50-200 lines, 3-5 files → 2 reviewers (skeptic + architect)
+- 200+ lines or 5+ files → 3 reviewers (skeptic + architect + minimalist)
+
+process:
+1. determine intent — what the implementation is trying to achieve.
+   state it explicitly BEFORE spawning reviewers.
+
+2. read ~/box/tools/adversarial-review/principles.md and ~/box/tools/adversarial-review/reviewer-lenses.md
+   (context for judging findings — script handles building reviewer prompts)
+
+3. run the review launcher. it handles diff capture, temp dir, spawning, polling, validation, cleanup:
+   ~/box/tools/adversarial-review/review.sh \
+     --lenses skeptic \
+     --intent "stated intent here"
+
+   for medium diffs: --lenses skeptic,architect
+   for large diffs:  --lenses skeptic,architect,minimalist
+
+   pass --diff-file for a specific patch (e.g. after stashing or cross-repo review):
+   ~/box/tools/adversarial-review/review.sh \
+     --lenses skeptic,architect \
+     --intent "stated intent here" \
+     --diff-file /tmp/review-diff.patch
+
+   stdout = all reviewer findings. exit 0=ok, 1=reviewer failed, 2=timeout.
+   on exit 1, stdout includes stderr log excerpt — verdict is CONTESTED minimum, never PASS.
+
+4. synthesize verdict from stdout:
+
+   ## Intent
+   <what the implementation is trying to achieve>
+
+   ## Verdict: PASS | CONTESTED | REJECT
+   <one-line summary>
+
+   ## Findings
+   <numbered list, ordered by severity: high → medium → low>
+   for each finding:
+   - **[severity]** description with file:line references
+   - Lens: which reviewer raised it
+   - Principle: which principle it maps to
+   - Recommendation: concrete action, not vague advice
+
+   ## What Went Well
+   <1-3 things the reviewers found no issue with — acknowledge good work>
+
+   ## Lead Judgment
+   <for each finding: accept or reject with a one-line rationale.
+    call out false positives, overreach, style-vs-substance confusion.
+    not every adversarial finding warrants action.>
+
+   verdict logic:
+   - PASS — no high-severity findings
+   - CONTESTED — high-severity but reviewers disagree
+   - REJECT — high-severity with consensus
+
+5. iterative loop (FULLY AUTONOMOUS):
+   - PASS → done, present summary to user
+   - REJECT → fix ALL findings autonomously, then re-run review.sh (script creates fresh dir each run)
+   - CONTESTED → fix undisputed findings, ask user ONLY about preference-based contested ones
+   - loop until PASS. no iteration cap.
+   - NEVER ask technical questions during fix cycle — make autonomous decisions.
+   - only stop for personal preference questions that genuinely could go either way.
+</adversarial-review>
 
 <env severity="critical">
 shell: bash | config: ~/box (nix-darwin + home-manager)
