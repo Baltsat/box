@@ -48,7 +48,7 @@ fi
 source_nix() {
     local daemon_sh="/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh"
     local profile_sh="$HOME/.nix-profile/etc/profile.d/nix.sh"
-    if [[ -f $daemon_sh ]] && [[ -S /nix/var/nix/daemon-socket/socket ]] && pgrep -x nix-daemon >/dev/null 2>&1; then
+    if [[ -f $daemon_sh ]] && nix_daemon_live; then
         . "$daemon_sh"
         return 0
     fi
@@ -60,6 +60,11 @@ source_nix() {
 nix_daemon_error() {
     local output="$1"
     [[ "$output" == *"daemon-socket/socket"* ]] || [[ "$output" == *"cannot connect to socket"* ]] || [[ "$output" == *"Connection refused"* ]]
+}
+
+nix_daemon_live() {
+    [[ -S /nix/var/nix/daemon-socket/socket ]] || return 1
+    ps aux 2>/dev/null | awk '/nix-daemon/ && !/defunct/ && !/awk/' | grep -q .
 }
 
 rewrite_codex_agent_paths() {
@@ -77,14 +82,16 @@ rewrite_codex_agent_paths() {
 start_nix_daemon_if_possible() {
     local daemon_bin="/nix/var/nix/profiles/default/bin/nix-daemon"
     [[ -x "$daemon_bin" ]] || return 1
-    pgrep -x nix-daemon >/dev/null 2>&1 && return 0
+    nix_daemon_live && return 0
     has_cmd sudo || return 1
     sudo -n true >/dev/null 2>&1 || return 1
 
     log "starting nix daemon"
+    sudo killall nix-daemon 2>/dev/null || true
+    sleep 1
     sudo "$daemon_bin" >/dev/null 2>&1 &
     for _ in $(seq 1 15); do
-        if [[ -S /nix/var/nix/daemon-socket/socket ]] && pgrep -x nix-daemon >/dev/null 2>&1; then
+        if nix_daemon_live; then
             return 0
         fi
         sleep 1
