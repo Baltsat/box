@@ -46,6 +46,8 @@ const links: [string, string][] = [
   ['tools/organize/config.yaml', '.config/organize/config.yaml'],
   // Swarm (multi-agent orchestrator)
   ['tools/swarm.py', '.local/bin/swarm'],
+  // cdx: standalone codex wrapper for non-interactive shells (hooks, subprocesses)
+  ['tools/cdx', '.local/bin/cdx'],
   // Claude Code statusline
   ['tools/claude/statusline.sh', '.claude/statusline.sh'],
   // Claude Code skills

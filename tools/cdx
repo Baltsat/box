@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# cdx — thin wrapper around codex exec for quick ephemeral one-shot tasks
+# works in non-interactive shells (hooks, subprocesses) with minimal PATH
+# usage: cdx "spec text" [extra codex exec flags]
+
+# augment PATH first so node/bun are findable before locating codex
+for _dir in "$HOME"/.nvm/versions/node/*/bin "$HOME/.bun/bin" "$HOME/.nix-profile/bin" /usr/local/bin; do
+    [[ -d "$_dir" ]] && PATH="$_dir:$PATH"
+done
+export PATH
+
+# locate codex even when PATH is stripped
+CODEX=$(command -v codex 2>/dev/null)
+if [[ -z "$CODEX" ]]; then
+    for _candidate in \
+        "$HOME/.bun/bin/codex" \
+        "$HOME/.local/bin/codex" \
+        "$HOME/.nix-profile/bin/codex" \
+        /usr/local/bin/codex
+    do
+        [[ -x "$_candidate" ]] && CODEX="$_candidate" && break
+    done
+fi
+
+if [[ -z "$CODEX" ]]; then
+    echo "cdx: codex not found in PATH or any of:" >&2
+    echo "  ~/.bun/bin/codex  ~/.local/bin/codex  ~/.nix-profile/bin/codex  /usr/local/bin/codex" >&2
+    exit 127
+fi
+
+exec "$CODEX" exec --skip-git-repo-check --ephemeral -o /dev/stdout "$@"
