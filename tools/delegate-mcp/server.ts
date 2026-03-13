@@ -106,7 +106,10 @@ async function with_session_lock<T>(session_id: string, fn: () => Promise<T>): P
   while (true) {
     try {
       await mkdir(path);
-      await Bun.write(`${path}/owner.json`, JSON.stringify({ pid: process.pid, created_at: stamp() }, null, 2));
+      await Bun.write(
+        `${path}/owner.json`,
+        JSON.stringify({ pid: process.pid, created_at: stamp() }, null, 2)
+      );
       break;
     } catch (e: any) {
       if (e?.code !== 'EEXIST') throw e;
