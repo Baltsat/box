@@ -21,7 +21,7 @@ fp=$(cd "$repo" && {
     git diff HEAD 2>/dev/null
 } | _sha | cut -d' ' -f1)
 
-echo "$fp" > "$baseline"
+echo "$fp" >"$baseline"
 
 # cleanup old baselines (> 7 days)
 find /tmp -maxdepth 1 -name 'session-git-baseline-*' -mtime +7 -delete 2>/dev/null || true
