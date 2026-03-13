@@ -16,20 +16,20 @@ baseline="/tmp/session-git-baseline-${key}"
 [[ -f "$baseline" ]] && exit 0
 
 _safe_cat() {
-	[[ -f "$1" ]] || return 0
-	[[ -L "$1" ]] && return 0
-	local sz
-	sz=$(wc -c <"$1" 2>/dev/null || echo 0)
-	[[ "$sz" -gt 1048576 ]] && return 0
-	cat "$1" 2>/dev/null
+    [[ -f "$1" ]] || return 0
+    [[ -L "$1" ]] && return 0
+    local sz
+    sz=$(wc -c <"$1" 2>/dev/null || echo 0)
+    [[ "$sz" -gt 1048576 ]] && return 0
+    cat "$1" 2>/dev/null
 }
 
 fp=$(cd "$repo" && {
-	git status --porcelain 2>/dev/null
-	git diff HEAD 2>/dev/null
-	git ls-files --others --exclude-standard 2>/dev/null | sort | while IFS= read -r f; do
-		_safe_cat "$f"
-	done
+    git status --porcelain 2>/dev/null
+    git diff HEAD 2>/dev/null
+    git ls-files --others --exclude-standard 2>/dev/null | sort | while IFS= read -r f; do
+        _safe_cat "$f"
+    done
 } | _sha | cut -d' ' -f1)
 
 echo "$fp" >"$baseline"

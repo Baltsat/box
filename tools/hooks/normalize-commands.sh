@@ -12,14 +12,14 @@ B='(^|[[:space:]]*[;&|]{1,2}[[:space:]]*|[(][[:space:]]*|[$][(][[:space:]]*)'
 W='([[:space:]]|$)'
 
 new_cmd=$(printf '%s\n' "$cmd" | sed -E \
-	-e "s/${B}(python3?)${W}/\1uv run \2\3/g" \
-	-e "s/${B}(pip3?)${W}/\1uv pip\3/g" \
-	-e "s/${B}(pytest)${W}/\1uv run \2\3/g")
+    -e "s/${B}(python3?)${W}/\1uv run \2\3/g" \
+    -e "s/${B}(pip3?)${W}/\1uv pip\3/g" \
+    -e "s/${B}(pytest)${W}/\1uv run \2\3/g")
 
 new_cmd=$(printf '%s\n' "$new_cmd" | sed -E \
-	-e 's/uv run uv run/uv run/g' \
-	-e 's/uv run uv pip/uv pip/g' \
-	-e 's/uv uv pip/uv pip/g')
+    -e 's/uv run uv run/uv run/g' \
+    -e 's/uv run uv pip/uv pip/g' \
+    -e 's/uv uv pip/uv pip/g')
 
 [[ "$new_cmd" == "$cmd" ]] && exit 0
 
