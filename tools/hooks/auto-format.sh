@@ -7,28 +7,28 @@ FILE=$(echo "$INPUT" | jq -r '.tool_input.file_path // ""')
 ext="${FILE##*.}"
 case "$ext" in
 py)
-	command -v ruff &>/dev/null && ruff format --quiet "$FILE" 2>/dev/null || true
-	;;
+    command -v ruff &>/dev/null && ruff format --quiet "$FILE" 2>/dev/null || true
+    ;;
 js | jsx | ts | tsx | json | yaml | yml | md | mdx | css | scss | html | htm | vue | svelte | graphql)
-	command -v prettier &>/dev/null && prettier --write --log-level=error "$FILE" 2>/dev/null || true
-	;;
+    command -v prettier &>/dev/null && prettier --write --log-level=error "$FILE" 2>/dev/null || true
+    ;;
 nix)
-	command -v nixfmt &>/dev/null && nixfmt "$FILE" 2>/dev/null || true
-	;;
+    command -v nixfmt &>/dev/null && nixfmt "$FILE" 2>/dev/null || true
+    ;;
 sh | bash | zsh)
-	command -v shfmt &>/dev/null && shfmt -w "$FILE" 2>/dev/null || true
-	;;
+    command -v shfmt &>/dev/null && shfmt -w "$FILE" 2>/dev/null || true
+    ;;
 toml)
-	command -v taplo &>/dev/null && taplo fmt "$FILE" 2>/dev/null || true
-	;;
+    command -v taplo &>/dev/null && taplo fmt "$FILE" 2>/dev/null || true
+    ;;
 go)
-	command -v gofmt &>/dev/null && gofmt -w "$FILE" 2>/dev/null || true
-	;;
+    command -v gofmt &>/dev/null && gofmt -w "$FILE" 2>/dev/null || true
+    ;;
 rs)
-	command -v rustfmt &>/dev/null && rustfmt --edition 2021 "$FILE" 2>/dev/null || true
-	;;
+    command -v rustfmt &>/dev/null && rustfmt --edition 2021 "$FILE" 2>/dev/null || true
+    ;;
 swift)
-	command -v swift-format &>/dev/null && swift-format -i "$FILE" 2>/dev/null || true
-	;;
+    command -v swift-format &>/dev/null && swift-format -i "$FILE" 2>/dev/null || true
+    ;;
 esac
 exit 0
