@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
 command -v jq >/dev/null 2>&1 || exit 0
 INPUT=$(cat)
+
+# skip formatting after Edit — sequential edits to the same file will fail
+# because old_string no longer matches the reformatted content.
+# only format after Write (full file replacement). precommit handles the rest.
+TOOL=$(echo "$INPUT" | jq -r '.tool_name // ""')
+[[ "$TOOL" == "Edit" ]] && exit 0
+
 FILE=$(echo "$INPUT" | jq -r '.tool_input.file_path // ""')
 [[ -z "$FILE" || ! -f "$FILE" ]] && exit 0
 
