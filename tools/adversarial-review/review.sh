@@ -98,7 +98,10 @@ REVIEW_DIR=$(mktemp -d /tmp/adversarial-review.XXXXXX)
 trap '/bin/rm -rf "$REVIEW_DIR"' EXIT
 
 if [[ -n "$DIFF_FILE" ]]; then
-    [[ ${#PATHS[@]} -gt 0 ]] && { echo "error: --path and --diff-file are mutually exclusive" >&2; exit 1; }
+    [[ ${#PATHS[@]} -gt 0 ]] && {
+        echo "error: --path and --diff-file are mutually exclusive" >&2
+        exit 1
+    }
     DIFF_CONTENT=$(cat "$DIFF_FILE")
 else
     # validate --path targets: allow paths that exist on disk OR in git index/HEAD (covers git rm)
