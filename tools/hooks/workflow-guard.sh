@@ -43,6 +43,17 @@ for repo in "${changed_repos[@]}"; do
     lines=$((tracked + untracked_lines))
     [[ "$lines" -lt 10 ]] && continue
 
+    all_docs=true
+    while IFS=$'\t' read -r _ _ f; do
+        case "$f" in *.md|*.txt|*.rst|*.adoc|*.mdx) ;; *) all_docs=false; break ;; esac
+    done < <(cd "$repo" && git diff --numstat HEAD 2>/dev/null)
+    if $all_docs && [[ -n "$untracked_files" ]]; then
+        while IFS= read -r f; do
+            case "$f" in *.md|*.txt|*.rst|*.adoc|*.mdx) ;; *) all_docs=false; break ;; esac
+        done <<< "$untracked_files"
+    fi
+    $all_docs && continue
+
     _repo_hash=$(printf '%s' "$repo" | _sha | cut -d' ' -f1)
     marker="/tmp/ar-${_repo_hash}"
     if [[ -f "$marker" ]]; then
