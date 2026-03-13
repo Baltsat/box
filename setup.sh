@@ -934,6 +934,17 @@ sync_claude_memory() {
     log "synced claude memory → $dst"
 }
 
+setup_delegate_mcp() {
+    has_cmd claude || return 0
+    has_cmd bun || return 0
+    log "registering delegate MCP server"
+    claude mcp remove codex-delegate --scope user 2>/dev/null || true
+    claude mcp remove delegate --scope user 2>/dev/null || true
+    if ! claude mcp add-json delegate --scope user "{\"type\":\"stdio\",\"command\":\"bun\",\"args\":[\"run\",\"$SCRIPT_DIR/tools/delegate-mcp/server.ts\"]}" 2>/dev/null; then
+        warn "failed to register delegate MCP server"
+    fi
+}
+
 repair_codex_config() {
     local codex_dir="$HOME/.codex"
     local codex_cfg="$codex_dir/config.toml"
@@ -981,6 +992,7 @@ link_configs
 sync_global_instructions
 sync_claude_memory
 repair_codex_config
+setup_delegate_mcp
 setup_tokf
 set_shell
 setup_shell_config
