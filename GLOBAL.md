@@ -504,6 +504,12 @@ process:
    for medium diffs: --lenses skeptic,architect
    for large diffs:  --lenses skeptic,architect,minimalist
 
+   pass --path to scope review to specific directories (e.g. skip docs/assets):
+   ~/box/tools/adversarial-review/review.sh \
+     --lenses skeptic \
+     --intent "stated intent here" \
+     --path vitalis-app --path vitalis-backend
+
    pass --diff-file for a specific patch (e.g. after stashing or cross-repo review):
    ~/box/tools/adversarial-review/review.sh \
      --lenses skeptic,architect \

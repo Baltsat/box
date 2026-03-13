@@ -5,7 +5,7 @@
 #
 # usage:
 #   review.sh --lenses skeptic[,architect,minimalist] --intent TEXT [--diff-file PATH] [--timeout SECS]
-#             [--reviewer-model claude|codex]
+#             [--reviewer-model claude|codex] [--path DIR ...]
 #
 # exit codes: 0=all ok, 1=reviewer failed, 2=timeout
 #
@@ -23,6 +23,7 @@ INTENT=""
 DIFF_FILE=""
 EXPLICIT_REVIEWER_MODEL=""
 MAX_DIFF_BYTES=204800
+declare -a PATHS=()
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -44,6 +45,10 @@ while [[ $# -gt 0 ]]; do
         ;;
     --reviewer-model)
         EXPLICIT_REVIEWER_MODEL="$2"
+        shift 2
+        ;;
+    --path)
+        PATHS+=("$2")
         shift 2
         ;;
     --help | -h)
@@ -93,13 +98,37 @@ REVIEW_DIR=$(mktemp -d /tmp/adversarial-review.XXXXXX)
 trap '/bin/rm -rf "$REVIEW_DIR"' EXIT
 
 if [[ -n "$DIFF_FILE" ]]; then
+    [[ ${#PATHS[@]} -gt 0 ]] && { echo "error: --path and --diff-file are mutually exclusive" >&2; exit 1; }
     DIFF_CONTENT=$(cat "$DIFF_FILE")
 else
+    # validate --path targets: allow paths that exist on disk OR in git index/HEAD (covers git rm)
+    for p in "${PATHS[@]}"; do
+        [[ -e "$p" ]] && continue
+        git ls-files --error-unmatch "$p" &>/dev/null && continue
+        git diff --name-only HEAD -- "$p" &>/dev/null 2>&1 && [[ -n "$(git diff --name-only HEAD -- "$p" 2>/dev/null)" ]] && continue
+        echo "error: --path target not found on disk or in git: $p" >&2
+        exit 1
+    done
+
+    # check file(1) availability — needed for binary detection of untracked files
+    HAS_FILE_CMD=1
+    if ! command -v file &>/dev/null || ! file --mime-encoding /dev/null &>/dev/null; then
+        echo "warning: file(1) unavailable — all untracked files will be skipped as a safety measure" >&2
+        HAS_FILE_CMD=0
+    fi
+
     # single canonical diff: all uncommitted changes vs HEAD
-    DIFF_CONTENT=$(git diff HEAD 2>/dev/null || true)
-    # include untracked regular files under 100KB (git ls-files --others already filters via gitignore)
+    # --path scopes both git diff and ls-files to specific directories
+    DIFF_CONTENT=$(git diff HEAD -- "${PATHS[@]}" 2>/dev/null || true)
+    # include untracked text files under 100KB (git ls-files --others already filters via gitignore)
     while IFS= read -r -d '' f; do
         [[ -f "$f" ]] || continue # skip symlinks, devices, pipes, fifos
+        # skip non-text files — null bytes corrupt bash variables and waste reviewer context
+        # fail-closed: if file(1) is unavailable or returns unexpected output, skip the file
+        if [[ $HAS_FILE_CMD -eq 0 ]] || ! file --mime-encoding "$f" 2>/dev/null | sed 's/.*: //' | grep -qE '^(us-ascii|utf-8|ascii|iso-8859)'; then
+            DIFF_CONTENT+=$'\n=== new untracked file: '"$f"' (skipped: non-text) ==='$'\n'
+            continue
+        fi
         local_size=$(wc -c <"$f" 2>/dev/null || echo 0)
         if [[ $local_size -gt 102400 ]]; then
             DIFF_CONTENT+=$'\n=== new untracked file: '"$f"' (skipped: '"$local_size"' bytes) ==='$'\n'
@@ -107,7 +136,7 @@ else
             DIFF_CONTENT+=$'\n=== new untracked file: '"$f"' ==='$'\n'
             DIFF_CONTENT+=$(cat "$f" 2>/dev/null || true)
         fi
-    done < <(git ls-files --others --exclude-standard -z 2>/dev/null || true)
+    done < <(git ls-files --others --exclude-standard -z -- "${PATHS[@]}" 2>/dev/null || true)
 fi
 
 # enforce 200KB byte cap on total payload (write to temp, measure bytes, truncate by bytes)
