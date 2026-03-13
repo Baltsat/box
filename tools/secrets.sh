@@ -66,7 +66,7 @@ edit() {
 OPENAI_API_KEY=
 
 # Anthropic
-ANTHROPIC_API_KEY=
+ANTHROPIC_OAUTH_TOKEN=
 
 # GitHub (for private repos, optional)
 # GH_TOKEN=

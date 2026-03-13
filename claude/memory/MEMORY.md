@@ -25,4 +25,4 @@
 - [project_vitalis_phase0.md](project_vitalis_phase0.md) — Phase 0 implementation context
 
 ## feedback
-- [feedback_codex_delegation.md](feedback_codex_delegation.md) — bidirectional delegation via delegate MCP (codex/claude/reply)
+- [feedback_codex_delegation.md](feedback_codex_delegation.md) — bidirectional delegation via delegate MCP (`delegate_codex` + `delegate_claude`)

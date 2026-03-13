@@ -45,12 +45,20 @@ for repo in "${changed_repos[@]}"; do
 
     all_docs=true
     while IFS=$'\t' read -r _ _ f; do
-        case "$f" in *.md|*.txt|*.rst|*.adoc|*.mdx) ;; *) all_docs=false; break ;; esac
+        case "$f" in *.md | *.txt | *.rst | *.adoc | *.mdx) ;; *)
+            all_docs=false
+            break
+            ;;
+        esac
     done < <(cd "$repo" && git diff --numstat HEAD 2>/dev/null)
     if $all_docs && [[ -n "$untracked_files" ]]; then
         while IFS= read -r f; do
-            case "$f" in *.md|*.txt|*.rst|*.adoc|*.mdx) ;; *) all_docs=false; break ;; esac
-        done <<< "$untracked_files"
+            case "$f" in *.md | *.txt | *.rst | *.adoc | *.mdx) ;; *)
+                all_docs=false
+                break
+                ;;
+            esac
+        done <<<"$untracked_files"
     fi
     $all_docs && continue
 

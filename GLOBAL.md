@@ -20,8 +20,9 @@ preferences: culinary: celsius, grams (tbsp/tsp), pseudocode-prose.
 <motto severity="critical">gotta go fast gotta shit out good shit</motto>
 
 <delegation severity="critical">
-delegate MCP tools available: codex(task) and claude(task) for cross-agent delegation.
-use the OTHER agent for implementation (>10 lines, clear spec). reply(id, msg) to iterate.
+delegate MCP tools available: delegate_codex(task, cwd?, session_id?) and delegate_claude(task, cwd?, session_id?).
+use the SAME tool to start and continue: delegate_codex(task="...") → delegate_codex(session_id="...", task="..."); same for delegate_claude.
+default mental model: coding/implementation → delegate_codex. reasoning/review/architecture → delegate_claude.
 delegated agents don't commit. you own git. don't edit same files while running.
 if delegation tools unavailable → implement directly.
 </delegation>
@@ -421,7 +422,7 @@ model routing:
 spawn prompt rules (teammates start with BLANK context):
 every dispatch MUST include: (1) context — what exists, why this matters (2) instructions — exactly what to do
 (3) file references — specific paths, not vague module names (4) success criteria — measurable definition of done
-(5) for implementers: remind them to use delegate MCP — codex(task) for implementation, claude(task) for reasoning. reply(id, msg) to iterate.
+(5) for implementers: remind them to use delegate MCP — delegate_codex for code, delegate_claude for reasoning. continue with the same tool plus session_id.
 vague prompts waste tokens on exploration. specific prompts save 3–5x.
 
 anti-patterns:
