@@ -65,7 +65,7 @@
           {
             "type": "command",
             "command": "~/box/tools/hooks/session-baseline.sh",
-            "timeout": 5
+            "timeout": 30
           }
         ]
       },
