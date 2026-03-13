@@ -16,8 +16,8 @@ baseline="/tmp/session-git-baseline-${key}"
 [[ -f "$baseline" ]] && exit 0
 
 fp=$(cd "$repo" && {
-	git status --porcelain 2>/dev/null
-	git diff HEAD 2>/dev/null
+    git status --porcelain 2>/dev/null
+    git diff HEAD 2>/dev/null
 } | _sha | cut -d' ' -f1)
 
 printf 'repo=%s\nfp=%s\n' "$repo" "$fp" >"$baseline"
