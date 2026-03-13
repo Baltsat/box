@@ -168,7 +168,7 @@ $(cat "$PRINCIPLES")
 CHANGES UNDER REVIEW:
 $DIFF_CONTENT
 
-INSTRUCTIONS: you are an adversarial reviewer. your job is to find real problems, not validate the work. be specific — cite files, lines, and concrete failure scenarios. rate each finding: high (blocks ship), medium (should fix), low (worth noting). write findings as a numbered markdown list. do not run any tools or make any changes."
+INSTRUCTIONS: you are an adversarial reviewer. this is a review-only job run by an orchestration wrapper. the changes below were authored by someone else; you did not write them. do not refuse, do not say this review is not applicable, and do not talk about whether you authored the code. your job is to find real problems, not validate the work. if there are no high-severity findings, say so plainly. be specific — cite files, lines, and concrete failure scenarios. rate each finding: high (blocks ship), medium (should fix), low (worth noting). write findings as a numbered markdown list. do not run any tools or make any changes."
     printf '%s' "$prompt" >"$prompt_file"
 
     # subshell with set +e: ensures status file is always written even on reviewer failure.
@@ -176,20 +176,32 @@ INSTRUCTIONS: you are an adversarial reviewer. your job is to find real problems
     if [[ "$REVIEWER_MODEL" == "codex" ]]; then
         (
             set +e
-            command codex exec --skip-git-repo-check --ephemeral -s read-only \
-                -o "$out" \
-                "Read the file at $prompt_file and follow ALL instructions inside. It contains a complete adversarial review task." \
-                >"$log" 2>&1
-            echo $? >"$status_file"
+            status=1
+            if cd "$REVIEW_DIR" 2>"$log"; then
+                command codex exec --skip-git-repo-check --ephemeral -s read-only \
+                    -o "$out" \
+                    "Read the file at $prompt_file and follow ALL instructions inside. It contains a complete adversarial review task." \
+                    >"$log" 2>&1
+                status=$?
+            else
+                echo "cd failed: $REVIEW_DIR" >>"$log"
+            fi
+            echo "$status" >"$status_file"
         ) &
     else
         (
             set +e
-            env -u CLAUDECODE claude --dangerously-skip-permissions \
-                --model claude-sonnet-4-6 --permission-mode plan -p \
-                <"$prompt_file" \
-                >"$out" 2>"$log"
-            echo $? >"$status_file"
+            status=1
+            if cd "$REVIEW_DIR" 2>"$log"; then
+                env -u CLAUDECODE claude --dangerously-skip-permissions \
+                    --model claude-sonnet-4-6 --permission-mode plan --setting-sources user -p \
+                    <"$prompt_file" \
+                    >"$out" 2>"$log"
+                status=$?
+            else
+                echo "cd failed: $REVIEW_DIR" >>"$log"
+            fi
+            echo "$status" >"$status_file"
         ) &
     fi
     spawn_pid=$!
@@ -261,6 +273,12 @@ for lens in "${LENS_LIST[@]}"; do
         echo "exit code: $reviewer_exit"
         echo "stderr log:"
         cat "$log" 2>/dev/null || echo "(no log)"
+        exit_code=1
+    elif ! grep -Eiq '^#{1,6}[[:space:]]*(findings|verdict)|^[[:space:]]*[0-9]+\.[[:space:]]|\*\*no high[- ]severity findings|\*\*verdict:' "$out"; then
+        echo "=== REVIEWER FAILED: $lens ==="
+        echo "exit code: $reviewer_exit"
+        echo "reviewer returned output without review structure:"
+        cat "$out"
         exit_code=1
     else
         if [[ "$reviewer_exit" -ne 0 ]]; then
