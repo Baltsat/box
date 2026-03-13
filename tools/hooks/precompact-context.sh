@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-set -euo pipefail
+command -v jq >/dev/null 2>&1 || exit 0
 INPUT=$(cat)
 TRANSCRIPT=$(echo "$INPUT" | jq -r '.transcript_path // ""')
 
 if [[ -z "$TRANSCRIPT" || ! -f "$TRANSCRIPT" ]]; then
-    SESSION_ID=$(echo "$INPUT" | jq -r '.session_id // ""')
-    [[ -z "$SESSION_ID" ]] && exit 0
-    TRANSCRIPT=$(find ~/.claude/projects -name "${SESSION_ID}.jsonl" -print -quit 2>/dev/null || true)
-    [[ -z "$TRANSCRIPT" || ! -f "$TRANSCRIPT" ]] && exit 0
+	SESSION_ID=$(echo "$INPUT" | jq -r '.session_id // ""')
+	[[ -z "$SESSION_ID" ]] && exit 0
+	TRANSCRIPT=$(find ~/.claude/projects -name "${SESSION_ID}.jsonl" -print -quit 2>/dev/null || true)
+	[[ -z "$TRANSCRIPT" || ! -f "$TRANSCRIPT" ]] && exit 0
 fi
 
 formatted=$(jq -rs '

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -euo pipefail
+command -v jq >/dev/null 2>&1 || exit 0
 
 INPUT=$(cat)
 ACTIVE=$(echo "$INPUT" | jq -r '.stop_hook_active // false')
@@ -20,12 +20,15 @@ _repo_hash=$(printf '%s' "$repo" | _sha | cut -d' ' -f1)
 # skip if state unchanged since session start (claude didn't edit anything)
 baseline_file="/tmp/session-git-baseline-${SESSION_ID}-${_repo_hash}"
 if [[ -f "$baseline_file" ]]; then
-    current_fp=$(cd "$repo" && {
-        git status --porcelain 2>/dev/null
-        git diff HEAD 2>/dev/null
-    } | _sha | cut -d' ' -f1)
-    baseline_fp=$(cat "$baseline_file" 2>/dev/null || true)
-    [[ "$current_fp" == "$baseline_fp" ]] && exit 0
+	current_fp=$(cd "$repo" && {
+		git status --porcelain 2>/dev/null
+		git diff HEAD 2>/dev/null
+		git ls-files --others --exclude-standard 2>/dev/null | sort | while IFS= read -r f; do
+			[[ -f "$f" ]] && cat "$f" 2>/dev/null
+		done
+	} | _sha | cut -d' ' -f1)
+	baseline_fp=$(cat "$baseline_file" 2>/dev/null || true)
+	[[ "$current_fp" == "$baseline_fp" ]] && exit 0
 fi
 
 # trivial changes don't need AR
@@ -33,9 +36,9 @@ tracked=$(cd "$repo" && git diff --numstat HEAD 2>/dev/null | awk '{s+=$1+$2} EN
 untracked_lines=0
 untracked_files=$(cd "$repo" && git ls-files --others --exclude-standard 2>/dev/null || true)
 if [[ -n "$untracked_files" ]]; then
-    untracked_lines=$(cd "$repo" && printf '%s\n' "$untracked_files" | while IFS= read -r f; do
-        wc -l <"$f" 2>/dev/null || echo 0
-    done | awk '{s+=$1} END {print s+0}')
+	untracked_lines=$(cd "$repo" && printf '%s\n' "$untracked_files" | while IFS= read -r f; do
+		wc -l <"$f" 2>/dev/null || echo 0
+	done | awk '{s+=$1} END {print s+0}')
 fi
 lines=$((tracked + untracked_lines))
 [[ "$lines" -lt 10 ]] && exit 0
@@ -43,16 +46,16 @@ lines=$((tracked + untracked_lines))
 # check AR marker (per-repo, fingerprinted to exact worktree state)
 marker="/tmp/ar-${_repo_hash}"
 if [[ -f "$marker" ]]; then
-    marker_age=$(($(date +%s) - $(stat -f %m "$marker" 2>/dev/null || stat -c %Y "$marker" 2>/dev/null || echo 0)))
-    ar_fp=$(cd "$repo" && {
-        git diff HEAD 2>/dev/null
-        git ls-files --others --exclude-standard 2>/dev/null | sort | while IFS= read -r f; do
-            printf '=== %s ===\n' "$f"
-            cat "$f" 2>/dev/null
-        done
-    } | _sha | cut -d' ' -f1)
-    stored_fp=$(cat "$marker" 2>/dev/null || true)
-    [[ "$marker_age" -lt 3600 && "$ar_fp" == "$stored_fp" ]] && exit 0
+	marker_age=$(($(date +%s) - $(stat -f %m "$marker" 2>/dev/null || stat -c %Y "$marker" 2>/dev/null || echo 0)))
+	ar_fp=$(cd "$repo" && {
+		git diff HEAD 2>/dev/null
+		git ls-files --others --exclude-standard 2>/dev/null | sort | while IFS= read -r f; do
+			printf '=== %s ===\n' "$f"
+			cat "$f" 2>/dev/null
+		done
+	} | _sha | cut -d' ' -f1)
+	stored_fp=$(cat "$marker" 2>/dev/null || true)
+	[[ "$marker_age" -lt 3600 && "$ar_fp" == "$stored_fp" ]] && exit 0
 fi
 
 jq -n '{

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -euo pipefail
+command -v jq >/dev/null 2>&1 || exit 0
 INPUT=$(cat)
 SESSION_ID=$(echo "$INPUT" | jq -r '.session_id // ""')
 CWD=$(echo "$INPUT" | jq -r '.cwd // ""')
@@ -17,8 +17,11 @@ baseline="/tmp/session-git-baseline-${key}"
 [[ -n "$SESSION_ID" && -f "$baseline" ]] && exit 0
 
 fp=$(cd "$repo" && {
-    git status --porcelain 2>/dev/null
-    git diff HEAD 2>/dev/null
+	git status --porcelain 2>/dev/null
+	git diff HEAD 2>/dev/null
+	git ls-files --others --exclude-standard 2>/dev/null | sort | while IFS= read -r f; do
+		[[ -f "$f" ]] && cat "$f" 2>/dev/null
+	done
 } | _sha | cut -d' ' -f1)
 
 echo "$fp" >"$baseline"
