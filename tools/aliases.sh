@@ -106,6 +106,7 @@ codex() {
     command codex "${codex_args[@]}" "$@"
 }
 
+# cdx is also a standalone script at ~/.local/bin/cdx for non-interactive shells (hooks, subprocesses)
 cdx() {
     local -a codex_args=()
     if _box_codex_supports_no_alt_screen; then
