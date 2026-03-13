@@ -60,6 +60,16 @@
     ],
     "SessionStart": [
       {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/box/tools/hooks/session-baseline.sh",
+            "timeout": 5
+          }
+        ]
+      },
+      {
         "matcher": "compact",
         "hooks": [
           {
@@ -109,7 +119,40 @@
         "hooks": [
           {
             "type": "command",
+            "command": "~/box/tools/hooks/normalize-commands.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
             "command": "~/box/tools/hooks/tokf-hook.sh"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/box/tools/hooks/auto-format.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/box/tools/hooks/precompact-context.sh",
+            "timeout": 15
           }
         ]
       }

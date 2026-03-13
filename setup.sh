@@ -369,6 +369,28 @@ setup_shell_config() {
         fi
     fi
 
+    # Linux + bash: inject PATH setup before interactive guard in .bashrc
+    # SSH remote commands run non-interactive bash which hits the guard and returns.
+    # Tools like tokf, cargo binaries, and nix packages need to be in PATH for those.
+    if [[ "$(uname -s)" == "Linux" && "$(basename "$SHELL")" == "bash" ]]; then
+        if ! grep -qF "# Box PATH" "$shell_rc" 2>/dev/null; then
+            log "adding PATH setup to top of $shell_rc"
+            local tmp_rc real_rc
+            tmp_rc=$(mktemp)
+            real_rc="$shell_rc"
+            [[ -L "$shell_rc" ]] && real_rc="$(readlink -f "$shell_rc")"
+            {
+                echo '# Box PATH (before interactive guard — needed for SSH remote commands)'
+                echo '[ -d "$HOME/.local/bin" ] && case ":$PATH:" in *":$HOME/.local/bin:"*) ;; *) export PATH="$HOME/.local/bin:$PATH" ;; esac'
+                echo '[ -d "$HOME/.cargo/bin" ] && case ":$PATH:" in *":$HOME/.cargo/bin:"*) ;; *) export PATH="$HOME/.cargo/bin:$PATH" ;; esac'
+                echo '[ -d "$HOME/.nix-profile/bin" ] && case ":$PATH:" in *":$HOME/.nix-profile/bin:"*) ;; *) export PATH="$HOME/.nix-profile/bin:$PATH" ;; esac'
+                echo ""
+                cat "$real_rc"
+            } >"$tmp_rc"
+            mv "$tmp_rc" "$real_rc"
+        fi
+    fi
+
     # Linux + bash: use bashrc.sh (includes aliases.sh + one-time setup)
     # macOS + zsh: use aliases.sh directly
     if [[ "$(uname -s)" == "Linux" && "$(basename "$SHELL")" == "bash" ]]; then
@@ -492,7 +514,7 @@ install_cli_tools() {
     fi
 
     # tokf (token output filter for LLM context compression)
-    # macOS: installed via brew (macos.nix). Linux: download pre-built binary.
+    # macOS: installed via brew (macos.nix). Linux: download pre-built binary or cargo install.
     if ! has_cmd tokf && [[ "$(uname -s)" == "Linux" ]]; then
         local arch
         arch=$(uname -m)
@@ -507,8 +529,14 @@ install_cli_tools() {
                 chmod +x "$HOME/.local/bin/tokf" 2>/dev/null || true
                 export PATH="$HOME/.local/bin:$PATH"
             fi
+        elif [[ -x "$HOME/.cargo/bin/cargo" ]] || has_cmd cargo; then
+            log "installing tokf via cargo ($arch)"
+            local cargo_bin
+            cargo_bin="$([[ -x "$HOME/.cargo/bin/cargo" ]] && echo "$HOME/.cargo/bin/cargo" || which cargo)"
+            "$cargo_bin" install tokf 2>&1 || true
+            export PATH="$HOME/.cargo/bin:$PATH"
         else
-            log "tokf: no pre-built binary for $arch linux, skipping"
+            log "tokf: no pre-built binary for $arch linux and cargo not found, skipping"
         fi
     fi
 

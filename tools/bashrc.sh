@@ -2,6 +2,11 @@
 # Linux server bashrc for box
 # Symlinked to ~/.bashrc on Linux
 
+# PATH setup (before interactive check — needed for SSH remote commands, cron, etc.)
+[[ -d "$HOME/.local/bin" ]] && case ":$PATH:" in *":$HOME/.local/bin:"*) ;; *) export PATH="$HOME/.local/bin:$PATH" ;; esac
+[[ -d "$HOME/.cargo/bin" ]] && case ":$PATH:" in *":$HOME/.cargo/bin:"*) ;; *) export PATH="$HOME/.cargo/bin:$PATH" ;; esac
+[[ -d "$HOME/.nix-profile/bin" ]] && case ":$PATH:" in *":$HOME/.nix-profile/bin:"*) ;; *) export PATH="$HOME/.nix-profile/bin:$PATH" ;; esac
+
 # Exit if not interactive
 case $- in
 *i*) ;;
