@@ -131,6 +131,16 @@
             "command": "~/box/tools/hooks/tokf-hook.sh"
           }
         ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/box/tools/hooks/track-edit-repo.sh",
+            "timeout": 5
+          }
+        ]
       }
     ],
     "PostToolUse": [
