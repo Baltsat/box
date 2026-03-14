@@ -47,9 +47,9 @@
 	version = HTTP/1.1
 [credential "https://github.com"]
 	helper = 
-	helper = !/opt/homebrew/bin/gh auth git-credential
+	helper = !/home/konstantinbaltsat/.nix-profile/bin/gh auth git-credential
 [credential "https://gist.github.com"]
 	helper = 
-	helper = !/opt/homebrew/bin/gh auth git-credential
+	helper = !/home/konstantinbaltsat/.nix-profile/bin/gh auth git-credential
 [credential]
 	helper = cache --timeout=86400

@@ -35,6 +35,12 @@ trust_level = "trusted"
 [projects."/private/tmp"]
 trust_level = "trusted"
 
+[projects."/home/konstantinbaltsat/agent"]
+trust_level = "trusted"
+
+[projects."/home/konstantinbaltsat"]
+trust_level = "trusted"
+
 [mcp_servers.delegate]
 command = "bash"
 args = ["-c", "exec bun run ~/box/tools/delegate-mcp/server.ts"]

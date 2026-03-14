@@ -287,7 +287,7 @@ async function session_pid_alive(session: Session) {
 
 function finish_session(session: Session, status: Status, error?: string) {
   session.status = status;
-  if (error) session.error = error;
+  if (error !== undefined) session.error = error;
   else delete session.error;
   session.updated_at = stamp();
   delete session.pid;
@@ -431,7 +431,11 @@ async function start_session(agent: Agent, task: string, cwd: string) {
         if (agent === 'claude' && code === 0 && !s.conv_id) {
           finish_session(s, 'error', 'claude did not return session_id');
         } else {
-          finish_session(s, code === 0 ? 'completed' : 'error', code !== 0 ? err || `exited ${code}` : undefined);
+          finish_session(
+            s,
+            code === 0 ? 'completed' : 'error',
+            code !== 0 ? err || `exited ${code}` : undefined
+          );
         }
         await store_session(session_id, s);
       });
@@ -440,7 +444,9 @@ async function start_session(agent: Agent, task: string, cwd: string) {
       const status: Status = code === 0 ? 'completed' : 'error';
       const error =
         status === 'error'
-          ? err || e?.message || (typeof code === 'number' ? `exited ${code}` : 'background handler failed')
+          ? err ||
+            e?.message ||
+            (typeof code === 'number' ? `exited ${code}` : 'background handler failed')
           : undefined;
       console.error(`[delegate] background handler failed for ${session_id}: ${e?.message ?? e}`);
       try {
@@ -450,7 +456,9 @@ async function start_session(agent: Agent, task: string, cwd: string) {
           await store_session(session_id, s);
         });
       } catch (inner: any) {
-        console.error(`[delegate] failed to persist terminal status for ${session_id}: ${inner?.message}`);
+        console.error(
+          `[delegate] failed to persist terminal status for ${session_id}: ${inner?.message}`
+        );
         try {
           const s = await load_session(session_id);
           if (s.status === 'running' && s.pid === proc.pid && !(await session_pid_alive(s))) {
@@ -458,7 +466,9 @@ async function start_session(agent: Agent, task: string, cwd: string) {
             await store_session(session_id, s);
           }
         } catch (fallback: any) {
-          console.error(`[delegate] fallback persist failed for ${session_id}: ${fallback?.message}`);
+          console.error(
+            `[delegate] fallback persist failed for ${session_id}: ${fallback?.message}`
+          );
         }
       }
     }
@@ -480,7 +490,11 @@ async function check_status(session_id: string, expected_agent?: Agent) {
       if (current.status !== 'running') return current;
       if (await session_pid_alive(current)) return current;
       if (current.pid) {
-        finish_session(current, 'error', current.error || 'process exited before handler completed');
+        finish_session(
+          current,
+          'error',
+          current.error || 'process exited before handler completed'
+        );
       } else {
         finish_session(current, 'completed');
       }
