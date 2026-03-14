@@ -12,6 +12,7 @@ const orphan_lock_ms = 5000;
 
 type Agent = 'codex' | 'claude';
 type Turn = { role: 'user' | 'assistant'; content: string };
+type Status = 'running' | 'completed' | 'error';
 type Session = {
   agent: Agent;
   cwd: string;
@@ -19,6 +20,9 @@ type Session = {
   history: Turn[];
   created_at: string;
   updated_at: string;
+  status: Status;
+  pid?: number;
+  error?: string;
 };
 
 const sessions = new Map<string, Session>();
@@ -177,6 +181,9 @@ function normalize_session(raw: unknown, session_id: string): Session {
   }
   const created_at = typeof session.created_at === 'string' ? session.created_at : stamp();
   const updated_at = typeof session.updated_at === 'string' ? session.updated_at : created_at;
+  const raw_status = (session as any).status;
+  const status: Status =
+    raw_status === 'running' ? 'running' : raw_status === 'error' ? 'error' : 'completed';
   return {
     agent: session.agent,
     cwd: session.cwd,
@@ -185,6 +192,9 @@ function normalize_session(raw: unknown, session_id: string): Session {
     history: session.history.map((turn) => ({ role: turn.role, content: turn.content })),
     created_at,
     updated_at,
+    status,
+    pid: typeof (session as any).pid === 'number' ? (session as any).pid : undefined,
+    error: typeof (session as any).error === 'string' ? (session as any).error : undefined,
   };
 }
 
@@ -340,34 +350,100 @@ async function run_claude(prompt: string, cwd: string, conv_id?: string) {
 
 async function start_session(agent: Agent, task: string, cwd: string) {
   const session_id = gen_id(agent);
-  const created_at = stamp();
+  const now = stamp();
+
+  const cmd =
+    agent === 'codex'
+      ? ['codex', 'exec', '--skip-git-repo-check', '-o', '/dev/stdout', task]
+      : [
+          'claude',
+          '--dangerously-skip-permissions',
+          '--setting-sources',
+          'user,project,local',
+          '--output-format',
+          'json',
+          '-p',
+          task,
+        ];
+
   const session: Session = {
     agent,
     cwd,
     history: [],
-    created_at,
-    updated_at: created_at,
+    status: 'running',
+    created_at: now,
+    updated_at: now,
   };
   await store_session(session_id, session);
 
-  let output = '';
-  if (agent === 'codex') {
-    output = await run_codex(task, cwd);
-  } else {
-    const result = await run_claude(task, cwd);
-    if (!result.conv_id) throw new Error('claude did not return session_id');
-    output = result.output;
-    session.conv_id = result.conv_id;
-  }
+  const proc = Bun.spawn(cmd, {
+    cwd,
+    stdin: 'ignore',
+    stdout: 'pipe',
+    stderr: 'pipe',
+    env: agent === 'claude' ? claude_env() : process.env,
+  });
+  session.pid = proc.pid;
 
-  push_turn(session, 'user', task);
-  push_turn(session, 'assistant', output);
-  try {
-    await store_session(session_id, session);
-  } catch (e: any) {
-    throw new Error(`session ${session_id} could not be persisted after start: ${e.message}`);
+  (async () => {
+    try {
+      const [out, err] = await Promise.all([
+        new Response(proc.stdout).text(),
+        new Response(proc.stderr).text(),
+      ]);
+      const code = await proc.exited;
+      const output = out.trim() || err.trim();
+      await with_session_lock(session_id, async () => {
+        const s = await load_session(session_id);
+        if (agent === 'claude') {
+          const parsed = parse_claude(output);
+          s.conv_id = parsed.conv_id;
+          push_turn(s, 'user', task);
+          push_turn(s, 'assistant', parsed.output);
+        } else {
+          push_turn(s, 'user', task);
+          push_turn(s, 'assistant', output);
+        }
+        if (agent === 'claude' && code === 0 && !s.conv_id) {
+          s.status = 'error';
+          s.error = 'claude did not return session_id';
+        } else {
+          s.status = code === 0 ? 'completed' : 'error';
+          s.error = code !== 0 ? (err || `exited ${code}`) : undefined;
+        }
+        delete s.pid;
+        await store_session(session_id, s);
+      });
+    } catch (e: any) {
+      try {
+        await with_session_lock(session_id, async () => {
+          const s = await load_session(session_id);
+          s.status = 'error';
+          s.error = e?.message || 'background handler failed';
+          delete s.pid;
+          await store_session(session_id, s);
+        });
+      } catch {}
+    }
+  })();
+
+  return { session_id, agent, status: 'running' };
+}
+
+async function check_status(session_id: string, expected_agent?: Agent) {
+  const session = await load_session(session_id);
+  if (expected_agent && session.agent !== expected_agent) {
+    throw new Error(
+      `session ${session_id} belongs to ${session.agent}; use delegate_${session.agent}`
+    );
   }
-  return { session_id, agent, status: 'started', output };
+  return {
+    session_id,
+    agent: session.agent,
+    status: session.status,
+    output: session.status !== 'running' ? session.history.at(-1)?.content : undefined,
+    error: session.error,
+  };
 }
 
 async function continue_session(session_id: string, task: string, expected_agent?: Agent) {
@@ -377,6 +453,9 @@ async function continue_session(session_id: string, task: string, expected_agent
       throw new Error(
         `session ${session_id} belongs to ${session.agent}; use delegate_${session.agent}`
       );
+    }
+    if (session.status !== 'completed') {
+      throw new Error(`session ${session_id} is ${session.status}; cannot continue`);
     }
 
     let output = '';
@@ -399,11 +478,11 @@ async function continue_session(session_id: string, task: string, expected_agent
 
 async function call_named_delegate(agent: Agent, args: any) {
   const task = typeof args?.task === 'string' ? args.task.trim() : '';
-  if (!task) throw new Error(`delegate_${agent} requires task`);
+  const sid = typeof args?.session_id === 'string' ? args.session_id.trim() : '';
 
-  if (typeof args?.session_id === 'string' && args.session_id.trim()) {
-    return continue_session(args.session_id.trim(), task, agent);
-  }
+  if (sid && !task) return check_status(sid, agent);
+  if (sid && task) return continue_session(sid, task, agent);
+  if (!task) throw new Error(`delegate_${agent} requires task for new sessions`);
 
   const cwd = typeof args?.cwd === 'string' && args.cwd.trim() ? args.cwd.trim() : home;
   return start_session(agent, task, cwd);
@@ -413,43 +492,39 @@ const tools = [
   {
     name: 'delegate_codex',
     description:
-      'delegate concrete implementation to codex. start with delegate_codex(task, cwd?) and continue with delegate_codex(session_id, task).',
+      'delegate implementation to codex. async: returns immediately with session_id. poll with delegate_codex(session_id) for status. continue with delegate_codex(session_id, task).',
     inputSchema: {
       type: 'object',
       properties: {
-        task: { type: 'string', description: 'task to delegate or follow-up message' },
-        cwd: {
+        task: {
           type: 'string',
-          description: 'working directory for a new session (default: $HOME)',
+          description: 'task to delegate. required for new sessions, optional for status checks',
         },
+        cwd: { type: 'string', description: 'working directory for new session (default: $HOME)' },
         session_id: {
           type: 'string',
-          description:
-            'existing codex delegation session; when set, continue it instead of starting a new one',
+          description: 'existing session; without task = status check, with task = continue',
         },
       },
-      required: ['task'],
     },
   },
   {
     name: 'delegate_claude',
     description:
-      'delegate reasoning, review, architecture, or analysis to claude. start with delegate_claude(task, cwd?) and continue with delegate_claude(session_id, task).',
+      'delegate reasoning/review/analysis to claude. async: returns immediately with session_id. poll with delegate_claude(session_id) for status. continue with delegate_claude(session_id, task).',
     inputSchema: {
       type: 'object',
       properties: {
-        task: { type: 'string', description: 'task to delegate or follow-up message' },
-        cwd: {
+        task: {
           type: 'string',
-          description: 'working directory for a new session (default: $HOME)',
+          description: 'task to delegate. required for new sessions, optional for status checks',
         },
+        cwd: { type: 'string', description: 'working directory for new session (default: $HOME)' },
         session_id: {
           type: 'string',
-          description:
-            'existing claude delegation session; when set, continue it instead of starting a new one',
+          description: 'existing session; without task = status check, with task = continue',
         },
       },
-      required: ['task'],
     },
   },
 ];
@@ -464,7 +539,7 @@ async function handle(req: any) {
       result: {
         protocolVersion: '2024-11-05',
         capabilities: { tools: {} },
-        serverInfo: { name: 'delegate', version: '3.0.0' },
+        serverInfo: { name: 'delegate', version: '4.0.0' },
       },
     };
 

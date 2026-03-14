@@ -103,17 +103,6 @@
         ]
       }
     ],
-    "TaskCompleted": [
-      {
-        "hooks": [
-          {
-            "type": "prompt",
-            "prompt": "a teammate marked a task completed. evaluate if completion is justified.\n\ntask info: $ARGUMENTS\n\ncheck:\n1. does task_subject describe work that could plausibly be done?\n2. if task_description exists, are there specific deliverables mentioned?\n3. any indication the task was only partially completed?\n\nrespond {\"ok\": true} if legitimate, or {\"ok\": false, \"reason\": \"specific concern\"} if clear red flag. err on the side of allowing — only block on obvious incompleteness.",
-            "timeout": 15
-          }
-        ]
-      }
-    ],
     "PreToolUse": [
       {
         "matcher": "Bash",
@@ -172,16 +161,6 @@
             "type": "command",
             "command": "~/box/tools/hooks/auto-format.sh",
             "timeout": 10
-          }
-        ]
-      },
-      {
-        "matcher": "Edit|Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "~/box/tools/hooks/git-snapshot.sh",
-            "timeout": 5
           }
         ]
       }

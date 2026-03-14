@@ -20,11 +20,23 @@ preferences: culinary: celsius, grams (tbsp/tsp), pseudocode-prose.
 <motto severity="critical">gotta go fast gotta shit out good shit</motto>
 
 <delegation severity="critical">
-delegate MCP tools available: delegate_codex(task, cwd?, session_id?) and delegate_claude(task, cwd?, session_id?).
-use the SAME tool to start and continue: delegate_codex(task="...") → delegate_codex(session_id="...", task="..."); same for delegate_claude.
-default mental model: coding/implementation → delegate_codex. reasoning/review/architecture → delegate_claude.
+delegate MCP tools: delegate_codex(task, cwd?, session_id?) and delegate_claude(task, cwd?, session_id?).
+async by default: first call returns immediately with session_id + status "running".
+poll: delegate_codex(session_id="...") → returns status + output when done.
+continue: delegate_codex(session_id="...", task="next work") → only after prior task completed.
+mental model: coding/implementation → delegate_codex. reasoning/review → delegate_claude.
 delegated agents don't commit. you own git. don't edit same files while running.
 if delegation tools unavailable → implement directly.
+
+parallel dispatch: fire 2-3 delegates, do other work, poll each for completion.
+phased delegation (tasks >20min total): decompose into ≤15min phases, chain via session_id.
+between phases: git diff --stat, read key outputs, adjust next prompt.
+
+anti-patterns:
+- mega-prompts with 8 tasks in one call
+- vague descriptions ("handle the backend")
+- polling too aggressively (wait ≥30s between status checks)
+- continuing a session without verifying prior phase results
 </delegation>
 
 <shortcuts>

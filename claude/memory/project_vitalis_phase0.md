@@ -1,18 +1,33 @@
 ---
 name: vitalis phase 0 implementation
-description: health dashboard + biomarker system for Vitalis iOS app, extending lifeops backend
+description: VITALIS health app — Expo/RN frontend + FastAPI backend, personal health data collector with background HealthKit sync
 type: project
 ---
 
-Vitalis health app — Phase 0 implementation in progress (2026-03-12).
+VITALIS is a personal health data collection app at ~/research-lab/.
 
-**Why:** building Ornament Health clone (~60% of user value at ~4% of codebase). Phase 0 = biomarker dashboard + reference ranges + manual entry + profile.
+**Architecture:** Expo/React Native frontend (vitalis-app/) + FastAPI backend (vitalis-backend/) on VPS 35.192.111.203:8100.
 
-**How to apply:**
-- iOS app at ~/Vitalis (SwiftUI, iOS 17+, SwiftData for models)
-- backend at VPS 35.192.111.203:8100 (FastAPI lifeops, routes_vitalis_biomarkers.py)
+**Why:** "invisible by design" — app collects health data silently, syncs to VPS, intelligence happens server-side, user interacts via Telegram. App UI is secondary — opened rarely to glance at dashboards.
+
+**How to apply:** manual data entry is LOW priority. background sync is CRITICAL. dark theme. focus on data collection pipeline, not UI polish.
+
+**Key decisions made (2026-03-14):**
+
+- kept React Native (not Swift rewrite) — @kingstinct/react-native-healthkit supports enableBackgroundDelivery + subscribeToChanges
+- backend refactored into modules (routes/, middleware/) with API key auth + rate limiting
+- new /api/v1/sync endpoint for bulk health data ingestion with sync_checkpoint anchors
+- background sync engine: observer queries per HK type, offline queue with exponential backoff
+- dark theme (near-black #0A0A0F palette)
+- onboarding refactored from 1878 lines into 7 step components
+- expo-location + expo-battery for device context
 - ornament-reverse reference docs at ~/research-lab/ornament-reverse/
-- API contract: /api/v1/biomarkers/thesaurus, /entries, /status, /profile
-- 4 phases total: P0 dashboard, P1 lab OCR, P2 fasting+sleep, P3 health score+AI
-- pbxproj update script at ~/Vitalis/update_pbxproj.py for adding new files
-- existing sync pipeline (HealthKit → SyncEngine → health_metric) preserved untouched
+
+**Known deferred items:**
+
+- HTTPS/TLS — needs domain name (bare IP can't get Let's Encrypt)
+- proper token auth (QR + Keychain) — current API key is in EXPO*PUBLIC*\* (extractable from bundle)
+- lab review singleton draft pattern — should be labId-based
+- thesaurus preloading dependency in lab flow
+
+**Stats:** frontend ~13.5K LOC TypeScript, backend ~2.6K LOC Python, 16 backend tests passing.

@@ -14,7 +14,6 @@
 - teammateMode: tmux (split panes)
 - hooks configured:
   - `TeammateIdle` → `~/box/tools/hooks/teammate-idle.sh` (nudges once to check tasks, then lets go idle)
-  - `TaskCompleted` → prompt hook (LLM verifies task genuinely done before marking complete)
 - docs: https://code.claude.com/docs/en/agent-teams
 
 ## box aliases
@@ -25,4 +24,3 @@
 - [project_vitalis_phase0.md](project_vitalis_phase0.md) — Phase 0 implementation context
 
 ## feedback
-- [feedback_codex_delegation.md](feedback_codex_delegation.md) — bidirectional delegation via delegate MCP (`delegate_codex` + `delegate_claude`)
