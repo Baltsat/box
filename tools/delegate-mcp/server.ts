@@ -9,6 +9,7 @@ const codex_history_turns = 12;
 const codex_history_chars = 24000;
 const lock_timeout_ms = Number(process.env.DELEGATE_SESSION_LOCK_TIMEOUT_MS ?? 3600000);
 const orphan_lock_ms = 5000;
+const pid_reuse_slop_ms = 5000;
 
 type Agent = 'codex' | 'claude';
 type Turn = { role: 'user' | 'assistant'; content: string };
@@ -274,6 +275,24 @@ async function load_session(session_id: string) {
   return legacy;
 }
 
+async function session_pid_alive(session: Session) {
+  if (typeof session.pid !== 'number') return false;
+  if (!pid_alive(session.pid)) return false;
+  const created_at = Date.parse(session.created_at);
+  const elapsed_ms = await pid_elapsed_ms(session.pid);
+  if (!Number.isFinite(created_at)) return true;
+  if (typeof elapsed_ms !== 'number') return pid_alive(session.pid);
+  return Date.now() - elapsed_ms <= created_at + pid_reuse_slop_ms;
+}
+
+function finish_session(session: Session, status: Status, error?: string) {
+  session.status = status;
+  if (error) session.error = error;
+  else delete session.error;
+  session.updated_at = stamp();
+  delete session.pid;
+}
+
 function build_context_prompt(session: Session, task: string) {
   if (session.history.length === 0) return task;
   const recent: string[] = [];
@@ -384,15 +403,20 @@ async function start_session(agent: Agent, task: string, cwd: string) {
     env: agent === 'claude' ? claude_env() : process.env,
   });
   session.pid = proc.pid;
+  session.updated_at = stamp();
+  await store_session(session_id, session);
 
   (async () => {
+    let err = '';
+    let code: number | undefined;
     try {
-      const [out, err] = await Promise.all([
+      const [out, raw_err] = await Promise.all([
         new Response(proc.stdout).text(),
         new Response(proc.stderr).text(),
       ]);
-      const code = await proc.exited;
-      const output = out.trim() || err.trim();
+      err = raw_err.trim();
+      code = await proc.exited;
+      const output = out.trim() || err;
       await with_session_lock(session_id, async () => {
         const s = await load_session(session_id);
         if (agent === 'claude') {
@@ -405,25 +429,38 @@ async function start_session(agent: Agent, task: string, cwd: string) {
           push_turn(s, 'assistant', output);
         }
         if (agent === 'claude' && code === 0 && !s.conv_id) {
-          s.status = 'error';
-          s.error = 'claude did not return session_id';
+          finish_session(s, 'error', 'claude did not return session_id');
         } else {
-          s.status = code === 0 ? 'completed' : 'error';
-          s.error = code !== 0 ? err || `exited ${code}` : undefined;
+          finish_session(s, code === 0 ? 'completed' : 'error', code !== 0 ? err || `exited ${code}` : undefined);
         }
-        delete s.pid;
         await store_session(session_id, s);
       });
     } catch (e: any) {
+      code ??= await proc.exited.catch(() => undefined);
+      const status: Status = code === 0 ? 'completed' : 'error';
+      const error =
+        status === 'error'
+          ? err || e?.message || (typeof code === 'number' ? `exited ${code}` : 'background handler failed')
+          : undefined;
+      console.error(`[delegate] background handler failed for ${session_id}: ${e?.message ?? e}`);
       try {
         await with_session_lock(session_id, async () => {
           const s = await load_session(session_id);
-          s.status = 'error';
-          s.error = e?.message || 'background handler failed';
-          delete s.pid;
+          finish_session(s, status, error);
           await store_session(session_id, s);
         });
-      } catch {}
+      } catch (inner: any) {
+        console.error(`[delegate] failed to persist terminal status for ${session_id}: ${inner?.message}`);
+        try {
+          const s = await load_session(session_id);
+          if (s.status === 'running' && s.pid === proc.pid && !(await session_pid_alive(s))) {
+            finish_session(s, status, error);
+            await store_session(session_id, s);
+          }
+        } catch (fallback: any) {
+          console.error(`[delegate] fallback persist failed for ${session_id}: ${fallback?.message}`);
+        }
+      }
     }
   })();
 
@@ -431,11 +468,25 @@ async function start_session(agent: Agent, task: string, cwd: string) {
 }
 
 async function check_status(session_id: string, expected_agent?: Agent) {
-  const session = await load_session(session_id);
+  let session = await load_session(session_id);
   if (expected_agent && session.agent !== expected_agent) {
     throw new Error(
       `session ${session_id} belongs to ${session.agent}; use delegate_${session.agent}`
     );
+  }
+  if (session.status === 'running') {
+    session = await with_session_lock(session_id, async () => {
+      const current = await load_session(session_id);
+      if (current.status !== 'running') return current;
+      if (await session_pid_alive(current)) return current;
+      if (current.pid) {
+        finish_session(current, 'error', current.error || 'process exited before handler completed');
+      } else {
+        finish_session(current, 'completed');
+      }
+      await store_session(session_id, current);
+      return current;
+    });
   }
   return {
     session_id,
@@ -589,6 +640,8 @@ while (true) {
     try {
       const res = await handle(JSON.parse(line));
       if (res) process.stdout.write(JSON.stringify(res) + '\n');
-    } catch {}
+    } catch (e: any) {
+      console.error(`[delegate] handle error: ${e?.message}`);
+    }
   }
 }
