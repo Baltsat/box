@@ -340,7 +340,7 @@ if [[ $exit_code -eq 0 ]]; then
                 cat "$f" 2>/dev/null
             else
                 printf '=== %s ===\n' "$f"
-                _sha < "$f" 2>/dev/null | cut -d' ' -f1
+                _sha <"$f" 2>/dev/null | cut -d' ' -f1
             fi
         done
     } | _sha | cut -d' ' -f1)

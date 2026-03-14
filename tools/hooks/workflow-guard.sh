@@ -69,12 +69,18 @@ for repo in "${changed_repos[@]}"; do
         stored_fp=$(sed -n '1p' "$marker" 2>/dev/null || true)
         stored_paths=$(sed -n '2p' "$marker" 2>/dev/null || true)
         # shellcheck disable=SC2086
-        read -ra _ar_paths <<< "$stored_paths"
+        read -ra _ar_paths <<<"$stored_paths"
 
         # if review was path-scoped, check for dirty files outside that scope
         if [[ ${#_ar_paths[@]} -gt 0 ]]; then
-            all_dirty=$(cd "$repo" && { git diff --name-only HEAD 2>/dev/null; git ls-files --others --exclude-standard 2>/dev/null; } | sort -u)
-            scoped_dirty=$(cd "$repo" && { git diff --name-only HEAD -- "${_ar_paths[@]}" 2>/dev/null; git ls-files --others --exclude-standard -- "${_ar_paths[@]}" 2>/dev/null; } | sort -u)
+            all_dirty=$(cd "$repo" && {
+                git diff --name-only HEAD 2>/dev/null
+                git ls-files --others --exclude-standard 2>/dev/null
+            } | sort -u)
+            scoped_dirty=$(cd "$repo" && {
+                git diff --name-only HEAD -- "${_ar_paths[@]}" 2>/dev/null
+                git ls-files --others --exclude-standard -- "${_ar_paths[@]}" 2>/dev/null
+            } | sort -u)
             unreviewed=$(comm -23 <(echo "$all_dirty") <(echo "$scoped_dirty") | grep -vcE '\.(md|txt|rst|adoc|mdx)$' || true)
             [[ "$unreviewed" -gt 0 ]] && { :; } # fall through to block — changes exist outside reviewed scope
             [[ "$unreviewed" -gt 0 ]] && continue=false || continue=true
@@ -92,7 +98,7 @@ for repo in "${changed_repos[@]}"; do
                         cat "$f" 2>/dev/null
                     else
                         printf '=== %s ===\n' "$f"
-                        _sha < "$f" 2>/dev/null | cut -d' ' -f1
+                        _sha <"$f" 2>/dev/null | cut -d' ' -f1
                     fi
                 done
             } | _sha | cut -d' ' -f1)
