@@ -76,19 +76,18 @@ for repo in "${changed_repos[@]}"; do
             all_dirty=$(cd "$repo" && {
                 git diff --name-only HEAD 2>/dev/null
                 git ls-files --others --exclude-standard 2>/dev/null
-            } | sort -u)
+            } | LC_ALL=C sort -u)
             scoped_dirty=$(cd "$repo" && {
                 git diff --name-only HEAD -- "${_ar_paths[@]}" 2>/dev/null
                 git ls-files --others --exclude-standard -- "${_ar_paths[@]}" 2>/dev/null
-            } | sort -u)
-            unreviewed=$(comm -23 <(echo "$all_dirty") <(echo "$scoped_dirty") | grep -vcE '\.(md|txt|rst|adoc|mdx)$' || true)
-            [[ "$unreviewed" -gt 0 ]] && { :; } # fall through to block — changes exist outside reviewed scope
-            [[ "$unreviewed" -gt 0 ]] && continue=false || continue=true
+            } | LC_ALL=C sort -u)
+            unreviewed=$(LC_ALL=C comm -23 <(echo "$all_dirty") <(echo "$scoped_dirty") | grep -vcE '\.(md|txt|rst|adoc|mdx)$' || true)
+            [[ "$unreviewed" -gt 0 ]] && _ar_ok=false || _ar_ok=true
         else
-            continue=true
+            _ar_ok=true
         fi
 
-        if [[ "$continue" == "true" ]]; then
+        if [[ "$_ar_ok" == "true" ]]; then
             ar_fp=$(cd "$repo" && {
                 git diff HEAD -- "${_ar_paths[@]}" 2>/dev/null
                 git ls-files --others --exclude-standard -z -- "${_ar_paths[@]}" 2>/dev/null | while IFS= read -r -d '' f; do

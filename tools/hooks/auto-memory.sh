@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # auto-memory: detect memorable content in user prompts via keyword matching
 # injects additionalContext so claude evaluates and saves to memory if confirmed
 # zero API, zero latency — pure bash regex filter

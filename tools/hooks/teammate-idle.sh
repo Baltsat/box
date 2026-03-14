@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-set -euo pipefail
-
+command -v jq >/dev/null 2>&1 || exit 0
 INPUT=$(cat)
-TEAMMATE=$(echo "$INPUT" | jq -r '.teammate_name')
-TEAM=$(echo "$INPUT" | jq -r '.team_name')
+TEAMMATE=$(echo "$INPUT" | jq -r '.teammate_name // ""')
+TEAM=$(echo "$INPUT" | jq -r '.team_name // ""')
+
+[[ -z "$TEAMMATE" || -z "$TEAM" ]] && exit 0
 
 COUNTER_FILE="/tmp/claude-idle-${TEAM}-${TEAMMATE}"
 COUNT=0

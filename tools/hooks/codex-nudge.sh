@@ -1,11 +1,8 @@
 #!/usr/bin/env bash
-set -euo pipefail
-
+command -v jq >/dev/null 2>&1 || exit 0
 INPUT=$(cat)
-SESSION_ID=$(echo "$INPUT" | jq -r '.session_id // "unknown"' 2>/dev/null) || {
-    echo "codex-nudge: jq parse failed" >&2
-    exit 0
-}
+SESSION_ID=$(echo "$INPUT" | jq -r '.session_id // ""')
+[[ -z "$SESSION_ID" ]] && exit 0
 TOOL=$(echo "$INPUT" | jq -r '.tool_name // ""')
 FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // ""')
 
