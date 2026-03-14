@@ -349,11 +349,11 @@ tdd: write failing test FIRST, then implement. RED → GREEN → REFACTOR.
 
 <tools severity="critical">
 shell tools:
-aliases.sh is LOADED into Bash. use the wrappers, not raw commands:
+these wrappers are available in Bash (via aliases.sh). use them, not raw commands:
 - `tree [N]` not `eza --tree -a -L N` (default N=2)
 - `repos` not `fd -H -t d ...`
 - `fancy left/right` for curly quotes
-these exist to be used. spelling out the underlying command = pointless.
+DO NOT read or reference aliases.sh directly. DO NOT use cdx, codex, gacp, or other aliases.
 
 exploration:
 use FAST modern tools. NEVER old unix garbage (find, grep, etc).
@@ -585,7 +585,6 @@ repos in ~ ONE LEVEL DOWN. use `repos` wrapper (uses fd).
 NEVER use find command. NEVER broad recursive search.
 
 file references:
-@~/box/tools/aliases.sh
 @~/box/shared.nix
 @~/box/macos.nix
 
