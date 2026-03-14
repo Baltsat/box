@@ -114,7 +114,7 @@ else
         [[ -e "$p" ]] && continue
         git ls-files --error-unmatch "$p" &>/dev/null && continue
         git diff --name-only HEAD -- "$p" &>/dev/null 2>&1 && [[ -n "$(git diff --name-only HEAD -- "$p" 2>/dev/null)" ]] && continue
-        echo "error: --path target not found on disk or in git: $p" >&2
+        echo "error: --path target not found on disk or in git: $p (git root: $(pwd))" >&2
         exit 1
     done
 

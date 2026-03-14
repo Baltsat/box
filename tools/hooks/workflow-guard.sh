@@ -35,6 +35,30 @@ for bf in "${baselines[@]}"; do
 
     [[ ${#session_files[@]} -eq 0 ]] && continue
 
+    # filter to files with actual net changes vs pre-session state
+    _file_baselines="/tmp/session-file-baselines-${SESSION_ID}"
+    if [[ -f "$_file_baselines" ]]; then
+        _net=()
+        for sf in "${session_files[@]}"; do
+            _full="$repo/$sf"
+            _bl=$(awk -v fp="$_full" -F'\t' '$1 == fp {print $2; exit}' "$_file_baselines" 2>/dev/null)
+            if [[ -z "$_bl" ]]; then
+                _net+=("$sf")
+            elif [[ "$_bl" == "__new__" ]]; then
+                [[ -e "$_full" ]] && _net+=("$sf")
+            else
+                if [[ -f "$_full" ]]; then
+                    _cur=$(_sha < "$_full" | cut -d' ' -f1)
+                    [[ "$_cur" != "$_bl" ]] && _net+=("$sf")
+                else
+                    _net+=("$sf")
+                fi
+            fi
+        done
+        session_files=("${_net[@]}")
+        [[ ${#session_files[@]} -eq 0 ]] && continue
+    fi
+
     # count dirty lines ONLY from session-edited files
     tracked=$(cd "$repo" && git diff --numstat HEAD -- "${session_files[@]}" 2>/dev/null | awk '{s+=$1+$2} END {print s+0}')
     untracked_lines=0
@@ -48,24 +72,24 @@ for bf in "${baselines[@]}"; do
     lines=$((tracked + untracked_lines))
     [[ "$lines" -lt 10 ]] && continue
 
-    all_docs=true
+    all_trivial=true
     while IFS=$'\t' read -r _ _ f; do
-        case "$f" in *.md | *.txt | *.rst | *.adoc | *.mdx) ;; *)
-            all_docs=false
-            break
-            ;;
+        case "$f" in *.md | *.txt | *.rst | *.adoc | *.mdx) ;;
+        *) case "${f##*/}" in .gitignore | .gitattributes | .editorconfig) ;; *)
+                all_trivial=false; break ;;
+            esac ;;
         esac
     done < <(cd "$repo" && git diff --numstat HEAD -- "${session_files[@]}" 2>/dev/null)
-    if $all_docs && [[ -n "$untracked_files" ]]; then
+    if $all_trivial && [[ -n "$untracked_files" ]]; then
         while IFS= read -r f; do
-            case "$f" in *.md | *.txt | *.rst | *.adoc | *.mdx) ;; *)
-                all_docs=false
-                break
-                ;;
+            case "$f" in *.md | *.txt | *.rst | *.adoc | *.mdx) ;;
+            *) case "${f##*/}" in .gitignore | .gitattributes | .editorconfig) ;; *)
+                    all_trivial=false; break ;;
+                esac ;;
             esac
         done <<<"$untracked_files"
     fi
-    $all_docs && continue
+    $all_trivial && continue
 
     _repo_hash=$(printf '%s' "$repo" | _sha | cut -d' ' -f1)
     marker="/tmp/ar-${_repo_hash}"
@@ -85,7 +109,7 @@ for bf in "${baselines[@]}"; do
                 git diff --name-only HEAD -- "${_ar_paths[@]}" 2>/dev/null
                 git ls-files --others --exclude-standard -- "${_ar_paths[@]}" 2>/dev/null
             } | LC_ALL=C sort -u)
-            unreviewed=$(LC_ALL=C comm -23 <(echo "$all_dirty") <(echo "$scoped_dirty") | grep -vcE '\.(md|txt|rst|adoc|mdx)$' || true)
+            unreviewed=$(LC_ALL=C comm -23 <(echo "$all_dirty") <(echo "$scoped_dirty") | grep -vE '\.(md|txt|rst|adoc|mdx)$' | grep -vcE '(^|/)\.(gitignore|gitattributes|editorconfig)$' || true)
             [[ "$unreviewed" -gt 0 ]] && _ar_ok=false || _ar_ok=true
         else
             _ar_ok=true
