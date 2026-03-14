@@ -409,7 +409,7 @@ async function start_session(agent: Agent, task: string, cwd: string) {
           s.error = 'claude did not return session_id';
         } else {
           s.status = code === 0 ? 'completed' : 'error';
-          s.error = code !== 0 ? (err || `exited ${code}`) : undefined;
+          s.error = code !== 0 ? err || `exited ${code}` : undefined;
         }
         delete s.pid;
         await store_session(session_id, s);

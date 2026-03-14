@@ -94,7 +94,10 @@ else
     REVIEWER_MODEL="claude" # manual invocation outside either model
 fi
 
-cd "$(git rev-parse --show-toplevel)" || { echo "error: not in a git repo" >&2; exit 1; }
+cd "$(git rev-parse --show-toplevel)" || {
+    echo "error: not in a git repo" >&2
+    exit 1
+}
 
 REVIEW_DIR=$(mktemp -d /tmp/adversarial-review.XXXXXX)
 trap '/bin/rm -rf "$REVIEW_DIR"' EXIT
