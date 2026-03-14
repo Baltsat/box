@@ -100,7 +100,8 @@ run_sops() {
         return 0
     fi
     "$BOX_DIR/tools/secrets.sh" encrypt 2>/dev/null || true
-    log "secrets encrypted"
+    git add "$BOX_DIR/.env.sops" 2>/dev/null || true
+    log "secrets encrypted and staged"
 }
 
 # Install as git pre-commit hook
