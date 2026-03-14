@@ -34,7 +34,7 @@
     ],
     "defaultMode": "bypassPermissions"
   },
-  "model": "opusplan",
+  "model": "claude-opus-4-6",
   "effortLevel": "high",
   "hooks": {
     "Stop": [
