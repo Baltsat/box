@@ -20,10 +20,10 @@ echo "$FILE_PATH" >>"/tmp/session-edits-${SESSION_ID}" 2>/dev/null
 _file_baselines="/tmp/session-file-baselines-${SESSION_ID}"
 if ! awk -v fp="$FILE_PATH" -F'\t' 'BEGIN{r=1} $1 == fp {r=0; exit} END {exit r}' "$_file_baselines" 2>/dev/null; then
     if [[ -f "$FILE_PATH" ]]; then
-        _fh=$(shasum -a 256 < "$FILE_PATH" 2>/dev/null || sha256sum < "$FILE_PATH")
-        printf '%s\t%s\n' "$FILE_PATH" "${_fh%% *}" >> "$_file_baselines"
+        _fh=$(shasum -a 256 <"$FILE_PATH" 2>/dev/null || sha256sum <"$FILE_PATH")
+        printf '%s\t%s\n' "$FILE_PATH" "${_fh%% *}" >>"$_file_baselines"
     else
-        printf '%s\t__new__\n' "$FILE_PATH" >> "$_file_baselines"
+        printf '%s\t__new__\n' "$FILE_PATH" >>"$_file_baselines"
     fi
 fi
 

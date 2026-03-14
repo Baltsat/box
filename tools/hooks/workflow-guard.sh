@@ -48,7 +48,7 @@ for bf in "${baselines[@]}"; do
                 [[ -e "$_full" ]] && _net+=("$sf")
             else
                 if [[ -f "$_full" ]]; then
-                    _cur=$(_sha < "$_full" | cut -d' ' -f1)
+                    _cur=$(_sha <"$_full" | cut -d' ' -f1)
                     [[ "$_cur" != "$_bl" ]] && _net+=("$sf")
                 else
                     _net+=("$sf")
@@ -76,16 +76,20 @@ for bf in "${baselines[@]}"; do
     while IFS=$'\t' read -r _ _ f; do
         case "$f" in *.md | *.txt | *.rst | *.adoc | *.mdx) ;;
         *) case "${f##*/}" in .gitignore | .gitattributes | .editorconfig) ;; *)
-                all_trivial=false; break ;;
-            esac ;;
+            all_trivial=false
+            break
+            ;;
+        esac ;;
         esac
     done < <(cd "$repo" && git diff --numstat HEAD -- "${session_files[@]}" 2>/dev/null)
     if $all_trivial && [[ -n "$untracked_files" ]]; then
         while IFS= read -r f; do
             case "$f" in *.md | *.txt | *.rst | *.adoc | *.mdx) ;;
             *) case "${f##*/}" in .gitignore | .gitattributes | .editorconfig) ;; *)
-                    all_trivial=false; break ;;
-                esac ;;
+                all_trivial=false
+                break
+                ;;
+            esac ;;
             esac
         done <<<"$untracked_files"
     fi
