@@ -22,6 +22,7 @@ fp=$(cd "$repo" && {
 
 printf 'repo=%s\nfp=%s\n' "$repo" "$fp" >"$baseline"
 
-# cleanup old baselines (> 7 days)
+# cleanup old baselines and edit logs (> 7 days)
 find /tmp -maxdepth 1 -name 'session-git-baseline-*' -mtime +7 -delete 2>/dev/null || true
+find /tmp -maxdepth 1 -name 'session-edits-*' -mtime +7 -delete 2>/dev/null || true
 exit 0

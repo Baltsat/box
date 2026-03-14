@@ -7,6 +7,9 @@ SESSION_ID=$(echo "$INPUT" | jq -r '.session_id // ""')
 FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // ""')
 [[ -z "$FILE_PATH" ]] && exit 0
 
+# always log edited files for workflow-guard filtering
+echo "$FILE_PATH" >>"/tmp/session-edits-${SESSION_ID}" 2>/dev/null
+
 dir=$(dirname "$FILE_PATH")
 [[ -d "$dir" ]] || exit 0
 repo=$(cd "$dir" && git rev-parse --show-toplevel 2>/dev/null) || exit 0
