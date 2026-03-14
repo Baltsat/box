@@ -306,7 +306,7 @@ for lens in "${LENS_LIST[@]}"; do
         echo "stderr log:"
         cat "$log" 2>/dev/null || echo "(no log)"
         exit_code=1
-    elif ! grep -Eiq '^#{1,6}[[:space:]]*(findings|verdict)|^[[:space:]]*[0-9]+\.[[:space:]]|\*\*no high[- ]severity findings|\*\*verdict:' "$out"; then
+    elif ! grep -Eiq '^#{1,6}[[:space:]]*(findings|verdict)|^[[:space:]]*\*{0,2}[0-9]+\.[[:space:]]|\*\*no high[- ]severity findings|\*\*verdict:' "$out"; then
         echo "=== REVIEWER FAILED: $lens ==="
         echo "exit code: $reviewer_exit"
         echo "reviewer returned output without review structure:"
@@ -326,17 +326,25 @@ done
 echo "=== review complete ===" >&2
 
 # write fingerprinted marker so stop hook knows this exact state was reviewed
+# format: line 1 = content hash, line 2 = paths (space-separated, empty = all)
 if [[ $exit_code -eq 0 ]]; then
     _repo=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
     _sha() { shasum -a 256 2>/dev/null || sha256sum; }
     _marker="/tmp/ar-$(printf '%s' "$_repo" | _sha | cut -d' ' -f1)"
-    {
-        git diff HEAD 2>/dev/null
-        git ls-files --others --exclude-standard 2>/dev/null | sort | while IFS= read -r f; do
-            printf '=== %s ===\n' "$f"
-            cat "$f" 2>/dev/null
+    _hash=$({
+        git diff HEAD -- "${PATHS[@]}" 2>/dev/null
+        git ls-files --others --exclude-standard -z -- "${PATHS[@]}" 2>/dev/null | while IFS= read -r -d '' f; do
+            [[ -f "$f" ]] || continue
+            if command -v file &>/dev/null && file --mime-encoding "$f" 2>/dev/null | sed 's/.*: //' | grep -qE '^(us-ascii|utf-8|ascii|iso-8859)'; then
+                printf '=== %s ===\n' "$f"
+                cat "$f" 2>/dev/null
+            else
+                printf '=== %s ===\n' "$f"
+                _sha < "$f" 2>/dev/null | cut -d' ' -f1
+            fi
         done
-    } | _sha | cut -d' ' -f1 >"$_marker"
+    } | _sha | cut -d' ' -f1)
+    printf '%s\n%s\n' "$_hash" "${PATHS[*]}" >"$_marker"
 fi
 
 exit $exit_code

@@ -66,15 +66,38 @@ for repo in "${changed_repos[@]}"; do
     marker="/tmp/ar-${_repo_hash}"
     if [[ -f "$marker" ]]; then
         marker_age=$(($(date +%s) - $(stat -c %Y "$marker" 2>/dev/null || stat -f %m "$marker" 2>/dev/null || echo 0)))
-        ar_fp=$(cd "$repo" && {
-            git diff HEAD 2>/dev/null
-            git ls-files --others --exclude-standard 2>/dev/null | sort | while IFS= read -r f; do
-                printf '=== %s ===\n' "$f"
-                cat "$f" 2>/dev/null
-            done
-        } | _sha | cut -d' ' -f1)
-        stored_fp=$(cat "$marker" 2>/dev/null || true)
-        [[ "$marker_age" -lt 3600 && "$ar_fp" == "$stored_fp" ]] && continue
+        stored_fp=$(sed -n '1p' "$marker" 2>/dev/null || true)
+        stored_paths=$(sed -n '2p' "$marker" 2>/dev/null || true)
+        # shellcheck disable=SC2086
+        read -ra _ar_paths <<< "$stored_paths"
+
+        # if review was path-scoped, check for dirty files outside that scope
+        if [[ ${#_ar_paths[@]} -gt 0 ]]; then
+            all_dirty=$(cd "$repo" && { git diff --name-only HEAD 2>/dev/null; git ls-files --others --exclude-standard 2>/dev/null; } | sort -u)
+            scoped_dirty=$(cd "$repo" && { git diff --name-only HEAD -- "${_ar_paths[@]}" 2>/dev/null; git ls-files --others --exclude-standard -- "${_ar_paths[@]}" 2>/dev/null; } | sort -u)
+            unreviewed=$(comm -23 <(echo "$all_dirty") <(echo "$scoped_dirty") | grep -vcE '\.(md|txt|rst|adoc|mdx)$' || true)
+            [[ "$unreviewed" -gt 0 ]] && { :; } # fall through to block — changes exist outside reviewed scope
+            [[ "$unreviewed" -gt 0 ]] && continue=false || continue=true
+        else
+            continue=true
+        fi
+
+        if [[ "$continue" == "true" ]]; then
+            ar_fp=$(cd "$repo" && {
+                git diff HEAD -- "${_ar_paths[@]}" 2>/dev/null
+                git ls-files --others --exclude-standard -z -- "${_ar_paths[@]}" 2>/dev/null | while IFS= read -r -d '' f; do
+                    [[ -f "$f" ]] || continue
+                    if command -v file &>/dev/null && file --mime-encoding "$f" 2>/dev/null | sed 's/.*: //' | grep -qE '^(us-ascii|utf-8|ascii|iso-8859)'; then
+                        printf '=== %s ===\n' "$f"
+                        cat "$f" 2>/dev/null
+                    else
+                        printf '=== %s ===\n' "$f"
+                        _sha < "$f" 2>/dev/null | cut -d' ' -f1
+                    fi
+                done
+            } | _sha | cut -d' ' -f1)
+            [[ "$marker_age" -lt 3600 && "$ar_fp" == "$stored_fp" ]] && continue
+        fi
     fi
 
     jq -n --arg repo "$repo" --arg lines "$lines" '{
